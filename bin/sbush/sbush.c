@@ -5,8 +5,8 @@
 #define COMM_LEN  100
 #define BIN_LEN  10
 #define ARG_LEN  20
-#define ENV_LEN 100
-#define PATH ""
+#define ENV_LEN 1000
+#define PATH_LEN 1000
 #define PS1_DEFAULT "sbush> "
 void str_cpy(char *to_str, char *frm_str){
 	int i=0;
@@ -37,6 +37,26 @@ int strfind_occurence(char *str, char query, int occr){
 			break;
 	}
 	return i; // Returns found index or else null index;
+}
+int str_contains(char *str, char *query){
+	int j=0, i=0;
+	int startIdx = -1, found = 0;
+	for(i=0;str[i] != '\0';i++){
+		if (str[i] == query[j]){
+			j++;
+			startIdx = i;
+			if (j == str_len(query)){
+				found = 1;
+				break;
+			}
+		}
+		else if (startIdx >= 0){
+				j = 0;
+				startIdx = -1;
+		}
+	}
+	
+	return (found == 1) ?  startIdx - str_len(query) + 1: -1; // Start Index of query substring
 }
 int strfind_delim(char *str, int frm){
 	int i=0;
@@ -69,6 +89,24 @@ int split(char *str, char out[][COMM_LEN]){
 	return arg_ctr;
 }
 
+void str_concat(char *prev, char *current, char *after, char *dest){
+	int i=0;
+	int j=0;
+	int k=0;
+	for(i = 0;prev[i] != '\0';i++){
+		dest[i] = prev[i];
+	}
+	dest[i] = '\0';
+	for(j = 0;current[j] != '\0';j++){
+		dest[j + i] = current[j];
+	}
+	dest[i+j] = '\0';
+	for(k = 0;after[k] != '\0';k++){
+		dest[j + i + k] = after[k];
+	}
+	dest[i+j+k] = '\0';
+}
+
 int comm_parser(char **comm, char *argv[COMM_LEN]){
 	
 	char args[ARG_LEN][COMM_LEN];
@@ -85,7 +123,20 @@ int main(int argc, char *argv[], char *envp[]) {
   
   int pid, status;
   char command[COMM_LEN] = {'\0'};
-
+  
+  if (argc > 1){
+ 		char *const fileName = argv[1];
+    	FILE* file = fopen(fileName, "r"); 
+    	char line[COMM_LEN];
+		if (!fgets(line, sizeof(line), file)){
+			puts("sbush: error executing script");
+		}
+    	while (fgets(line, sizeof(line), file)) {
+        	printf("%s", line); 
+    	}
+    fclose(file); 	
+  }
+  else{
   while(1){
   	pid = fork();
 	if (pid != 0)
@@ -110,18 +161,32 @@ int main(int argc, char *argv[], char *envp[]) {
 					int delim_idx = strfind_occurence(command, '=', 1);
 					char env_var[BIN_LEN];
 					str_substr(command, str_len(args[0])+1, delim_idx-1, env_var);
-				if (str_cmp(env_var, "PS1") > 0){
 					char env_val[ENV_LEN];
 					str_substr(command, delim_idx+2, str_len(command)-2, env_val); //Null and New line were two extra chars
+				if (str_cmp(env_var, "PS1") > 0){
 					setenv("PS1", env_val, 1);
 				}
 				else if (str_cmp(env_var, "PATH") > 0){
-					printf("Exporting PATH");
+					printf("%d", str_contains(env_val, "$PATH"));
+					int idx = str_contains(env_val, "$PATH");
+					if (idx < 0)
+						setenv("PATH", env_val, 1);
+					char temp[ENV_LEN];
+					str_cpy(temp, env_val);
+					char *current = getenv("PATH");
+					while(idx >= 0){
+						char prev[PATH_LEN];
+						str_substr(temp, 0, idx-1, prev);
+						char after[PATH_LEN];
+						str_substr(temp, idx+5, str_len(temp)-1, after);
+						str_concat(prev, current, after, temp);
+						setenv("PATH", temp, 1);
+						idx = str_contains(temp, "$PATH");
+					}
 				}
 			}
 			else{
 				execvp(args[0], args);
-				
 				if(WIFEXITED(status)){
          			fputs("sbush: command not found: ", stdout);
 					puts(args[0]);
@@ -133,8 +198,7 @@ int main(int argc, char *argv[], char *envp[]) {
 			puts("Error reading input from stdin");
 		}
 	}
-  
-  
   }
+ } 
   return 0;
 }
