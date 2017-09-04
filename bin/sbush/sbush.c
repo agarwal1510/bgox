@@ -118,34 +118,8 @@ int comm_parser(char **comm, char *argv[COMM_LEN]){
 	}
 	return arg_ctr;
 }
-
-int main(int argc, char *argv[], char *envp[]) {
-  
-  int pid, status;
-  char command[COMM_LEN] = {'\0'};
-  
-  if (argc > 1){
- 		char *const fileName = argv[1];
-    	FILE* file = fopen(fileName, "r"); 
-    	char line[COMM_LEN];
-		if (!fgets(line, sizeof(line), file)){
-			puts("sbush: error executing script");
-		}
-    	while (fgets(line, sizeof(line), file)) {
-        	printf("%s", line); 
-    	}
-    fclose(file); 	
-  }
-  else{
-  while(1){
-  	pid = fork();
-	if (pid != 0)
-		waitpid(pid, &status, WUNTRACED);
-	else{
-		(getenv("PS1") == NULL) ? setenv("PS1", PS1_DEFAULT, 1) : setenv("PS1", getenv("PS1"), 1);
-		char *PS1 = getenv("PS1");
-		fputs(PS1, stdout);
-		if (fgets(command, 100, stdin) != NULL){
+void exec_comm(char command[], int status){
+		
 			command[str_len(command)-1] = '\0';
 			char *comm = command;
 			char *args[COMM_LEN];
@@ -167,7 +141,6 @@ int main(int argc, char *argv[], char *envp[]) {
 					setenv("PS1", env_val, 1);
 				}
 				else if (str_cmp(env_var, "PATH") > 0){
-					printf("%d", str_contains(env_val, "$PATH"));
 					int idx = str_contains(env_val, "$PATH");
 					if (idx < 0)
 						setenv("PATH", env_val, 1);
@@ -192,7 +165,41 @@ int main(int argc, char *argv[], char *envp[]) {
 					puts(args[0]);
 				}
 			}
-			
+			return;
+}
+int main(int argc, char *argv[], char *envp[]) {
+  
+  int pid;
+  int status;
+  char command[COMM_LEN] = {'\0'};
+  if (argc > 1){
+ 		char *const fileName = argv[1];
+    	FILE* file = fopen(fileName, "r"); 
+		if (!fgets(command, COMM_LEN, file)){
+			puts("sbush: error executing script");
+		}
+    	while (fgets(command, COMM_LEN, file)){
+			pid = fork();
+			if (pid != 0){
+				waitpid(pid, &status, WNOHANG);
+			}else{
+			exec_comm(command, status);
+			//break;
+    	}
+	}
+    fclose(file); 	
+  }
+  else{
+  while(1){
+  	pid = fork();
+	if (pid != 0)
+		waitpid(pid, &status, WUNTRACED);
+	else{
+		(getenv("PS1") == NULL) ? setenv("PS1", PS1_DEFAULT, 1) : setenv("PS1", getenv("PS1"), 1);
+		char *PS1 = getenv("PS1");
+		fputs(PS1, stdout);
+		if (fgets(command, COMM_LEN, stdin) != NULL){
+			exec_comm(command, status);
 		}
 		else{
 			puts("Error reading input from stdin");
