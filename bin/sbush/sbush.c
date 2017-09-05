@@ -79,7 +79,20 @@ void str_substr(char *str, int from, int to, char *out_str){
 		}
 		out_str[index] = '\0';
 }
+int split_delim(char *str, char delim, char out[COMM_LEN][COMM_LEN]){
+	int prev_ptr = 0;
+	int i = 0;
+	int arg_ctr = 0;
+	for(i=0;str[i] != '\0';i++){
+		if (str[i] == '|'){
+			str_substr(str, prev_ptr, i-1, out[arg_ctr++]);
+			prev_ptr = i+1;
+		}
+	}
+	str_substr(str, prev_ptr, i-1, out[arg_ctr++]);
+	return arg_ctr;
 
+}
 int split(char *str, char out[][COMM_LEN]){
 		int prev_ptr = 0;
 		int i=0;
@@ -126,8 +139,12 @@ int comm_parser(char **comm, char *argv[COMM_LEN]){
 int exec_custom(char command[], char *args[], int arg_ctr){
 
 		if (str_cmp(args[0], "cd") > 0){
-				if (chdir(args[1]) < 0)
-						puts("sbush: error executing command: cd");
+				if (!args[1]){
+					if (chdir(getenv("HOME")) < 0)
+							puts("sbush: error executing command: cd");	
+				}
+				else if (chdir(args[1]) < 0)
+							puts("sbush: error executing command: cd");
 				return 1;
 		}
 		else if (str_cmp(args[0], "export") > 0){ //TODO Make export persistant by wrinting to file 
@@ -161,12 +178,69 @@ int exec_custom(char command[], char *args[], int arg_ctr){
 		}
 		return 0;
 }
+void pipe_comm(char *args[][COMM_LEN], int ctr){
+
+//		int pfd[ctr-1][2];
+		int pid, status;
+		int pfd[2];
+			if (pipe(pfd) < 0){
+				puts("Error piping commands");
+			}
+		/*
+		for(int i=0;i<ctr-1;i++){
+			if (pipe(pfd[i]) < 0){
+				puts("Error piping commands");
+			}
+		}
+
+		for(int i=0;i<ctr;i++){
+		
+			if ((pid = fork()) == 0){
+				if (i != 0)
+					dup2(pfd[i/2][0], 0);
+				if (i < ctr-1)
+					dup2(pfd[i/2][1], 1);
+				if (i == 0)
+					close(pfd[i/2][0]);
+				if (i == ctr - 1)
+					close(pfd[i/2][1]);
+				execvp(args[i][0], args[i]);
+			}
+				else{
+					if (i == 0)
+					waitpid(pid, NULL, WUNTRACED);
+				//	close(pfd[i][0]);
+				//	close(pfd[i][1]);
+				}
+		} */
+		if (fork() == 0){
+
+				dup2(pfd[0], 0);
+				close(pfd[1]);
+				// TODO diff between execvp and execlp
+				execvp(args[1][0], args[1]);
+				perror("could not do it");
+		}
+		else if ((pid = fork()) == 0){
+						dup2(pfd[1], 1);
+						close(pfd[0]);
+						execvp(args[0][0], args[0]);
+						perror("could not do first");
+		}
+		else{
+				waitpid(pid, NULL, WUNTRACED);				
+				close(pfd[0]);
+				close(pfd[1]);
+		}
+			return;
+}
 int main(int argc, char *argv[], char *envp[]) {
 
 		int pid, status;
 		char command[COMM_LEN] = {'\0'};
 
-
+		
+		//TODO Strip spaces from front and back for execution
 		if (argc > 1){
 				char *const fileName = argv[1];
 				FILE* file = fopen(fileName, "r"); 
@@ -212,12 +286,49 @@ int main(int argc, char *argv[], char *envp[]) {
 						char *PS1 = getenv("PS1");
 						fputs(PS1, stdout);
 						if (fgets(command, COMM_LEN, stdin) != NULL){
+								if (str_cmp(command, "\n") > 0)
+									continue;
 								command[str_len(command)-1] = '\0';
 								char *args[COMM_LEN];
 								char *comm = command;
+								
 								int arg_ctr = comm_parser(&comm, args);
 								args[arg_ctr] = NULL;
 								int BACKGROUND = str_cmp(args[arg_ctr-1], "&");
+								int PIPED = str_contains(command, "|");
+								
+								if (PIPED >= 0){
+									char out_delim[COMM_LEN][COMM_LEN];
+									int ctr = split_delim(command, '|', out_delim);
+					//				printf("%d", ctr);
+									char *args[ctr][COMM_LEN];
+									args[0][0] = "ls";
+									args[0][1] = "-la";
+									args[0][2] = NULL;
+									args[1][0] = "grep";
+									args[1][1] = "bin";
+									args[1][2] = NULL;
+						//			args[2][0] = "head";
+						//			args[2][1] = "-n1";
+						//			args[2][2] = NULL;
+			//						char *comm = out_delim[0];
+			//						comm_parser(&comm, args[0]);
+		//							str_cpy(comm, out_delim[1]);
+			//						char *comm2 = out_delim[1];
+			//						comm_parser(&comm2, args[1]);
+	
+//									for(int i=0;i<ctr;i++){
+//										char *comm = out_delim[i];
+//										comm_parser(&comm, args[i]);
+	//								
+//									}
+										
+									//	printf("comm: %s", args[0][0]);
+
+									pipe_comm(args, ctr);
+								}
+								else{
+								
 								if (BACKGROUND > 0){
 										args[arg_ctr - 1] = NULL;
 										arg_ctr--;
@@ -241,8 +352,10 @@ int main(int argc, char *argv[], char *envp[]) {
 										}
 								}
 						}
+						}
 						else{
-								puts("Error reading input from stdin");
+							//	puts("Error reading input from stdin");
+								break;
 						}
 
 				}
