@@ -181,7 +181,7 @@ int exec_custom(char command[], char *args[], int arg_ctr){
 void pipe_comm(char *args[][COMM_LEN], int ctr){
 
 //		int pfd[ctr-1][2];
-		int pid, status;
+		int pid;
 		int pfd[2];
 			if (pipe(pfd) < 0){
 				puts("Error piping commands");
