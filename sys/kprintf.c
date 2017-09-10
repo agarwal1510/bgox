@@ -12,7 +12,7 @@ void print_seq(const char * seq){
 		char* temp2 = (char*)0xb8000 + Y*160 + X;
 
 		for(;*temp1; temp1 += 1) {
-			if (*temp1 == '\n'){
+			if (*temp1 == '\n' || *temp1 == '\r'){
 		   		Y++;
 		   		X = 0;
 				temp2 = (char*)0xb8000 + Y*160 + X;
@@ -170,5 +170,6 @@ void kprintf(const char *fmt, ...)
 				}
 				else{print_seq(fmt_const);}
 		}
+		va_end(al);
 //while(1);
 }
