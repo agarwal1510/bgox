@@ -87,7 +87,7 @@ void str_reverse(char *str, char *dest){
 	}
 	dest[i] = '\0';
 }
-int itoa(int num, char *dest){
+int itoa(int num, char *dest, int base){
 	int i = 0;
 	if (num == 0){
 		dest[i++] = '0';
@@ -95,14 +95,24 @@ int itoa(int num, char *dest){
 		return i;
 	}
 	int neg = 0;
-	if (num < 0){
+	if (num < 0 && base == 10){
 		neg = 1;
 		num = -num;
 	}
-//	char rev[FMT_LEN];
 	while (num != 0){
+		if (base == 10){
 		dest[i++] = (num % 10) + '0';
 		num /= 10;
+		}
+		else if (base == 16){
+			int rem = num % 16;
+			if (rem > 9){
+				dest[i++] = rem - 10 + 'a';
+			}
+			else
+				dest[i++] = rem + '0';		
+		num /= 16;
+		}
 	}
 	if (neg == 1){
 		dest[i++] = '-';
@@ -128,16 +138,27 @@ void kprintf(const char *fmt, ...)
 				str_substr(fmt_const, 0, 1, identfr);
 				char str[FMT_LEN];
 				char trail[FMT_LEN];
-				if (str_cmp(identfr, "%d") > 0){
+				if (str_cmp(identfr, "%d") > 0 || str_cmp(identfr, "%x") > 0 || str_cmp(identfr, "%p") > 0 ){
+					int base = 10;
+					if (str_cmp(identfr, "%p") > 0 || str_cmp(identfr, "%x") > 0)
+						base = 16;
 					str_substr(fmt_const, 2, str_len(fmt_const)-1, trail);
 					const char* const_trail = trail;
 
 					const int num = va_arg(al, int);
 					char temp_tr[FMT_LEN];
-					itoa(num, temp_tr);
+					itoa(num, temp_tr, base);
 					
-					str_concat(temp_tr, const_trail, str) ;
-					const char* const_str = str;
+					str_concat(temp_tr, const_trail, str);
+					char final_str[FMT_LEN];
+					str_cpy(final_str, str);
+					if(str_cmp(identfr, "%p") > 0){
+						char *max_Addr = "0x7fffffffffff";
+						char pref[20];
+						str_substr(max_Addr, 0, 13 - str_len(final_str), pref);
+						str_concat(pref, str, final_str);
+					}
+					const char* const_str = final_str;
 					print_seq(const_str);
 				}
 				else if (str_cmp(identfr, "%s") > 0){
@@ -147,15 +168,7 @@ void kprintf(const char *fmt, ...)
 					const char* const_str = str;
 					print_seq(const_str);
 				}
-				else if (str_cmp(identfr, "%p") > 0){
-					print_seq("pointer found\n");
-				}
-				else if (str_cmp(identfr, "%x") > 0){
-					print_seq("x found");
-				}
 				else{print_seq(fmt_const);}
-		//		print_seq(fmt_split[i]);
-		//		print_seq("\n");
 		}
-while(1);
+//while(1);
 }
