@@ -6,14 +6,32 @@
 #define Y_DEFAULT 0
 int X = X_DEFAULT;
 int Y = Y_DEFAULT;
+void scroll_up(){
+			for(int i = 1; i < 24; i++){
+				char *next = (char*)0xb8000 + i*160;
+					for(int j = 0; j < 160; j++){
+						char *top = (char*)0xb8000 + (i-1)*160;
+						*(top + j) = *(next + j);
+					}
+			}
+			Y = 22;
+}
 void print_seq(const char * seq){
 
 		const char *temp1 = seq;
+
+
 		char* temp2 = (char*)0xb8000 + Y*160 + X;
 
 		for(;*temp1; temp1 += 1) {
-			if (*temp1 == '\n' || *temp1 == '\r'){
+			if (*temp1 == '\n'){
 		   		Y++;
+		   		X = 0;
+				if (Y > 22)
+					scroll_up();
+				temp2 = (char*)0xb8000 + Y*160 + X;
+			}
+			else if (*temp1 == '\r'){
 		   		X = 0;
 				temp2 = (char*)0xb8000 + Y*160 + X;
 			}
@@ -124,6 +142,22 @@ int itoa(int num, char *dest, int base){
 	return str_len(dest);
 }
 
+void kprintf_boott(const char *seq, int sec){
+// For static printing, No New lines, No Fancy stuff.
+	int y = 24;
+	int x = 100;
+	char time_str[FMT_LEN];
+	char boots[FMT_LEN];
+	itoa(sec, boots, 10);
+	str_concat(seq, boots, time_str);
+	const char *temp1 = time_str;
+	char* temp2 = (char*)0xb8000 + y*160 + x;	
+	for(;*temp1; temp1 += 1) {
+				temp2 += 2;
+				x +=2;
+				*temp2 = *temp1;
+	}
+}
 void kprintf(const char *fmt, ...)
 {
 		va_list al;

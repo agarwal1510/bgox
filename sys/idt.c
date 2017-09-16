@@ -22,6 +22,7 @@ struct gate_str{
 
 struct gate_str IDT[MAX_IDT];
 int ticks = 0;
+int sec = -1;
 struct idtr_t
 {
 		uint16_t size;
@@ -36,11 +37,17 @@ void outb(int16_t port, uint8_t value){
 
 void _x86_64_asm_lidt(struct idtr_t *idtr);
 
-void irq_handler(void)
-{	
-	kprintf("\nThese are the ticks: %d\n", ticks);
+void irq_handler(void){
 	outb(0x20, 0x20);
 	outb(0xa0, 0x20);
+	if (ticks % 18 == 0){
+		int new_sec = ticks/100;
+		if (new_sec != sec){
+			sec = new_sec;
+			kprintf_boott(">Time Since Boot: ", sec);
+		}
+	}
+	ticks++;
 }
 
 void pic_init(void){ // SETUP Master and Slave PICS
@@ -69,7 +76,7 @@ void idt_init(void)
 {
 //	for(int i=0;i<=33;i++)
 //		setup_gate(i);
-	setup_gate(33);
+	setup_gate(32);
 //	unsigned long idt_address;
 //	unsigned long idt_ptr[2];
 
@@ -92,16 +99,30 @@ void idt_init(void)
 }
 
 void kb_init(void){
-	outb(0x21 , 0xFD);
+	outb(0x21 , 0xFE);
 }
+/*void timer_init(){
 
-void kmain(void){
+		int frequency = 100;
+		uint16_t divisor = 1193180/frequency;
+		// Send the command byte.
+		outb(0x43, 0x36);
+
+		// Divisor has to be sent byte-wise, so split here into upper/lower bytes.
+		uint8_t l = (uint8_t)(divisor & 0xFF);
+		uint8_t h = (uint8_t)(divisor>>8);
+
+		// Send the frequency divisor.
+		outb(0x40, l);
+		outb(0x40, h);
+}
+*/void kmain(void){
 
 	kprintf("%s", "In kmain");
 	pic_init();
 	idt_init();
 	kb_init();
-	//timer_init();
+	timer_init();
 // for(int i = 0;i < 1000000; i++) {
 //	ticks++; 
 //	  }
