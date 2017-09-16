@@ -3,9 +3,8 @@
 #define KERNEL_CODE_SEGMENT_OFFSET 0x08
 #include <sys/kprintf.h>
 #include <sys/defs.h>
+#include <sys/portio.h>
 #include <stdlib.h>
-extern char read_port(unsigned short port);
-extern void write_port(unsigned short port, unsigned char data);
 extern void load_idt(unsigned long *idt_ptr);
 extern void isr0(void);
 extern void keyboard_handler(void);
@@ -30,10 +29,6 @@ struct idtr_t
 } __attribute__((packed));
 
 struct idtr_t idtr = {((sizeof(struct gate_str))*MAX_IDT), (uint64_t)&IDT};
-
-void outb(int16_t port, uint8_t value){
-	__asm__ ("outb %0, %1" : : "a"(value), "Nd"(port));
-}
 
 void _x86_64_asm_lidt(struct idtr_t *idtr);
 
@@ -74,57 +69,19 @@ void setup_gate(int32_t num){
 }
 void idt_init(void)
 {
-//	for(int i=0;i<=33;i++)
-//		setup_gate(i);
 	setup_gate(32);
-//	unsigned long idt_address;
-//	unsigned long idt_ptr[2];
-
-	/* populate IDT entry of keyboard's interrupt */
-
-	/*     Ports
-	*	 PIC1	PIC2
-	*Command 0x20	0xA0
-	*Data	 0x21	0xA1
-	*/
-
-	/* ICW1 - begin initialization */
-	/* fill the IDT descriptor */
-//	idt_address = (unsigned long)IDT ;
-//	idt_ptr[0] = sizeof(IDT);
-///	idt_ptr[0] = (sizeof (struct IDT_entry) * IDT_SIZE) + ((idt_address & 0x0ffff) << 32);
-//	idt_ptr[1] = idt_address ;
-//
 	_x86_64_asm_lidt(&idtr);
 }
 
 void kb_init(void){
 	outb(0x21 , 0xFE);
 }
-/*void timer_init(){
 
-		int frequency = 100;
-		uint16_t divisor = 1193180/frequency;
-		// Send the command byte.
-		outb(0x43, 0x36);
-
-		// Divisor has to be sent byte-wise, so split here into upper/lower bytes.
-		uint8_t l = (uint8_t)(divisor & 0xFF);
-		uint8_t h = (uint8_t)(divisor>>8);
-
-		// Send the frequency divisor.
-		outb(0x40, l);
-		outb(0x40, h);
-}
-*/void kmain(void){
+void kmain(void){
 
 	kprintf("%s", "In kmain");
 	pic_init();
 	idt_init();
 	kb_init();
 	timer_init();
-// for(int i = 0;i < 1000000; i++) {
-//	ticks++; 
-//	  }
-//	while(1);
 }
