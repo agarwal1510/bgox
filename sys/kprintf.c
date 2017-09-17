@@ -16,30 +16,43 @@ void scroll_up(){
 			}
 			Y = 22;
 }
-void print_seq(const char * seq){
+void print_seq(const char * seq, int x, int y){
 
+		int overwrite_cood = 0;
+		if (x == -1){
+			x = X;
+			overwrite_cood = 1;
+		}
+		if (y == -1){
+			y = Y;
+			overwrite_cood = 1;
+		}
 		const char *temp1 = seq;
 
 
-		char* temp2 = (char*)0xb8000 + Y*160 + X;
+		char* temp2 = (char*)0xb8000 + y*160 + x;
 
 		for(;*temp1; temp1 += 1) {
 			if (*temp1 == '\n'){
-		   		Y++;
-		   		X = 0;
-				if (Y > 22)
+		   		y++;
+		   		x = 0;
+				if (y > 22)
 					scroll_up();
-				temp2 = (char*)0xb8000 + Y*160 + X;
+				temp2 = (char*)0xb8000 + y*160 + x;
 			}
 			else if (*temp1 == '\r'){
-		   		X = 0;
-				temp2 = (char*)0xb8000 + Y*160 + X;
+		   		y = 0;
+				temp2 = (char*)0xb8000 + y*160 + x;
 			}
 			else{
 				temp2 += 2;
-				X +=2;
+				x +=2;
 				*temp2 = *temp1;
 			}
+		}
+		if (overwrite_cood == 1){
+			X = x;
+			Y = y;
 		}
 
 }
@@ -158,14 +171,21 @@ void kprintf_boott(const char *seq, int sec){
 				*temp2 = *temp1;
 	}
 }
-void kprintf(const char *fmt, ...)
-{
+void print_wrapper(const char *fmt, ...){
+
 		va_list al;
 		va_start(al, fmt);
 
+}
+void kprintf_at(const char *fmt, ...)
+{
+		va_list al;
+		va_start(al, fmt);
+		int x = va_arg(al, int);
+		int y = va_arg(al, int);
+
 		char fmt_split[10][FMT_LEN];
 		int split_ctr = str_split_delim(fmt, '%', fmt_split);
-		
 		for(int i = 0; i < split_ctr; i++){
 				const char* fmt_const = fmt_split[i];
 				char identfr[3];
@@ -193,17 +213,78 @@ void kprintf(const char *fmt, ...)
 						str_concat(pref, str, final_str);
 					}
 					const char* const_str = final_str;
-					print_seq(const_str);
+					print_seq(const_str, x, y);
 				}
 				else if (str_cmp(identfr, "%s") > 0){
 					str_substr(fmt_const, 2, str_len(fmt_const)-1, trail);
 					const char* const_trail = trail;
 					str_concat(va_arg(al, char*), const_trail, str) ;
 					const char* const_str = str;
-					print_seq(const_str);
+					print_seq(const_str, x, y);
 				}
-				else{print_seq(fmt_const);}
+				else if (str_cmp(identfr, "%c") > 0){
+					str_substr(fmt_const, 2, str_len(fmt_const)-1, trail);
+					const char* const_trail = trail;
+					char ch = (char)va_arg(al, int);
+					str_concat(&ch, const_trail, str) ;
+					const char* const_str = str;
+					print_seq(const_str, x, y);
+				}
+				else{print_seq(fmt_const, x, y);}
 		}
 		va_end(al);
-//while(1);
+}
+void kprintf(const char *fmt, ...)
+{
+		va_list al;
+		va_start(al, fmt);
+		char fmt_split[10][FMT_LEN];
+		int split_ctr = str_split_delim(fmt, '%', fmt_split);
+		for(int i = 0; i < split_ctr; i++){
+				const char* fmt_const = fmt_split[i];
+				char identfr[3];
+				str_substr(fmt_const, 0, 1, identfr);
+				char str[FMT_LEN];
+				char trail[FMT_LEN];
+				if (str_cmp(identfr, "%d") > 0 || str_cmp(identfr, "%x") > 0 || str_cmp(identfr, "%p") > 0 ){
+					int base = 10;
+					if (str_cmp(identfr, "%p") > 0 || str_cmp(identfr, "%x") > 0)
+						base = 16;
+					str_substr(fmt_const, 2, str_len(fmt_const)-1, trail);
+					const char* const_trail = trail;
+
+					const int num = va_arg(al, int);
+					char temp_tr[FMT_LEN];
+					itoa(num, temp_tr, base);
+					
+					str_concat(temp_tr, const_trail, str);
+					char final_str[FMT_LEN];
+					str_cpy(final_str, str);
+					if(str_cmp(identfr, "%p") > 0){
+						char *max_Addr = "0x7fffffffffff";
+						char pref[20];
+						str_substr(max_Addr, 0, 13 - str_len(final_str), pref);
+						str_concat(pref, str, final_str);
+					}
+					const char* const_str = final_str;
+					print_seq(const_str, -1, -1);
+				}
+				else if (str_cmp(identfr, "%s") > 0){
+					str_substr(fmt_const, 2, str_len(fmt_const)-1, trail);
+					const char* const_trail = trail;
+					str_concat(va_arg(al, char*), const_trail, str) ;
+					const char* const_str = str;
+					print_seq(const_str, -1, -1);
+				}
+				else if (str_cmp(identfr, "%c") > 0){
+					str_substr(fmt_const, 2, str_len(fmt_const)-1, trail);
+					const char* const_trail = trail;
+					char ch = (char)va_arg(al, int);
+					str_concat(&ch, const_trail, str) ;
+					const char* const_str = str;
+					print_seq(const_str, -1, -1);
+				}
+				else{print_seq(fmt_const, -1, -1);}
+		}
+		va_end(al);
 }
