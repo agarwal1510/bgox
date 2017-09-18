@@ -1,5 +1,6 @@
 #include <sys/kprintf.h>
 #include <sys/stdarg.h>
+#include <sys/defs.h>
 
 #define FMT_LEN 100
 #define X_DEFAULT 0
@@ -118,7 +119,7 @@ void str_reverse(char *str, char *dest){
 	}
 	dest[i] = '\0';
 }
-int itoa(int num, char *dest, int base){
+int itoa(unsigned long long num, char *dest, int base){
 	int i = 0;
 	if (num == 0){
 		dest[i++] = '0';
@@ -198,8 +199,8 @@ void kprintf_at(const char *fmt, ...)
 						base = 16;
 					str_substr(fmt_const, 2, str_len(fmt_const)-1, trail);
 					const char* const_trail = trail;
+					const unsigned long long num = va_arg(al, unsigned long long);
 
-					const int num = va_arg(al, int);
 					char temp_tr[FMT_LEN];
 					itoa(num, temp_tr, base);
 					
@@ -208,7 +209,7 @@ void kprintf_at(const char *fmt, ...)
 					str_cpy(final_str, str);
 					if(str_cmp(identfr, "%p") > 0){
 						char *max_Addr = "0x7fffffffffff";
-						char pref[20];
+						char pref[64];
 						str_substr(max_Addr, 0, 13 - str_len(final_str), pref);
 						str_concat(pref, str, final_str);
 					}

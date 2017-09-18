@@ -128,7 +128,6 @@ void mask_init(void){
 
 void kmain(void){
 
-	kprintf("%s", "In kmain");
 	pic_init();
 	idt_init();
 	mask_init();
