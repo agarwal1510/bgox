@@ -85,8 +85,76 @@ void irq_kb_handler(void){
 		if (key < 0x52){ // Keys over SSH
 			if (CTRL_ON == 0)
 				kprintf_at("%c", 146, 24, ' ');
-			if (SHIFT_ON == 1)
-			kprintf_at("%c", 148, 24, kbdus[key] - 32);
+			if (SHIFT_ON == 1){
+				switch (key){
+					case 2:
+						kprintf_at("%c", 148, 24, '!');
+						break;
+					case 3:
+						kprintf_at("%c", 148, 24, '@');
+						break;
+					case 4:
+						kprintf_at("%c", 148, 24, '#');
+						break;
+					case 5:
+						kprintf_at("%c", 148, 24, '$');
+						break;
+					case 6:
+						kprintf_at("%c", 148, 24, '%');
+						break;
+					case 7:
+						kprintf_at("%c", 148, 24, '^');
+						break;
+					case 8:
+						kprintf_at("%c", 148, 24, '&');
+						break;
+					case 9:
+						kprintf_at("%c", 148, 24, '*');
+						break;
+					case 10:
+						kprintf_at("%c", 148, 24, '(');
+						break;
+					case 11:
+						kprintf_at("%c", 148, 24, ')');
+						break;
+					case 12:
+						kprintf_at("%c", 148, 24, '_');
+						break;
+					case 13:
+						kprintf_at("%c", 148, 24, '+');
+						break;
+					case 26:
+						kprintf_at("%c", 148, 24, '{');
+						break;
+					case 27:
+						kprintf_at("%c", 148, 24, '}');
+						break;
+					case 39:
+						kprintf_at("%c", 148, 24, ':');
+						break;
+					case 40:
+						kprintf_at("%c", 148, 24, '"');
+						break;
+					case 41:
+						kprintf_at("%c", 148, 24, '~');
+						break;
+					case 43:
+						kprintf_at("%c", 148, 24, '|');
+						break;
+					case 51:
+						kprintf_at("%c", 148, 24, '<');
+						break;
+					case 52:
+						kprintf_at("%c", 148, 24, '>');
+						break;
+					case 53:
+						kprintf_at("%c", 148, 24, '?');
+						break;
+					default:
+						kprintf_at("%c", 148, 24, kbdus[key] - 32);	
+						break;
+					}
+			}
 			else
 			kprintf_at("%c", 148, 24, kbdus[key]);
 		}
