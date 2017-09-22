@@ -13,3 +13,17 @@ uint8_t inb(int16_t port){
 					: "Nd" (port));
 	return ret;
 }
+
+void outl(int16_t port, uint32_t value){
+	__asm__ volatile("outl %0, %1"
+					:
+					: "a" (value), "Nd" (port));
+}
+
+long inl(int16_t port){
+	uint32_t ret;
+	__asm__ volatile("inl %1, %0"
+					: "=a" (ret)
+					: "Nd" (port));
+	return (long)ret;
+}
