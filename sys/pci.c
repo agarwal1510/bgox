@@ -23,25 +23,32 @@ uint16_t pciConfigReadWord (uint8_t bus, uint8_t slot, uint8_t func, uint8_t off
 		outl(0xCF8, address);
 		/* read in the data */
 		/* (offset & 2) * 8) = 0 will choose the first word of the 32 bits register */
-//		tmp = (uint16_t)((inl(0xCFC) >> ((offset & 2) * 8)) & 0xffff);
-		tmp = (uint16_t)inl(0xCFC);
+		tmp = (uint16_t)((inl(0xCFC) >> ((offset & 2) * 8)) & 0xffff);
+		//tmp = (uint16_t)inl(0xCFC);
 		return (tmp);
 }
 
 void check_device(uint8_t bus_num, uint8_t device_num){
-		uint8_t func = 1;
-		uint8_t deviceid;
+		uint8_t func = 0;
+		uint16_t deviceid;
 		uint16_t vendorid;
+		//uint8_t classid;
+		uint16_t subclassid;
 
-	vendorid = pciConfigReadWord(bus_num, device_num, func, 2);
+	vendorid = pciConfigReadWord(bus_num, device_num, func, 0);
 	if (vendorid == 0xFFFF)
 		return;
-	else
+	else {
 		deviceid = pciConfigReadWord(bus_num, device_num, func, 2);
-		kprintf("%x %x\n", vendorid, deviceid);
+		subclassid = pciConfigReadWord(bus_num, device_num, func, 0x0A);
+		//classid = pciConfigReadWord(bus_num, device_num, func, 0x0B);
+		if (subclassid == 0x0106)
+			kprintf("%x %x %x ", vendorid, deviceid, subclassid);
+	}
 }
+
 void enumerate_pci(){
-	for(uint8_t i = 0;i < 128; i++){
+	for(uint8_t i = 0;i < 256; i++){
 		for(uint8_t j = 0; j < DEVICE_NUM; j++){
 			check_device(i, j);
 		}
