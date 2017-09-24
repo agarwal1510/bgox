@@ -17,6 +17,7 @@ uint64_t ahci_addr;
 #define AHCI_DEV_NULL 0 
 
 // Check device type
+int count = 0;
 static int check_type(hba_port_t *port)
 {
 	uint32_t ssts = port->ssts;
@@ -48,7 +49,8 @@ void probe_port(hba_mem_t *abar)
 	uint32_t pi = abar->pi;
 	int i = 0;
 	while (i<32)
-	{	kprintf("%d", pi);	
+	{	
+		//kprintf("%d", pi);	
 		if (pi & 1)
 		{
 			int dt = check_type(&abar->ports[i]);
@@ -90,29 +92,25 @@ uint16_t pciConfigReadWord (uint8_t bus, uint8_t slot, uint8_t func, uint8_t off
 		address = (uint32_t)((lbus << 16) | (lslot << 11) | (lfunc << 8) | (offset & 0xfc) | ((uint32_t)0x80000000));
 
 		outl(0xCF8, address);
+		outl(0xCFC, 0x298B6040);
 		tmp = (uint16_t)((inl(0xCFC) >> ((offset & 2) * 8)) & 0xffff);
 		return (tmp);
 }
 
 int check_device(uint8_t bus_num, uint8_t device_num){
 		uint8_t func = 0;
-		//uint16_t deviceid;
 		uint16_t vendorid;
-		//uint8_t classid;
-		uint16_t subclassid;
+		uint16_t class_scId;
 		vendorid = pciConfigReadWord(bus_num, device_num, func, 0);
 
 		if (vendorid == 0xFFFF)
 				return -1;
 
-		//deviceid = pciConfigReadWord(bus_num, device_num, func, 2);
-		subclassid = pciConfigReadWord(bus_num, device_num, func, 0x0A);
-		//classid = pciConfigReadWord(bus_num, device_num, func, 0x0B);
-		if (subclassid == 0x0106){
-	//	uint16_t l_addr = pciConfigReadWord(bus_num, device_num, func, 0x24);
-	//	uint16_t h_addr = pciConfigReadWord(bus_num, device_num, func, 0x26);
-	//	ahci_addr = (uint32_t)h_addr << 16 | l_addr;
-		ahci_addr = 0xfebf1000;
+		class_scId = pciConfigReadWord(bus_num, device_num, func, 0x0A);
+		if (class_scId == 0x0106){
+				uint16_t l_addr = pciConfigReadWord(bus_num, device_num, func, 0x24);
+				uint16_t h_addr = pciConfigReadWord(bus_num, device_num, func, 0x26);
+				ahci_addr = (uint32_t)h_addr << 16 | l_addr;
 				kprintf("AHCI Found at address: %x\n", ahci_addr);
 				return 1;
 		}
@@ -125,18 +123,19 @@ void enumerate_pci(){
 		for(i = 0; found == 0 && i < BUS_NUM; i++){
 				for(j = 0; j < DEVICE_NUM; j++){
 						if (check_device(i, j) > 0){
-							found = 1;
-							break;
+								found = 1;
+								break;
 						}
 				}
 		}
 		if (found == 1){
-			i--;
-			kprintf("AHCI Detected Bus: %d Device: %d\n", i, j);
+				i--;
+				kprintf("AHCI Detected Bus: %d Device: %d\n", i, j);
 		}
+		//kprintf("Count: %d", count);
 }
 
 void find_ahci(){
 		enumerate_pci();
-		probe_port((hba_mem_t *)(0xFFFFFFFF00000000+ahci_addr));
+		probe_port((hba_mem_t *)(ahci_addr));
 }
