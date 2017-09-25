@@ -18,6 +18,7 @@ uint64_t ahci_addr;
 #define	AHCI_BASE	0x400000	// 4M
 #define ATA_DEV_BUSY 0x80
 #define ATA_DEV_DRQ 0x08
+#define ATA_CMD_READ_DMA_EX 0x25
 #define DWORD uint32_t
 #define WORD uint16_t
 #define BYTE uint8_t
@@ -35,7 +36,7 @@ int find_cmdslot(hba_port_t *m_port)
 {
 	// If not set in SACT and CI, the slot is free
 	uint32_t slots = (m_port->sact | m_port->ci);
-	for (int i=0; i<cmdslots; i++)
+	for (int i=0; i<32; i++)
 	{
 		if ((slots&1) == 0)
 			return i;
@@ -46,7 +47,7 @@ int find_cmdslot(hba_port_t *m_port)
 }
 
 
-int read(hba_port_t *port, uint32_t startl, uint32_t  starth, uint32_t count, uint16_t *buf)
+int read(hba_port_t *port, uint32_t startl, uint32_t  starth, uint32_t count, char *buf)
 {
 	port->is_rwc = (DWORD)-1;		// Clear pending interrupt bits
 	int spin = 0; // Spin lock timeout counter
@@ -120,7 +121,7 @@ int read(hba_port_t *port, uint32_t startl, uint32_t  starth, uint32_t count, ui
 			break;
 		if (port->is_rwc & HBA_PxIS_TFES)	// Task file error
 		{
-			kprintf("Read disk error\n");
+			kprintf("Read disk error 1\n");
 			return FALSE;
 		}
 	}
@@ -128,7 +129,7 @@ int read(hba_port_t *port, uint32_t startl, uint32_t  starth, uint32_t count, ui
 	// Check again
 	if (port->is_rwc & HBA_PxIS_TFES)
 	{
-		kprintf("Read disk error\n");
+		kprintf("Read disk error 2\n");
 		return FALSE;
 	}
  
@@ -242,8 +243,12 @@ void probe_port(hba_mem_t *abar)
 			int dt = check_type(&abar->ports[i]);
 			if (dt == AHCI_DEV_SATA)
 			{
-				//port_rebase(&abar->ports[i], i);
+				char *buf = {'\0'};
+
 				kprintf("SATA drive found at port %d\n", i);
+				if (read(&abar->ports[i], 0, 4096, 100, buf) == 1)
+					kprintf("Read 1 returned");
+				//port_rebase(&abar->ports[i], i);
 			}
 			else if (dt == AHCI_DEV_SATAPI)
 			{
