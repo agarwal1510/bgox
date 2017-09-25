@@ -15,8 +15,218 @@ uint64_t ahci_addr;
 #define HBA_PORT_DET_PRESENT 3
 #define HBA_PORT_IPM_ACTIVE 1 
 #define AHCI_DEV_NULL 0 
+#define ATA_CMD_READ_DMA_EX 0x25
+#define ATA_CMD_WRITE_DMA_EX 0x35
 // Check device type
 int count = 0;
+#define FALSE 0
+#define TRUE 1
+
+#define ATA_DEV_BUSY 0x80
+#define ATA_DEV_DRQ 0x08
+
+void memset(void *address, int value, int size) {
+		unsigned char *p = address;
+		for (int i = 0; i< size; i++)
+				*p++ = (unsigned char)value;
+} 
+int find_cmdslot(hba_port_t *m_port)
+{
+	// If not set in SACT and CI, the slot is free
+	uint32_t slots = (m_port->sact | m_port->ci);
+	uint32_t cmdslots = ((hba_mem_t*)ahci_addr)->cap;
+	for (int i=0; i<cmdslots; i++)
+	{
+		if ((slots&1) == 0)
+			return i;
+		slots >>= 1;
+	}
+	kprintf("Cannot find free command list entry\n");
+	return -1;
+}
+
+int read(hba_port_t *port, uint32_t startl, uint32_t starth, uint32_t count, uint16_t buf)
+{
+	port->is_rwc = 0xffffffff;		// Clear pending interrupt bits
+	int spin = 0; // Spin lock timeout counter
+	int slot = find_cmdslot(port);
+	if (slot == -1)
+		return FALSE;
+ 
+	hba_cmd_header_t *cmdheader = (hba_cmd_header_t*)port->clb;
+	cmdheader += slot;
+	cmdheader->cfl = sizeof(fis_reg_h2d_t)/sizeof(uint32_t);	// Command FIS size
+	cmdheader->w = 0;		// Read from device
+	cmdheader->prdtl = (uint16_t)((count-1)>>4) + 1;	// PRDT entries count
+ 
+	hba_cmd_tbl_t *cmdtbl = (hba_cmd_tbl_t*)(cmdheader->ctba);
+	memset(cmdtbl, 0, sizeof(hba_cmd_tbl_t) +
+ 		(cmdheader->prdtl-1)*sizeof(hba_prdt_entry_t));
+ 
+	// 8K bytes (16 sectors) per PRDT
+
+	int i = 0;
+	for (i=0; i<cmdheader->prdtl-1; i++)
+	{
+		cmdtbl->prdt_entry[i].dba = (uint64_t)buf;
+		cmdtbl->prdt_entry[i].dbc = 8*1024;	// 8K bytes
+		cmdtbl->prdt_entry[i].i = 1;
+		buf += 4*1024;	// 4K words
+		count -= 16;	// 16 sectors
+	}
+	// Last entry
+	cmdtbl->prdt_entry[i].dba = (uint64_t)buf;
+	cmdtbl->prdt_entry[i].dbc = count<<9;	// 512 bytes per sector
+	cmdtbl->prdt_entry[i].i = 1;
+ 
+	// Setup command
+	fis_reg_h2d_t *cmdfis = (fis_reg_h2d_t*)(&cmdtbl->cfis);
+ 
+	cmdfis->fis_type = FIS_TYPE_REG_H2D;
+	cmdfis->c = 1;	// Command
+	cmdfis->command = ATA_CMD_READ_DMA_EX;
+ 
+	cmdfis->lba0 = (uint8_t)startl;
+	cmdfis->lba1 = (uint8_t)(startl>>8);
+	cmdfis->lba2 = (uint8_t)(startl>>16);
+	cmdfis->device = 1<<6;	// LBA mode
+ 
+	cmdfis->lba3 = (uint8_t)(startl>>24);
+	cmdfis->lba4 = (uint8_t)starth;
+	cmdfis->lba5 = (uint8_t)(starth>>8);
+ 
+	cmdfis->count = count;
+ 
+	// The below loop waits until the port is no longer busy before issuing a new command
+	while ((port->tfd & (ATA_DEV_BUSY | ATA_DEV_DRQ)) && spin < 1000000)
+	{
+		spin++;
+	}
+	if (spin == 1000000)
+	{
+		kprintf("Port is hung\n");
+		return FALSE;
+	}
+ 
+	port->ci = 1<<slot;	// Issue command
+ 
+	// Wait for completion
+	while (1)
+	{
+		// In some longer duration reads, it may be helpful to spin on the DPS bit 
+		// in the PxIS port field as well (1 << 5)
+		if ((port->ci & (1<<slot)) == 0) 
+			break;
+		if (port->is_rwc & HBA_PxIS_TFES)	// Task file error
+		{
+			kprintf("Read disk error\n");
+			return FALSE;
+		}
+	}
+	kprintf("BUFFER: %d", cmdtbl->prdt_entry[0].dba); 
+	// Check again
+	if (port->is_rwc & HBA_PxIS_TFES)
+	{
+		kprintf("Read disk error\n");
+		return FALSE;
+	}
+ 
+	return TRUE;
+}
+ 
+
+int write(hba_port_t *port, uint32_t startl, uint32_t starth, uint32_t count, uint16_t buf)
+{
+	port->is_rwc = 0xffffffff;		// Clear pending interrupt bits
+	int spin = 0; // Spin lock timeout counter
+	int slot = find_cmdslot(port);
+	if (slot == -1)
+		return FALSE;
+ 
+	hba_cmd_header_t *cmdheader = (hba_cmd_header_t*)port->clb;
+	cmdheader += slot;
+	cmdheader->cfl = sizeof(fis_reg_h2d_t)/sizeof(uint32_t);	// Command FIS size
+	cmdheader->w = 1;		// Write to device
+	cmdheader->prdtl = (uint16_t)((count-1)>>4) + 1;	// PRDT entries count
+ 
+	hba_cmd_tbl_t *cmdtbl = (hba_cmd_tbl_t*)(cmdheader->ctba);
+	memset(cmdtbl, 0, sizeof(hba_cmd_tbl_t) +
+ 		(cmdheader->prdtl-1)*sizeof(hba_prdt_entry_t));
+ 
+	// 8K bytes (16 sectors) per PRDT
+
+	int i = 0;
+	for (i=0; i<cmdheader->prdtl-1; i++)
+	{
+		cmdtbl->prdt_entry[i].dba = (uint64_t)buf;
+		cmdtbl->prdt_entry[i].dbc = 8*1024;	// 8K bytes
+		cmdtbl->prdt_entry[i].i = 1;
+		buf += 4*1024;	// 4K words
+		count -= 16;	// 16 sectors
+	}
+	// Last entry
+ 	cmdtbl->prdt_entry[i].dba = (uint64_t) (buf);
+//    cmdtbl->prdt_entry[i].dbau = (uint32_t) ((buf << 32) & 0xFFFFFFFF);
+    cmdtbl->prdt_entry[i].dbc = count << 9; // 512 bytes per sector
+    cmdtbl->prdt_entry[i].i = 0;
+	// Setup command
+	
+	fis_reg_h2d_t *cmdfis = (fis_reg_h2d_t*)(&cmdtbl->cfis);
+ 
+	cmdfis->fis_type = FIS_TYPE_REG_H2D;
+	cmdfis->c = 1;	// Command
+	cmdfis->command = ATA_CMD_WRITE_DMA_EX;
+ 
+	cmdfis->lba0 = (uint8_t)startl;
+	cmdfis->lba1 = (uint8_t)(startl>>8);
+	cmdfis->lba2 = (uint8_t)(startl>>16);
+	cmdfis->device = 1<<6;	// LBA mode
+ 
+	cmdfis->lba3 = (uint8_t)(startl>>24);
+	cmdfis->lba4 = (uint8_t)starth;
+	cmdfis->lba5 = (uint8_t)(starth>>8);
+ 
+	cmdfis->count = count;
+ 
+	// The below loop waits until the port is no longer busy before issuing a new command
+	while ((port->tfd & (ATA_DEV_BUSY | ATA_DEV_DRQ)) && spin < 1000000)
+	{
+		spin++;
+	}
+	if (spin == 1000000)
+	{
+		kprintf("Port is hung\n");
+		return FALSE;
+	}
+ 
+	port->ci = 1<<slot;	// Issue command
+ 
+	// Wait for completion
+	while (1)
+	{
+		// In some longer duration reads, it may be helpful to spin on the DPS bit 
+		// in the PxIS port field as well (1 << 5)
+		if ((port->ci & (1<<slot)) == 0) 
+			break;
+		if (port->is_rwc & HBA_PxIS_TFES)	// Task file error
+		{
+			kprintf("Write disk error\n");
+			return FALSE;
+		}
+	}
+ 
+	// Check again
+	if (port->is_rwc & HBA_PxIS_TFES)
+	{
+		kprintf("Write disk error\n");
+		return FALSE;
+	}
+ 
+	return TRUE;
+}
+
+///////////////////////////////////////////////// AHCI READ WRITE TERMINATION
+
 static int check_type(hba_port_t *port)
 {
 	uint32_t ssts = port->ssts;
@@ -138,4 +348,10 @@ void enumerate_pci(){
 void find_ahci(){
 		enumerate_pci();
 		probe_port((hba_mem_t *)(ahci_addr));
+		uint16_t buf = 69;	
+		write(&(((hba_mem_t*)ahci_addr)->ports[1]), 0, 0, 1, buf);
+		uint16_t read_buf = 0;
+		read(&((hba_mem_t*)ahci_addr)->ports[1], 0, 0, 1, read_buf);
+//		kprintf("%d", read_buf);
+		
 }
