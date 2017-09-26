@@ -66,7 +66,8 @@ typedef struct {
   uint8_t featureh;          // Feature register, 15:8
 
   // DWORD 3
-  uint16_t count;            // Count register
+  uint8_t countl;            // Count register
+  uint8_t counth;
   uint8_t icc;               // Isochronous command completion
   uint8_t control;           // Control register
 
@@ -101,7 +102,8 @@ typedef struct {
   uint8_t rsv2;              // Reserved
 
   // DWORD 3
-  uint16_t count;            // Count register
+  uint8_t countl;            // Count register
+  uint8_t counth;
   uint8_t rsv3[2];           // Reserved
 
   // DWORD 4
@@ -216,7 +218,8 @@ typedef struct {
 /* physical region descriptor table entry */
 typedef struct {
   // DW0 & DW1
-  uint64_t dba;              // Data base address
+  uint32_t dba;              // Data base address
+  uint32_t dbau;              // Data base address
   // DW2
   uint32_t rsv0;             // Reserved
   // DW3
