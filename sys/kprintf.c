@@ -208,10 +208,10 @@ void kprintf_at(const char *fmt, ...)
 					char final_str[FMT_LEN];
 					str_cpy(final_str, str);
 					if(str_cmp(identfr, "%p") > 0){
-						char *max_Addr = "0x7fffffffffff";
-						char pref[64];
-						str_substr(max_Addr, 0, 13 - str_len(final_str), pref);
-						str_concat(pref, str, final_str);
+						char *max_Addr = "0x";
+					//	char pref[64];
+					//	str_substr(max_Addr, 0, 13 - str_len(final_str), pref);
+						str_concat(max_Addr, str, final_str);
 					}
 					const char* const_str = final_str;
 					print_seq(const_str, x, y);
@@ -262,10 +262,10 @@ void kprintf(const char *fmt, ...)
 					char final_str[FMT_LEN];
 					str_cpy(final_str, str);
 					if(str_cmp(identfr, "%p") > 0){
-						char *max_Addr = "0x7fffffffffff";
-						char pref[20];
-						str_substr(max_Addr, 0, 13 - str_len(final_str), pref);
-						str_concat(pref, str, final_str);
+						char *max_Addr = "0x";
+					//	char pref[20];
+					//	str_substr(max_Addr, 0, 13 - str_len(final_str), pref);
+						str_concat(max_Addr, str, final_str);
 					}
 					const char* const_str = final_str;
 					print_seq(const_str, -1, -1);
