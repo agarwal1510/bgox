@@ -7,7 +7,6 @@
 #define FUNC_NUM 8
 #define CONFIG_ADDR 0xCF8
 #define CONFIG_DATA	0xCFC
-uint64_t ahci_addr;
 #define	SATA_SIG_ATA	0x00000101	// SATA drive
 #define	SATA_SIG_ATAPI	0xEB140101	// SATAPI drive
 #define	SATA_SIG_SEMB	0xC33C0101	// Enclosure management bridge
@@ -15,20 +14,28 @@ uint64_t ahci_addr;
 #define HBA_PORT_DET_PRESENT 3
 #define HBA_PORT_IPM_ACTIVE 1 
 #define AHCI_DEV_NULL 0 
-#define MEM_ADDR 0x25000000
+
+#define MEM_ADDR 0xA6000
+
+#define WRITE_ADDR 0x300000
+//#define READ_ADDR 0x16000
+
 #define ATA_CMD_READ_DMA_EX 0x25
 #define ATA_CMD_WRITE_DMA_EX 0x35
-#define TEST_OUT (*(uint64_t*)0x6000000)
+
+#define TEST_OUT (*(uint64_t*)0x600000)
 //#define TEST_VAR (*(uint64_t*)0x5000000)
 // Check device type
-int count = 0;
 #define FALSE 0
 #define TRUE 1
-#define	AHCI_BASE	0x1200000	// 4M
+//#define	AHCI_BASE	0x1200000	// 4M
 
 #define ATA_DEV_BUSY 0x80
 #define ATA_DEV_DRQ 0x08
 
+uint64_t ahci_addr;
+
+void init_write();
 void memset(void *address, int value, int size) {
 		unsigned char *p = address;
 		for (int i = 0; i< size; i++)
@@ -250,7 +257,7 @@ static int check_type(hba_port_t *port)
 				return AHCI_DEV_NULL;
 		if (ipm != HBA_PORT_IPM_ACTIVE)
 				return AHCI_DEV_NULL;
-
+	
 		switch (port->sig)
 		{
 				case SATA_SIG_ATAPI:
@@ -271,13 +278,16 @@ void probe_port(hba_mem_t *abar)
 		int i = 0;
 		while (i<32)
 		{	
-				//kprintf("%d", pi);	
+	//			kprintf("%d ", pi);	
 				if (pi & 1)
 				{
 						int dt = check_type(&abar->ports[i]);
+	//					kprintf("%d %d", dt, AHCI_DEV_SATA);
 						if (dt == AHCI_DEV_SATA)
 						{
 								kprintf("SATA drive found at port %d\n", i);
+								init_write();
+								break;
 						}
 						else if (dt == AHCI_DEV_SATAPI)
 						{
@@ -293,7 +303,7 @@ void probe_port(hba_mem_t *abar)
 						}
 						else
 						{
-								kprintf("No drive found at port %d\n", i);
+					//			kprintf("No drive found at port %d\n", i);
 						}
 				}
 
@@ -318,7 +328,24 @@ uint16_t pciConfigReadWord (uint8_t bus, uint8_t slot, uint8_t func, uint8_t off
 		tmp = (uint16_t)((inl(0xCFC) >> ((offset & 2) * 8)) & 0xffff);
 		return (tmp);
 }
+/*void check_function(uint8_t bus_num, uint8_t device_num, int func){
+	uint16_t class_scId;
+	uint8_t sec_bus;
 
+	class_scId = pciConfigRead(bus_num, device_num, func);
+	if (class_scId == 0x0604){
+		sec_bus = 	
+	}
+
+
+}*/
+void fetch_ahci_addr(uint8_t bus_num, uint8_t device_num, uint8_t func){
+			uint16_t l_addr = pciConfigReadWord(bus_num, device_num, func, 0x24);
+			uint16_t h_addr = pciConfigReadWord(bus_num, device_num, func, 0x26);
+			ahci_addr = (uint32_t)h_addr << 16 | l_addr;
+			kprintf("AHCI Found at address: %x\n", ahci_addr);
+
+}
 int check_device(uint8_t bus_num, uint8_t device_num){
 		uint8_t func = 0;
 		uint16_t vendorid;
@@ -327,64 +354,76 @@ int check_device(uint8_t bus_num, uint8_t device_num){
 
 		if (vendorid == 0xFFFF)
 				return -1;
-
 		class_scId = pciConfigReadWord(bus_num, device_num, func, 0x0A);
-		if (class_scId == 0x0106){
-				uint16_t l_addr = pciConfigReadWord(bus_num, device_num, func, 0x24);
-				uint16_t h_addr = pciConfigReadWord(bus_num, device_num, func, 0x26);
-				ahci_addr = (uint32_t)h_addr << 16 | l_addr;
-				kprintf("AHCI Found at address: %x\n", ahci_addr);
-				return 1;
-		}
-		return -1;
-}
 
-void enumerate_pci(){
-		uint8_t i, j;
-		int found = 0;
-		for(i = 0; found == 0 && i < BUS_NUM; i++){
-				for(j = 0; j < DEVICE_NUM; j++){
-						if (check_device(i, j) > 0){
-								found = 1;
-								break;
+		uint16_t header = pciConfigReadWord(bus_num, device_num, func, 0x0E);
+		if ((header & 0xff) ==  0x80){
+				for(uint8_t fun = 0; fun < 8; fun++){
+						vendorid = pciConfigReadWord(bus_num, device_num, fun, 0);
+						if (vendorid != 0xFFFF){
+								class_scId = pciConfigReadWord(bus_num, device_num, fun, 0x0A);
+								if (class_scId == 0x0106){
+										fetch_ahci_addr(bus_num, device_num, fun);
+										uint16_t deviceid = pciConfigReadWord(bus_num, device_num, fun, 0x02);
+										kprintf("\nMultiFunc AHCI Vendor: %x Device: %x", vendorid, deviceid);
+										return 1;
+								}
 						}
 				}
 		}
-		if (found == 1){
-				i--;
-				kprintf("AHCI Detected Bus: %d Device: %d\n", i, j);
+		else if (class_scId == 0x0106){
+				fetch_ahci_addr(bus_num, device_num, func);
+				uint16_t deviceid = pciConfigReadWord(bus_num, device_num, func, 0x02);
+				kprintf("AHCI Vendor: %x Device: %x\n", vendorid, deviceid);
+				return 1;
 		}
-}
+		return -1;
+}/*
+	void check_bus(int bus_num){
+	for(int i = 0; i < 32; i++){
+		check_device(bus_num, i);
+	}
 
-void find_ahci(){
-		enumerate_pci();
-		probe_port((hba_mem_t *)(ahci_addr));
-		//		TEST_VAR = 69;
-		//uint64_t s = TEST_VAR;
-		//	uint64_t out = 'b';
-		//		char *out;
+}
+void check_buses(){
+
+	uint16_t header = pciConfigReadWord(0, 0, 0, 0x0E);
+	if ((header & 0xff) == 0x80){
+		// MULTIFUNCTION
+		for(int i = 0; i < 8; i ++){
+			uint16_t vendorid = pciConfigReadWord(0, 0, i, 0);
+			if (vendorid != 0xFFFF) break;
+			int bus = i;
+			check_bus(bus);
+		}
+	}
+	else{
+		check_bus(0);
+	}
+}*/
+void init_write(){
+
 		for(int i = 0; i < 100; i++){
-				//		kprintf("Writing Byte: %d", i);
-				uint64_t *var = (uint64_t*)((uint64_t)0x4000000 + (uint64_t)0x1000*i);
+				uint64_t *var = (uint64_t*)((uint64_t)0x300000 + (uint64_t)0x1000*i);
 				*var = i;
-				write(&(((hba_mem_t*)ahci_addr)->ports[1]), 16*i, 0, 1, (uint64_t)(0x4000000 + 0x1000*i));
+				write(&(((hba_mem_t*)ahci_addr)->ports[1]), 8*i, 0, 1, (uint64_t)(0x300000 + 0x1000*i));
 		}
 		//		kprintf("Before Write: %d\n", TEST_VAR);
 		//	uint16_t read_buf;
 		//port_rebase(&(((hba_mem_t*)ahci_addr)->ports[1]), 1);
-		//		write(&(((hba_mem_t*)ahci_addr)->ports[1]), 0, 0, 1, (uint64_t)0x5000000) != 1
+//				uint64_t *var = (uint64_t*)((uint64_t)0x300000);
+//				*var = 69;
+//				write(&(((hba_mem_t*)ahci_addr)->ports[0]), 0, 0, 1, (uint64_t)0x300000);
 		//		if (write(&(((hba_mem_t*)ahci_addr)->ports[1]), 0, 0, 1, (uint64_t)0x5000000) != 1)
 		//			kprintf("Could Not Write to Disk\n");
 		//		else{
+//				read(&((hba_mem_t*)ahci_addr)->ports[0], 0, 0, 1, (uint64_t)0x600000);
+		
 		for(int i = 0; i < 100; i++){
-				//		kprintf("Writing Byte: %d", i);
-				//		uint64_t *var = (uint64_t*)((uint64_t)0x4000000 + (uint64_t)0x1000*i);
-				//		*var = 70 + i;
-				read(&((hba_mem_t*)ahci_addr)->ports[1], 16*i, 0, 1, (uint64_t)0x6000000);
+				read(&((hba_mem_t*)ahci_addr)->ports[1], 8*i, 0, 1, (uint64_t)0x600000);
 				kprintf("%d ", TEST_OUT);
 		}
 
-		//		if (read(&((hba_mem_t*)ahci_addr)->ports[1], 16*99, 0, 1, (uint64_t)0x6000000) != 1)
 		//			kprintf("Could Not Read from Disk\n");
 		//		else{
 		//		memcpy(&in_s, (void*)AHCI_BASE + 0x2000, 4095);
@@ -395,4 +434,29 @@ void find_ahci(){
 
 		//		}
 		//	}		
+}
+void enumerate_pci(){
+		uint8_t i, j;
+		int found = 0;
+		for(i = 0; found == 0 && i < BUS_NUM; i++){
+				for(j = 0; found == 0 && j < DEVICE_NUM; j++){
+				//		for(int k = 0; k < 8; k++){
+						if (check_device(i, j) > 0){
+								found = 1;
+								break;
+						}
+				//		}
+				}
+		}
+		if (found == 1){
+				i--;
+				j--;
+				kprintf("AHCI Detected Bus: %d Device: %d\n", i, j);
+				probe_port((hba_mem_t *)(ahci_addr));
+		}
+}
+
+void find_ahci(){
+//		check_buses();
+		enumerate_pci();
 }
