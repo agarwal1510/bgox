@@ -271,7 +271,7 @@ static int check_type(hba_port_t *port)
 		}
 }
 
-void probe_port(hba_mem_t *abar)
+int probe_port(hba_mem_t *abar)
 {
 		// Search disk in impelemented ports
 		uint32_t pi = abar->pi;
@@ -287,7 +287,7 @@ void probe_port(hba_mem_t *abar)
 						{
 								kprintf("SATA drive found at port %d\n", i);
 								init_write();
-								break;
+								return 1;
 						}
 						else if (dt == AHCI_DEV_SATAPI)
 						{
@@ -310,6 +310,7 @@ void probe_port(hba_mem_t *abar)
 				pi >>= 1;
 				i ++;
 		}
+		return -1;
 }
 
 
@@ -328,17 +329,7 @@ uint16_t pciConfigReadWord (uint8_t bus, uint8_t slot, uint8_t func, uint8_t off
 		tmp = (uint16_t)((inl(0xCFC) >> ((offset & 2) * 8)) & 0xffff);
 		return (tmp);
 }
-/*void check_function(uint8_t bus_num, uint8_t device_num, int func){
-	uint16_t class_scId;
-	uint8_t sec_bus;
 
-	class_scId = pciConfigRead(bus_num, device_num, func);
-	if (class_scId == 0x0604){
-		sec_bus = 	
-	}
-
-
-}*/
 void fetch_ahci_addr(uint8_t bus_num, uint8_t device_num, uint8_t func){
 			uint16_t l_addr = pciConfigReadWord(bus_num, device_num, func, 0x24);
 			uint16_t h_addr = pciConfigReadWord(bus_num, device_num, func, 0x26);
@@ -346,6 +337,7 @@ void fetch_ahci_addr(uint8_t bus_num, uint8_t device_num, uint8_t func){
 			kprintf("AHCI Found at address: %x\n", ahci_addr);
 
 }
+
 int check_device(uint8_t bus_num, uint8_t device_num){
 		uint8_t func = 0;
 		uint16_t vendorid;
@@ -378,29 +370,8 @@ int check_device(uint8_t bus_num, uint8_t device_num){
 				return 1;
 		}
 		return -1;
-}/*
-	void check_bus(int bus_num){
-	for(int i = 0; i < 32; i++){
-		check_device(bus_num, i);
-	}
-
 }
-void check_buses(){
 
-	uint16_t header = pciConfigReadWord(0, 0, 0, 0x0E);
-	if ((header & 0xff) == 0x80){
-		// MULTIFUNCTION
-		for(int i = 0; i < 8; i ++){
-			uint16_t vendorid = pciConfigReadWord(0, 0, i, 0);
-			if (vendorid != 0xFFFF) break;
-			int bus = i;
-			check_bus(bus);
-		}
-	}
-	else{
-		check_bus(0);
-	}
-}*/
 void init_write(){
 
 		for(int i = 0; i < 100; i++){
@@ -440,19 +411,17 @@ void enumerate_pci(){
 		int found = 0;
 		for(i = 0; found == 0 && i < BUS_NUM; i++){
 				for(j = 0; found == 0 && j < DEVICE_NUM; j++){
-				//		for(int k = 0; k < 8; k++){
 						if (check_device(i, j) > 0){
-								found = 1;
+								if (probe_port((hba_mem_t *)(ahci_addr)) > 0)
+									found = 1;
 								break;
 						}
-				//		}
 				}
 		}
 		if (found == 1){
 				i--;
 				j--;
 				kprintf("AHCI Detected Bus: %d Device: %d\n", i, j);
-				probe_port((hba_mem_t *)(ahci_addr));
 		}
 }
 
