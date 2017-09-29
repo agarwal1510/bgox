@@ -303,7 +303,7 @@ void probe_port(hba_mem_t *abar)
 						}
 						else
 						{
-					//			kprintf("No drive found at port %d\n", i);
+								kprintf("No drive found at port %d\n", i);
 						}
 				}
 
