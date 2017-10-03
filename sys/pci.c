@@ -42,7 +42,16 @@ void memset(void *address, int value, int size);
 void port_rebase(hba_port_t *port, int portno)
 {
 	stop_cmd(port);	// Stop command engine
- 
+ 	
+	port->cmd |= HBA_PxCMD_ICC;
+	port->cmd |= HBA_PxCMD_POD;
+	port->cmd |= HBA_PxCMD_SUD;
+	port->cmd |= HBA_PxCMD_CLO;
+	port->sctl = 0x300;
+	for (int i=0; i < 1000000; i++);
+	port->sctl = 0x301;
+	port->serr_rwc = 0xffffffff;
+
 	// Command list offset: 1K*portno
 	// Command list entry size = 32
 	// Command list entry maxim count = 32
@@ -480,6 +489,7 @@ void enumerate_pci(){
 		for(i = 0; found == 0 && i < BUS_NUM; i++){
 				for(j = 0; found == 0 && j < DEVICE_NUM; j++){
 						if (check_device(i, j) > 0){
+							((hba_mem_t *)(ahci_addr))->ghc = ((hba_mem_t *)(ahci_addr))->ghc | 0x80000003;
 								if (probe_port((hba_mem_t *)(ahci_addr)) > 0)
 									found = 1;
 								break;
