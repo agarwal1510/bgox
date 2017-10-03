@@ -15,7 +15,7 @@
 #define HBA_PORT_IPM_ACTIVE 1 
 #define AHCI_DEV_NULL 0 
 
-#define MEM_ADDR 0xA6000
+#define MEM_ADDR 0x25000000
 
 #define WRITE_ADDR 0x300000
 //#define READ_ADDR 0x16000
@@ -28,7 +28,7 @@
 // Check device type
 #define FALSE 0
 #define TRUE 1
-//#define	AHCI_BASE	0x1200000	// 4M
+#define	AHCI_BASE	0x1200000	// 4M
 
 #define ATA_DEV_BUSY 0x80
 #define ATA_DEV_DRQ 0x08
@@ -36,6 +36,74 @@
 uint64_t ahci_addr;
 
 void init_write();
+void stop_cmd(hba_port_t *port);
+void start_cmd(hba_port_t *port);
+void memset(void *address, int value, int size);
+void port_rebase(hba_port_t *port, int portno)
+{
+	stop_cmd(port);	// Stop command engine
+ 
+	// Command list offset: 1K*portno
+	// Command list entry size = 32
+	// Command list entry maxim count = 32
+	// Command list maxim size = 32*32 = 1K per port
+	port->clb = AHCI_BASE + (portno<<10);
+//	port->clbu = 0;
+	memset((void*)(port->clb), 0, 1024);
+ 
+	// FIS offset: 32K+256*portno
+	// FIS entry size = 256 bytes per port
+	port->fb = AHCI_BASE + (32<<10) + (portno<<8);
+//	port->fbu = 0;
+	memset((void*)(port->fb), 0, 256);
+ 
+	// Command table offset: 40K + 8K*portno
+	// Command table size = 256*32 = 8K per port
+	hba_cmd_header_t *cmdheader = (hba_cmd_header_t*)(port->clb);
+	for (int i=0; i<32; i++)
+	{
+		cmdheader[i].prdtl = 8;	// 8 prdt entries per command table
+					// 256 bytes per command table, 64+16+48+16*8
+		// Command table offset: 40K + 8K*portno + cmdheader_index*256
+		cmdheader[i].ctba = AHCI_BASE + (40<<10) + (portno<<13) + (i<<8);
+	//	cmdheader[i].ctbau = 0;
+		memset((void*)cmdheader[i].ctba, 0, 256);
+	}
+ 
+	start_cmd(port);	// Start command engine
+}
+ 
+// Start command engine
+void start_cmd(hba_port_t *port)
+{
+	// Wait until CR (bit15) is cleared
+	while (port->cmd & HBA_PxCMD_CR);
+ 
+	// Set FRE (bit4) and ST (bit0)
+	port->cmd |= HBA_PxCMD_FRE;
+	port->cmd |= HBA_PxCMD_ST; 
+}
+ 
+// Stop command engine
+void stop_cmd(hba_port_t *port)
+{
+	// Clear ST (bit0)
+	port->cmd &= ~HBA_PxCMD_ST;
+ 
+	// Wait until FR (bit14), CR (bit15) are cleared
+	while(1)
+	{
+		if (port->cmd & HBA_PxCMD_FR)
+			continue;
+		if (port->cmd & HBA_PxCMD_CR)
+			continue;
+		break;
+	}
+ 
+	// Clear FRE (bit4)
+	port->cmd &= ~HBA_PxCMD_FRE;
+}
+
 void memset(void *address, int value, int size) {
 		unsigned char *p = address;
 		for (int i = 0; i< size; i++)
@@ -303,7 +371,7 @@ int probe_port(hba_mem_t *abar)
 						}
 						else
 						{
-								kprintf("No drive found at port %d\n", i);
+				//				kprintf("No drive found at port %d\n", i);
 						}
 				}
 
@@ -373,6 +441,8 @@ int check_device(uint8_t bus_num, uint8_t device_num){
 
 void init_write(){
 
+		port_rebase(&(((hba_mem_t*)ahci_addr)->ports[1]), 1);
+		
 		for(int i = 0; i < 100; i++){
 				uint64_t *var = (uint64_t*)((uint64_t)0x300000 + (uint64_t)0x1000*i);
 				*var = i;
@@ -380,7 +450,6 @@ void init_write(){
 		}
 		//		kprintf("Before Write: %d\n", TEST_VAR);
 		//	uint16_t read_buf;
-		//port_rebase(&(((hba_mem_t*)ahci_addr)->ports[1]), 1);
 //				uint64_t *var = (uint64_t*)((uint64_t)0x300000);
 //				*var = 69;
 //				write(&(((hba_mem_t*)ahci_addr)->ports[0]), 0, 0, 1, (uint64_t)0x300000);
