@@ -261,7 +261,7 @@ typedef struct {
 
   // DW2, 3
   uint64_t ctba;             // Command table descriptor base address
-
+//  uint32_t ctbau;
   // DW4 - 7
   uint32_t rsv1[4];          // Reserved
 }__attribute__((__packed__)) hba_cmd_header_t;
@@ -295,7 +295,9 @@ typedef struct {
 
 typedef volatile struct {
   uint64_t clb;              // 0x00, command list base address, 1K-byte aligned
+ // uint32_t clbu;
   uint64_t fb;               // 0x08, FIS base address, 256-byte aligned
+ // uint32_t fbu;
   uint32_t is_rwc;           // 0x10, interrupt status
   uint32_t ie;               // 0x14, interrupt enable
   uint32_t cmd;              // 0x18, command and status
