@@ -12,6 +12,11 @@
 #define HBA_PxCMD_CR   (1U << 15)
 #define HBA_PxIS_TFES  (1U << 30)
 
+#define HBA_PxCMD_ICC (1U << 28)
+#define HBA_PxCMD_POD (1U << 2)
+#define HBA_PxCMD_SUD (1U << 1)
+
+
 #define AHCI_DEV_SATA   0x00000101  // SATA drive
 #define AHCI_DEV_SATAPI 0xEB140101  // SATAPI drive
 #define AHCI_DEV_SEMB   0xC33C0101  // Enclosure management bridge
