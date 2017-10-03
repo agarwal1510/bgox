@@ -15,7 +15,9 @@
 #define HBA_PxCMD_ICC (1U << 28)
 #define HBA_PxCMD_POD (1U << 2)
 #define HBA_PxCMD_SUD (1U << 1)
-
+#define HBA_PxTDF_BSY (1U << 7)
+#define HBA_PxTDF_DRQ (1U << 3)
+#define HBA_PxTDF_ERR (1U)
 
 #define AHCI_DEV_SATA   0x00000101  // SATA drive
 #define AHCI_DEV_SATAPI 0xEB140101  // SATAPI drive
@@ -266,7 +268,7 @@ typedef struct {
 
   // DW2, 3
   uint64_t ctba;             // Command table descriptor base address
-//  uint32_t ctbau;
+  //uint32_t ctbau;
   // DW4 - 7
   uint32_t rsv1[4];          // Reserved
 }__attribute__((__packed__)) hba_cmd_header_t;
@@ -300,9 +302,9 @@ typedef struct {
 
 typedef volatile struct {
   uint64_t clb;              // 0x00, command list base address, 1K-byte aligned
- // uint32_t clbu;
+  //uint32_t clbu;
   uint64_t fb;               // 0x08, FIS base address, 256-byte aligned
- // uint32_t fbu;
+  //uint32_t fbu;
   uint32_t is_rwc;           // 0x10, interrupt status
   uint32_t ie;               // 0x14, interrupt enable
   uint32_t cmd;              // 0x18, command and status
