@@ -7,15 +7,18 @@
 #define Y_DEFAULT 0
 int X = X_DEFAULT;
 int Y = Y_DEFAULT;
+void str_cpy(char *to_str, char *frm_str);
 void scroll_up(){
 			for(int i = 1; i < 24; i++){
 				char *next = (char*)0xb8000 + i*160;
 					for(int j = 0; j < 160; j++){
 						char *top = (char*)0xb8000 + (i-1)*160;
 						*(top + j) = *(next + j);
+						str_cpy((next+j),"");
 					}
 			}
-			Y = 22;
+			Y = 23;
+			X = 0;
 }
 void print_seq(const char * seq, int x, int y){
 
@@ -37,8 +40,10 @@ void print_seq(const char * seq, int x, int y){
 			if (*temp1 == '\n'){
 		   		y++;
 		   		x = 0;
-				if (y > 22)
+				if (y > 23){
 					scroll_up();
+					y = 23;
+				}
 				temp2 = (char*)0xb8000 + y*160 + x;
 			}
 			else if (*temp1 == '\r'){
@@ -46,8 +51,16 @@ void print_seq(const char * seq, int x, int y){
 				temp2 = (char*)0xb8000 + y*160 + x;
 			}
 			else{
-				temp2 += 2;
 				x +=2;
+				if (x >= 160){
+					y++;
+					x = 0;
+					if (y > 23){
+						scroll_up();
+						y = 23;
+					}
+				}
+				temp2 = (char*)0xb8000 + y*160 + x;
 				*temp2 = *temp1;
 			}
 		}
@@ -208,10 +221,10 @@ void kprintf_at(const char *fmt, ...)
 					char final_str[FMT_LEN];
 					str_cpy(final_str, str);
 					if(str_cmp(identfr, "%p") > 0){
-						char *max_Addr = "0x7fffffffffff";
-						char pref[64];
-						str_substr(max_Addr, 0, 13 - str_len(final_str), pref);
-						str_concat(pref, str, final_str);
+						char *max_Addr = "0x";
+					//	char pref[64];
+					//	str_substr(max_Addr, 0, 13 - str_len(final_str), pref);
+						str_concat(max_Addr, str, final_str);
 					}
 					const char* const_str = final_str;
 					print_seq(const_str, x, y);
@@ -262,10 +275,10 @@ void kprintf(const char *fmt, ...)
 					char final_str[FMT_LEN];
 					str_cpy(final_str, str);
 					if(str_cmp(identfr, "%p") > 0){
-						char *max_Addr = "0x7fffffffffff";
-						char pref[20];
-						str_substr(max_Addr, 0, 13 - str_len(final_str), pref);
-						str_concat(pref, str, final_str);
+						char *max_Addr = "0x";
+					//	char pref[20];
+					//	str_substr(max_Addr, 0, 13 - str_len(final_str), pref);
+						str_concat(max_Addr, str, final_str);
 					}
 					const char* const_str = final_str;
 					print_seq(const_str, -1, -1);
