@@ -1,25 +1,26 @@
-//#define MAX_IDT 256
-//#define INTERRUPT_GATE 0x8E
-//#define KERNEL_CODE_SEGMENT_OFFSET 0x08
-//#define KB_DATA	0x60
-//#define KB_STATUS 0x64
+#define MAX_IDT 256
+#define INTERRUPT_GATE 0x8E
+#define KERNEL_CODE_SEGMENT_OFFSET 0x08
+#define KB_DATA	0x60
+#define KB_STATUS 0x64
 #include <sys/kprintf.h>
 #include <sys/defs.h>
 #include <sys/portio.h>
 //#include <stdlib.h>
-//#include "kb_map.h"
+#include "kb_map.h"
 #define CPUID_FLAG_APIC 1 << 9
 #define CPUID_FLAG_MSR 1 << 5
 #define IA32_APIC_BASE_MSR 0x1B
 #define IA32_APIC_BASE_MSR_BSP 0x100
 #define IA32_APIC_BASE_MSR_ENABLE 0x800
-/*extern void load_idt(unsigned long *idt_ptr);
+extern void load_idt(unsigned long *idt_ptr);
 extern void isr0(void);
 extern void isr1(void);
 extern void timer_init(void);
 extern unsigned char kbdus[128];
 int SHIFT_ON = 0;
 int CTRL_ON = 0;
+
 struct gate_str{
 		uint16_t offset_low;     // offset bits 0...15
 		uint16_t selector;       // a code segment selector in GDT or LDT 16...31
@@ -31,6 +32,7 @@ struct gate_str{
 }  __attribute__((packed));
 
 struct gate_str IDT[MAX_IDT];
+
 int ticks = 0;
 int sec = -1;
 struct idtr_t
@@ -44,8 +46,8 @@ struct idtr_t idtr = {((sizeof(struct gate_str))*MAX_IDT), (uint64_t)&IDT};
 void _x86_64_asm_lidt(struct idtr_t *idtr);
 
 void irq_timer_handler(void){
-	outb(0x20, 0x20);
-	outb(0xa0, 0x20);
+//	outb(0x20, 0x20);
+//	outb(0xa0, 0x20);
 	if (ticks % 18 == 0){
 		int new_sec = ticks/100;
 		if (new_sec != sec){
@@ -57,8 +59,8 @@ void irq_timer_handler(void){
 }
 
 void irq_kb_handler(void){
-	outb(0x20, 0x20);
-	outb(0xa0, 0x20);
+//	outb(0x20, 0x20);
+//	outb(0xa0, 0x20);
 
 	char status = inb(KB_STATUS);
 	if (status & 0x01){
@@ -164,7 +166,7 @@ void irq_kb_handler(void){
 			kprintf_at("%c", 148, 24, kbdus[key]);
 		}
 	}
-}*/
+}
 void cpuid(uint32_t a, uint32_t *b){
 		__asm__("cpuid"
 						:"=a"(*b)                 // EAX into b (output)
@@ -214,7 +216,7 @@ uintptr_t cpu_get_apic_base() {
 		return (eax & 0xfffff000);
 #endif
 }
-/*void setup_gate(int32_t num, uint64_t handler_addr){
+void setup_gate(int32_t num, uint64_t handler_addr){
   IDT[num].offset_low = (handler_addr & 0xFFFF);
   IDT[num].offset_mid = ((handler_addr >> 16) & 0xFFFF);
 	IDT[num].offset_high = ((handler_addr >> 32) & 0xFFFFFFFF);
@@ -229,7 +231,7 @@ void idt_init(void)
 	setup_gate(33, (uint64_t)isr1);
 	_x86_64_asm_lidt(&idtr);
 }
-
+/*
 void mask_init(void){
 	outb(0x21 , 0xFC); //11111100
 }
@@ -239,5 +241,8 @@ void apicMain(void){
 	kprintf("APIC val: %x", check_apic());
 	kprintf("MSR val: %d", check_msr());
 	cpu_set_apic_base(cpu_get_apic_base());
-	outl(0xF0, inl(0xF0) | 0x100);
+	kprintf("\n%x\n", cpu_get_apic_base());
+	outl(0xF0, inl(0xF0) | 0x1FF);
+	idt_init();
+	outl(cpu_get_apic_base() | 0x320, 32 | cpu_get_apic_base() | 0x20000);
 }
