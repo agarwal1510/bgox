@@ -6,6 +6,8 @@
 #include <sys/kprintf.h>
 #include <sys/defs.h>
 #include <sys/portio.h>
+#include <sys/apic.h>
+#include <sys/apicio.h>
 //#include <stdlib.h>
 #include "kb_map.h"
 #define CPUID_FLAG_APIC 1 << 9
@@ -13,7 +15,8 @@
 #define IA32_APIC_BASE_MSR 0x1B
 #define IA32_APIC_BASE_MSR_BSP 0x100
 #define IA32_APIC_BASE_MSR_ENABLE 0x800
-extern void load_idt(unsigned long *idt_ptr);
+uint64_t APIC_BASE;
+/*extern void load_idt(unsigned long *idt_ptr);
 extern void isr0(void);
 extern void isr1(void);
 extern void timer_init(void);
@@ -30,24 +33,25 @@ struct gate_str{
 		uint32_t offset_high;  // offset bits 16..31, set at 48...63
 		uint32_t ist;           // unused set to 0, set at 96...127
 }  __attribute__((packed));
+*/
+//struct gate_str IDT[MAX_IDT];
 
-struct gate_str IDT[MAX_IDT];
+//int ticks = 0;
+//int sec = -1;
+//struct idtr_t
+//{
+//		uint16_t size;
+//		uint64_t addr;
+//} __attribute__((packed));
 
-int ticks = 0;
-int sec = -1;
-struct idtr_t
-{
-		uint16_t size;
-		uint64_t addr;
-} __attribute__((packed));
+//struct idtr_t idtr = {((sizeof(struct gate_str))*MAX_IDT), (uint64_t)&IDT};
 
-struct idtr_t idtr = {((sizeof(struct gate_str))*MAX_IDT), (uint64_t)&IDT};
+//void _x86_64_asm_lidt(struct idtr_t *idtr);
 
-void _x86_64_asm_lidt(struct idtr_t *idtr);
-
-void irq_timer_handler(void){
+/*void irq_timer_handler(void){
 //	outb(0x20, 0x20);
 //	outb(0xa0, 0x20);
+	kprintf("Entere\n");
 	if (ticks % 18 == 0){
 		int new_sec = ticks/100;
 		if (new_sec != sec){
@@ -166,6 +170,35 @@ void irq_kb_handler(void){
 			kprintf_at("%c", 148, 24, kbdus[key]);
 		}
 	}
+}*/
+
+void apic_start_timer() {
+        // Tell APIC timer to use divider 16
+        apicwrite(APIC_BASE + LAPIC_TDCR, 0x3);
+ 
+        // Prepare the PIT to sleep for 10ms (10000µs)
+    //    pit_prepare_sleep(10000);
+ 
+        // Set APIC init counter to -1
+        apicwrite(APIC_BASE + LAPIC_TICR, 0xFFFFFFFF);
+ 
+        // Perform PIT-supported sleep
+  //      pit_perform_sleep();
+ 
+        // Stop the APIC timer
+		apicwrite(APIC_BASE + LAPIC_TIMER, 0x10000);
+      //  apicwrite(APIC_REGISTER_LVT_TIMER, APIC_LVT_INT_MASKED);
+ 
+        // Now we know how often the APIC timer has ticked in 10ms
+        //uint32_t ticksIn10ms = 0xFFFFFFFF - apicread(APIC_REGISTER_TIMER_CURRCNT);
+ 
+        // Start timer as periodic on IRQ 0, divider 16, with the number of ticks we counted
+    //    apicwrite(APIC_REGISTER_LVT_TIMER, 32 | APIC_LVT_TIMER_MODE_PERIODIC);
+    //    apicwrite(APIC_REGISTER_TIMER_DIV, 0x3);
+   //     apicwrite(APIC_REGISTER_TIMER_INITCNT, ticksIn10ms);
+   		apicwrite(APIC_BASE + LAPIC_TIMER, 51 | 0x00000); //One - Shot
+    	apicwrite(APIC_BASE + LAPIC_TDCR, 0x3);
+    	apicwrite(APIC_BASE + LAPIC_TICR, 1);
 }
 void cpuid(uint32_t a, uint32_t *b){
 		__asm__("cpuid"
@@ -216,7 +249,7 @@ uintptr_t cpu_get_apic_base() {
 		return (eax & 0xfffff000);
 #endif
 }
-void setup_gate(int32_t num, uint64_t handler_addr){
+/*void setup_gate(int32_t num, uint64_t handler_addr){
   IDT[num].offset_low = (handler_addr & 0xFFFF);
   IDT[num].offset_mid = ((handler_addr >> 16) & 0xFFFF);
 	IDT[num].offset_high = ((handler_addr >> 32) & 0xFFFFFFFF);
@@ -230,7 +263,7 @@ void idt_init(void)
 	setup_gate(32, (uint64_t)isr0);
 	setup_gate(33, (uint64_t)isr1);
 	_x86_64_asm_lidt(&idtr);
-}
+}*/
 /*
 void mask_init(void){
 	outb(0x21 , 0xFC); //11111100
@@ -241,8 +274,16 @@ void apicMain(void){
 	kprintf("APIC val: %x", check_apic());
 	kprintf("MSR val: %d", check_msr());
 	cpu_set_apic_base(cpu_get_apic_base());
-	kprintf("\n%x\n", cpu_get_apic_base());
-	outl(0xF0, inl(0xF0) | 0x1FF);
-	idt_init();
-	outl(cpu_get_apic_base() | 0x320, 32 | cpu_get_apic_base() | 0x20000);
+	APIC_BASE = cpu_get_apic_base();
+	kprintf("\n%x\n", APIC_BASE);
+//	outl(0xF0, inl(0xF0) | 0x100);
+  	apicwrite(LAPIC_ERROR, 0x1F); /// 0x1F: temporary vector (all other bits: 0)
+    apicwrite(LAPIC_TPR, 0);
+
+	  apicwrite(APIC_BASE + LAPIC_DFR, 0xffffffff);
+	    apicwrite(APIC_BASE + LAPIC_LDR, 0x01000000);
+		  apicwrite(APIC_BASE + LAPIC_SVR, 0x100|0xff);
+	apic_start_timer();
+//	idt_init();
+//	apicwrite(APIC_BASE + LAPIC_TIMER, 32 | APIC_BASE | 0x20000);
 }

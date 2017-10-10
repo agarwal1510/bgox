@@ -4,8 +4,8 @@
 .global isr0
 .global isr1
 .global timer_init
-.extern irq_timer_handler
-.extern irq_kb_handler
+//.extern irq_timer_handler
+//.extern irq_kb_handler
 
 timer_init:
 	movw	$11931, %dx
@@ -24,12 +24,12 @@ _x86_64_asm_lidt:
 
 isr0:
 	cli
-	call irq_timer_handler
+//	call irq_timer_handler
 	sti
 	iretq
 
 isr1:
 	cli
-	call irq_kb_handler
+//	call irq_kb_handler
 	sti
 	iretq
