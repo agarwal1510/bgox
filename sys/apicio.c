@@ -1,12 +1,15 @@
 #include <sys/defs.h>
-
-void apicwrite(uint64_t reg, uint64_t value)
+#include <sys/kprintf.h>
+static inline void apicwrite(uint64_t *reg, uint64_t value)
 {
-		uint64_t volatile *localapic = (uint64_t volatile *)reg;
-		*localapic = value;
+		kprintf("\nWriting: %x %x\n", reg, value);
+//		uint64_t volatile *localapic = (uint64_t volatile *)reg;
+//		*localapic = value;
+		*(volatile uint64_t *)(reg) = value;
 }
-uint64_t apicread(uint64_t reg)
+static inline uint64_t apicread(uint64_t *reg)
 {
-		uint64_t volatile *localapic = (uint64_t volatile *)(reg);
-		return *localapic;
+		kprintf("reading: %x\n", reg);
+	//	uint64_t volatile *localapic = (uint64_t volatile *)(reg);
+		return *(volatile uint64_t *)(reg);
 }

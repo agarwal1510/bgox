@@ -7,7 +7,7 @@
 #include <sys/defs.h>
 #include <sys/portio.h>
 #include <sys/apic.h>
-#include <sys/apicio.h>
+//#include <sys/apicio.h>
 //#include <stdlib.h>
 #include "kb_map.h"
 #define CPUID_FLAG_APIC 1 << 9
@@ -15,14 +15,17 @@
 #define IA32_APIC_BASE_MSR 0x1B
 #define IA32_APIC_BASE_MSR_BSP 0x100
 #define IA32_APIC_BASE_MSR_ENABLE 0x800
-uint64_t APIC_BASE;
-/*extern void load_idt(unsigned long *idt_ptr);
+uint32_t *APIC_BASE;
+uint32_t *IOAPIC_BASE;
+extern void load_idt(unsigned long *idt_ptr);
 extern void isr0(void);
-extern void isr1(void);
+//extern void isr1(void);
 extern void timer_init(void);
 extern unsigned char kbdus[128];
 int SHIFT_ON = 0;
 int CTRL_ON = 0;
+
+static AcpiMadt *s_madt;
 
 struct gate_str{
 		uint16_t offset_low;     // offset bits 0...15
@@ -33,35 +36,57 @@ struct gate_str{
 		uint32_t offset_high;  // offset bits 16..31, set at 48...63
 		uint32_t ist;           // unused set to 0, set at 96...127
 }  __attribute__((packed));
-*/
-//struct gate_str IDT[MAX_IDT];
 
-//int ticks = 0;
-//int sec = -1;
-//struct idtr_t
-//{
-//		uint16_t size;
-//		uint64_t addr;
-//} __attribute__((packed));
+struct gate_str IDT[MAX_IDT];
 
-//struct idtr_t idtr = {((sizeof(struct gate_str))*MAX_IDT), (uint64_t)&IDT};
+int ticks = 0;
+int sec = -1;
+struct idtr_t
+{
+		uint16_t size;
+		uint64_t addr;
+} __attribute__((packed));
 
-//void _x86_64_asm_lidt(struct idtr_t *idtr);
+struct idtr_t idtr = {((sizeof(struct gate_str))*MAX_IDT), (uint64_t)&IDT};
 
-/*void irq_timer_handler(void){
+void _x86_64_asm_lidt(struct idtr_t *idtr);
+
+static inline void apicwrite(void *reg, uint32_t value)
+{
+//		kprintf("\nWriting: %x %x\n", reg, value);
+//		uint64_t volatile *localapic = (uint64_t volatile *)reg;
+//		*localapic = value;
+		*(volatile uint32_t *)(reg) = value;
+}
+static inline uint32_t apicread(void *reg)
+{
+//		kprintf("reading: %x\n", reg);
+	//	uint64_t volatile *localapic = (uint64_t volatile *)(reg);
+		return *(volatile uint32_t *)(reg);
+}
+
+void irq_timer_handler(void){
+	apicwrite(APIC_BASE + LAPIC_EOI, 0);
 //	outb(0x20, 0x20);
 //	outb(0xa0, 0x20);
 	kprintf("Entere\n");
-	if (ticks % 18 == 0){
-		int new_sec = ticks/100;
-		if (new_sec != sec){
-			sec = new_sec;
-			kprintf_boott(">Time Since Boot: ", sec);
-		}
-	}
-	ticks++;
+//	if (ticks % 18 == 0){
+//		int new_sec = ticks/100;
+//		if (new_sec != sec){
+//			sec = new_sec;
+//			kprintf_boott(">Time Since Boot: ", sec);
+//		}
+//	}
+//	ticks++;
 }
-
+void memcpy(void *dest, void* src, int size ){
+	char *source = (char *)src;
+	char * dst = (char *)dest;
+	for(int i = 0; i < size; i ++){
+		dst[i] = source[i];
+	}
+}
+/*
 void irq_kb_handler(void){
 //	outb(0x20, 0x20);
 //	outb(0xa0, 0x20);
@@ -155,50 +180,69 @@ void irq_kb_handler(void){
 					case 51:
 						kprintf_at("%c", 148, 24, '<');
 						break;
-					case 52:
+						case 52:
 						kprintf_at("%c", 148, 24, '>');
 						break;
-					case 53:
+						case 53:
 						kprintf_at("%c", 148, 24, '?');
 						break;
-					default:
+						default:
 						kprintf_at("%c", 148, 24, kbdus[key] - 32);	
 						break;
-					}
-			}
-			else
-			kprintf_at("%c", 148, 24, kbdus[key]);
-		}
-	}
+						}
+}
+else
+kprintf_at("%c", 148, 24, kbdus[key]);
+}
+}
 }*/
 
+void pic_init(void){ // SETUP Master and Slave PICS
+		outb(0x20, 0x11);
+		outb(0xA0, 0x11); 
+		outb(0x21, 0x20);
+		outb(0xA1, 0x28);
+		outb(0x21, 0x04);
+		outb(0xA1, 0x02);
+		outb(0x21, 0x01);
+		outb(0xA1, 0x01);
+		//    outb(0x21, 0xff);
+		//	outb(0xA1, 0xff);
+}
+void pic_disable()
+{
+		/* Set OCW1 (interrupt masks) */
+		outb(0x21, 0xFF);
+		outb(0xA1, 0xFF);
+}
 void apic_start_timer() {
-        // Tell APIC timer to use divider 16
-        apicwrite(APIC_BASE + LAPIC_TDCR, 0x3);
- 
-        // Prepare the PIT to sleep for 10ms (10000µs)
-    //    pit_prepare_sleep(10000);
- 
-        // Set APIC init counter to -1
-        apicwrite(APIC_BASE + LAPIC_TICR, 0xFFFFFFFF);
- 
-        // Perform PIT-supported sleep
-  //      pit_perform_sleep();
- 
-        // Stop the APIC timer
-		apicwrite(APIC_BASE + LAPIC_TIMER, 0x10000);
-      //  apicwrite(APIC_REGISTER_LVT_TIMER, APIC_LVT_INT_MASKED);
- 
-        // Now we know how often the APIC timer has ticked in 10ms
-        //uint32_t ticksIn10ms = 0xFFFFFFFF - apicread(APIC_REGISTER_TIMER_CURRCNT);
- 
-        // Start timer as periodic on IRQ 0, divider 16, with the number of ticks we counted
-    //    apicwrite(APIC_REGISTER_LVT_TIMER, 32 | APIC_LVT_TIMER_MODE_PERIODIC);
-    //    apicwrite(APIC_REGISTER_TIMER_DIV, 0x3);
-   //     apicwrite(APIC_REGISTER_TIMER_INITCNT, ticksIn10ms);
-   		apicwrite(APIC_BASE + LAPIC_TIMER, 51 | 0x00000); //One - Shot
-    	apicwrite(APIC_BASE + LAPIC_TDCR, 0x3);
-    	apicwrite(APIC_BASE + LAPIC_TICR, 1);
+		// Tell APIC timer to use divider 16
+		apicwrite(APIC_BASE + LAPIC_TDCR, 0x3);
+
+		// Prepare the PIT to sleep for 10ms (10000µs)
+		//    pit_prepare_sleep(10000);
+
+		// Set APIC init counter to -1
+//		apicwrite(APIC_BASE + LAPIC_TICR, 0xffffffff);
+
+		// Perform PIT-supported sleep
+		//      pit_perform_sleep();
+
+		// Stop the APIC timer
+//		apicwrite(APIC_BASE + LAPIC_TIMER, 0x10000);
+		//  apicwrite(APIC_REGISTER_LVT_TIMER, APIC_LVT_INT_MASKED);
+
+		// Now we know how often the APIC timer has ticked in 10ms
+		//uint32_t ticksIn10ms = 0xFFFFFFFF - apicread(APIC_REGISTER_TIMER_CURRCNT);
+
+		// Start timer as periodic on IRQ 0, divider 16, with the number of ticks we counted
+		//    apicwrite(APIC_REGISTER_LVT_TIMER, 32 | APIC_LVT_TIMER_MODE_PERIODIC);
+		//    apicwrite(APIC_REGISTER_TIMER_DIV, 0x3);
+//		 uint32_t ticksIn10ms = 0x1;
+		apicwrite(APIC_BASE + LAPIC_TIMER, 51 | 0x00000); //One - Shot
+		apicwrite(APIC_BASE + LAPIC_TDCR, 0x3);
+		apicwrite(APIC_BASE + LAPIC_TICR, 0x1);
+		kprintf("timer: %x", apicread(APIC_BASE + LAPIC_TIMER));
 }
 void cpuid(uint32_t a, uint32_t *b){
 		__asm__("cpuid"
@@ -228,14 +272,14 @@ void cpuSetMSR(uint32_t msr, uint32_t lo, uint32_t hi)
 }
 
 void cpu_set_apic_base(uintptr_t apic) {
-   uint32_t edx = 0;
-   uint32_t eax = (apic & 0xfffff000) | IA32_APIC_BASE_MSR_ENABLE;
- 
+		uint32_t edx = 0;
+		uint32_t eax = (apic & 0xfffff000) | IA32_APIC_BASE_MSR_ENABLE;
+
 #ifdef __PHYSICAL_MEMORY_EXTENSION__
-   edx = (apic >> 32) & 0x0f;
+		edx = (apic >> 32) & 0x0f;
 #endif
- 
-   cpuSetMSR(IA32_APIC_BASE_MSR, eax, edx);
+
+		cpuSetMSR(IA32_APIC_BASE_MSR, eax, edx);
 }
 
 uintptr_t cpu_get_apic_base() {
@@ -249,41 +293,303 @@ uintptr_t cpu_get_apic_base() {
 		return (eax & 0xfffff000);
 #endif
 }
-/*void setup_gate(int32_t num, uint64_t handler_addr){
-  IDT[num].offset_low = (handler_addr & 0xFFFF);
-  IDT[num].offset_mid = ((handler_addr >> 16) & 0xFFFF);
-	IDT[num].offset_high = ((handler_addr >> 32) & 0xFFFFFFFF);
-	IDT[num].selector = 0x08;
-	IDT[num].type_attr = 0x8e;
-	IDT[num].zero = 0x0;
-	IDT[num].ist = 0x0;
+void setup_gate(int32_t num, uint64_t handler_addr){
+		IDT[num].offset_low = (handler_addr & 0xFFFF);
+		IDT[num].offset_mid = ((handler_addr >> 16) & 0xFFFF);
+		IDT[num].offset_high = ((handler_addr >> 32) & 0xFFFFFFFF);
+		IDT[num].selector = 0x08;
+		IDT[num].type_attr = 0x8e;
+		IDT[num].zero = 0x0;
+		IDT[num].ist = 0x0;
 }
 void idt_init(void)
 {
-	setup_gate(32, (uint64_t)isr0);
-	setup_gate(33, (uint64_t)isr1);
-	_x86_64_asm_lidt(&idtr);
-}*/
-/*
-void mask_init(void){
-	outb(0x21 , 0xFC); //11111100
+//	for(int i = 0; i < 255; i ++)
+//		setup_gate(i, (uint64_t)isr0);
+		setup_gate(32, (uint64_t)isr0);
+		setup_gate(0xff, (uint64_t)isr0);
+//		setup_gate(31, (uint64_t)isr0);
+//			setup_gate(33, (uint64_t)isr0);
+		_x86_64_asm_lidt(&idtr);
 }
-*/
+
+  // void mask_init(void){
+ //  outb(0x21 , 0xFC); //11111100
+  // }
+#define IOREGSEL                        0x00
+#define IOWIN                           0x10
+
+// ------------------------------------------------------------------------------------------------
+// IO APIC Registers
+#define IOAPICID                        0x00
+#define IOAPICVER                       0x01
+#define IOAPICARB                       0x02
+#define IOREDTBL                        0x10
+
+// ------------------------------------------------------------------------------------------------
+static void IoApicOut(uint32_t *base, uint8_t reg, uint32_t val)
+{
+    apicwrite(base + IOREGSEL, reg);
+    apicwrite(base + IOWIN, val);
+}
+
+// ------------------------------------------------------------------------------------------------
+static uint32_t IoApicIn(uint32_t *base, uint8_t reg)
+{
+    apicwrite(base + IOREGSEL, reg);
+    return apicread(base + IOWIN);
+}
+
+// ------------------------------------------------------------------------------------------------
+void IoApicSetEntry(uint32_t *base, uint8_t index, uint64_t data)
+{
+    IoApicOut(base, IOREDTBL + index * 2, (uint32_t)data);
+    IoApicOut(base, IOREDTBL + index * 2 + 1, (uint32_t)(data >> 32));
+}
+
+// ------------------------------------------------------------------------------------------------
+void IoApicInit()
+{
+    // Get number of entries supported by the IO APIC
+    uint32_t x = IoApicIn(IOAPIC_BASE, IOAPICVER);
+    int count = ((x >> 16) & 0xff) + 1;    // maximum redirection entry
+
+    kprintf("I/O APIC pins = %d\n", count);
+
+    // Disable all entries
+//    for (int i = 0; i < count; ++i)
+  //  {
+    //    IoApicSetEntry(IOAPIC_BASE, i, 1 << 16);
+ //   }
+}
+
+static void AcpiParseApic(AcpiMadt *madt)
+{
+    s_madt = madt;
+
+    kprintf("Local APIC Address = 0x%x\n", madt->localApicAddr);
+    APIC_BASE = (uint32_t *)(uintptr_t)madt->localApicAddr;
+
+    uint8_t *p = (uint8_t *)(madt + 1);
+    uint8_t *end = (uint8_t *)madt + madt->header.length;
+
+    while (p < end)
+    {
+        ApicHeader *header = (ApicHeader *)p;
+        uint8_t type = header->type;
+        uint8_t length = header->length;
+
+        if (type == APIC_TYPE_LOCAL_APIC)
+        {
+            ApicLocalApic *s = (ApicLocalApic *)p;
+
+            kprintf("Found CPU: %d %d %x\n", s->acpiProcessorId, s->apicId, s->flags);
+      //      if (g_acpiCpuCount < MAX_CPU_COUNT)
+       //     {
+        //        g_acpiCpuIds[g_acpiCpuCount] = s->apicId;
+         //       ++g_acpiCpuCount;
+          //  }
+        }
+        else if (type == APIC_TYPE_IO_APIC)
+        {
+            ApicIoApic *s = (ApicIoApic *)p;
+
+            kprintf("Found I/O APIC: %d 0x%x %d\n", s->ioApicId, s->ioApicAddress, s->globalSystemInterruptBase);
+            IOAPIC_BASE = (uint32_t *)(uintptr_t)s->ioApicAddress;
+        }
+        else if (type == APIC_TYPE_INTERRUPT_OVERRIDE)
+        {
+   //         ApicInterruptOverride *s = (ApicInterruptOverride *)p;
+
+//            kprintf("Found Interrupt Override: %d %d %d 0x%04x\n", s->bus, s->source, s->interrupt, s->flags);
+        }
+        else
+        {
+  //          kprintf("Unknown APIC structure %d\n", type);
+        }
+
+        p += length;
+    }
+}
+static void AcpiParseDT(AcpiHeader *header)
+{
+    uint32_t signature = header->signature;
+
+    char sigStr[5];
+    memcpy(sigStr, &signature, 4);
+    sigStr[4] = 0;
+    kprintf("%s 0x%x\n", sigStr, signature);
+
+    if (signature == 0x50434146)
+    {
+		kprintf("sig: 1\n");
+  //      AcpiParseFacp((AcpiFadt *)header);
+    }
+    else if (signature == 0x43495041)
+    {
+//		kprintf("sig2: \n");
+        AcpiParseApic((AcpiMadt *)header);
+    }
+}
+
+static void AcpiParseRsdt(AcpiHeader *rsdt)
+{
+    uint32_t *p = (uint32_t *)(rsdt + 1);
+    uint32_t *end = (uint32_t *)((uint8_t*)rsdt + rsdt->length);
+
+    while (p < end)
+    {
+        uint32_t address = *p++;
+        AcpiParseDT((AcpiHeader *)(uintptr_t)address);
+    }
+}
+static int AcpiParseRsdp(uint8_t *p)
+{
+    // Parse Root System Description Pointer
+//    ConsolePrint("RSDP found\n");
+
+    // Verify checksum
+    uint8_t sum = 0;
+    for (int i = 0; i < 20; ++i)
+    {
+        sum += p[i];
+    }
+
+    if (sum)
+    {
+  //      ConsolePrint("Checksum failed\n");
+        return 0;
+    }
+
+    // Print OEM
+    char oem[7];
+    memcpy(oem, p + 9, 6);
+    oem[6] = '\0';
+    //ConsolePrint("OEM = %s\n", oem);
+
+    // Check version
+    uint8_t revision = p[15];
+    if (revision == 0)
+    {
+ //       ConsolePrint("Version 1\n");
+//		kprintf("revision 0");
+        uint32_t rsdtAddr = *(uint32_t *)(p + 16);
+        AcpiParseRsdt((AcpiHeader *)(uintptr_t)rsdtAddr);
+    }
+/*    else if (revision == 2)
+    {
+        ConsolePrint("Version 2\n");
+
+        uint32_t rsdtAddr = *(uint32_t *)(p + 16);
+        uint64_t xsdtAddr = *(u64 *)(p + 24);
+
+        if (xsdtAddr)
+        {
+            AcpiParseXsdt((AcpiHeader *)(uintptr_t)xsdtAddr);
+        }
+        else
+        {
+            AcpiParseRsdt((AcpiHeader *)(uintptr_t)rsdtAddr);
+        }
+    }
+  */  else
+    {
+        kprintf("Unsupported ACPI version %d\n", revision);
+    }
+
+    return 1;
+}
+void AcpiInit()
+{
+    // TODO - Search Extended BIOS Area
+
+    // Search main BIOS area below 1MB
+    uint8_t *p = (uint8_t *)0x000e0000;
+    uint8_t *end = (uint8_t *)0x000fffff;
+
+    while (p < end)
+    {
+        uint64_t signature = *(uint64_t *)p;
+
+        if (signature == 0x2052545020445352) // 'RSD PTR '
+        {
+           if (AcpiParseRsdp(p))
+           {
+			kprintf("\nSignature found\n");
+               break;
+            }
+        }
+
+        p += 16;
+    }
+}
+int AcpiRemapIrq(int irq)
+{
+    AcpiMadt *madt = s_madt;
+
+    uint8_t *p = (uint8_t *)(madt + 1);
+    uint8_t *end = (uint8_t *)madt + madt->header.length;
+
+    while (p < end)
+    {
+     //   kprintf("%x %x\n", p, end);
+		ApicHeader *header = (ApicHeader *)p;
+        uint8_t type = header->type;
+        uint8_t length = header->length;
+
+        if (type == APIC_TYPE_INTERRUPT_OVERRIDE)
+        {
+            kprintf("\ntype found\n");
+			ApicInterruptOverride *s = (ApicInterruptOverride *)p;
+
+            if (s->source == irq)
+            {
+            kprintf("\nsource type found %x\n", s->interrupt);
+                return s->interrupt;
+            }
+        }
+
+        p += length;
+    }
+
+    return irq;
+} 
 void apicMain(void){
 
-	kprintf("APIC val: %x", check_apic());
-	kprintf("MSR val: %d", check_msr());
-	cpu_set_apic_base(cpu_get_apic_base());
-	APIC_BASE = cpu_get_apic_base();
-	kprintf("\n%x\n", APIC_BASE);
-//	outl(0xF0, inl(0xF0) | 0x100);
-  	apicwrite(LAPIC_ERROR, 0x1F); /// 0x1F: temporary vector (all other bits: 0)
-    apicwrite(LAPIC_TPR, 0);
+		idt_init();
+		pic_init();
+		pic_disable();
+		kprintf("APIC val: %x", check_apic());
+		kprintf("MSR val: %d", check_msr());
+		AcpiInit();
+		cpu_set_apic_base(0x25000);
+		IOAPIC_BASE = (uint32_t *)0x45000;
+		APIC_BASE = (uint32_t *)cpu_get_apic_base();
+		kprintf("\n%x\n", APIC_BASE);
 
-	  apicwrite(APIC_BASE + LAPIC_DFR, 0xffffffff);
-	    apicwrite(APIC_BASE + LAPIC_LDR, 0x01000000);
-		  apicwrite(APIC_BASE + LAPIC_SVR, 0x100|0xff);
-	apic_start_timer();
-//	idt_init();
-//	apicwrite(APIC_BASE + LAPIC_TIMER, 32 | APIC_BASE | 0x20000);
+	//	idt_init();
+//		apicwrite(APIC_BASE + 0xF0, apicread(APIC_BASE + 0xF0) | 0x100);
+//		apicwrite(APIC_BASE + LAPIC_ERROR, 0x1F); /// 0x1F: temporary vector (all other bits: 0)
+		apicwrite(APIC_BASE + LAPIC_TPR, 0);
+		apicwrite(APIC_BASE + LAPIC_DFR, 0xffffffff);
+		apicwrite(APIC_BASE + LAPIC_LDR, 0x1000000);
+		apicwrite(APIC_BASE + LAPIC_SVR, 0x100|0xff);
+		IoApicInit();
+		timer_init();
+		IoApicSetEntry(IOAPIC_BASE, AcpiRemapIrq(0x00), 0x20);
+		__asm__ volatile("sti");
+//kprintf("Passing: %x\n", APIC_BASE + LAPIC_DFR);
+		kprintf("\n%x\n", apicread(APIC_BASE + LAPIC_DFR));
+		kprintf("\n%x\n", apicread(APIC_BASE + LAPIC_LDR));
+		kprintf("\n%x\n", apicread(APIC_BASE + LAPIC_SVR));
+		kprintf("\nTesting APIC! Local APIC revision: %x Max LVT entry: %x\n",apicread(APIC_BASE + LAPIC_VER)&&0xff, ((apicread(APIC_BASE + LAPIC_VER)>>16) && 0xff)+1);
+
+//		mask_init();
+//		apicwrite(APIC_BASE + LAPIC_TIMER, 32 | 0x20000);
+//		apic_start_timer();
+		
+		
+//		while(1)
+//			kprintf("Current Val: %x\n", apicread(APIC_BASE + LAPIC_TCCR));
+//		__asm__ volatile("int $0x20");
 }
