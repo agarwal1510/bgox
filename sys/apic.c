@@ -66,9 +66,9 @@ static inline uint32_t apicread(void *reg)
 }
 
 void irq_timer_handler(void){
-	apicwrite(APIC_BASE + LAPIC_EOI, 0);
-//	outb(0x20, 0x20);
-//	outb(0xa0, 0x20);
+//	apicwrite(IOAPIC_BASE + LAPIC_EOI, 0);
+	outb(0x20, 0x20);
+	outb(0xa0, 0x20);
 	kprintf("Entere\n");
 //	if (ticks % 18 == 0){
 //		int new_sec = ticks/100;
@@ -239,7 +239,7 @@ void apic_start_timer() {
 		//    apicwrite(APIC_REGISTER_LVT_TIMER, 32 | APIC_LVT_TIMER_MODE_PERIODIC);
 		//    apicwrite(APIC_REGISTER_TIMER_DIV, 0x3);
 //		 uint32_t ticksIn10ms = 0x1;
-		apicwrite(APIC_BASE + LAPIC_TIMER, 51 | 0x00000); //One - Shot
+		apicwrite(APIC_BASE + LAPIC_TIMER, 32 | 0x00000); //One - Shot
 		apicwrite(APIC_BASE + LAPIC_TDCR, 0x3);
 		apicwrite(APIC_BASE + LAPIC_TICR, 0x1);
 		kprintf("timer: %x", apicread(APIC_BASE + LAPIC_TIMER));
@@ -313,9 +313,9 @@ void idt_init(void)
 		_x86_64_asm_lidt(&idtr);
 }
 
-  // void mask_init(void){
- //  outb(0x21 , 0xFC); //11111100
-  // }
+   void mask_init(void){
+   outb(0x21 , 0xFC); //11111100
+   }
 #define IOREGSEL                        0x00
 #define IOWIN                           0x10
 
@@ -344,7 +344,8 @@ static uint32_t IoApicIn(uint32_t *base, uint8_t reg)
 void IoApicSetEntry(uint32_t *base, uint8_t index, uint64_t data)
 {
     IoApicOut(base, IOREDTBL + index * 2, (uint32_t)data);
-    IoApicOut(base, IOREDTBL + index * 2 + 1, (uint32_t)(data >> 32));
+    kprintf("***Here: %x %x***", data, IoApicIn(base, IOREDTBL + index* 2));
+	IoApicOut(base, IOREDTBL + index * 2 + 1, (uint32_t)(data >> 32));
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -553,7 +554,35 @@ int AcpiRemapIrq(int irq)
     }
 
     return irq;
-} 
+}/*
+void ioapic_set_irq(uint8_t irq, uint64_t apic_id, uint8_t vector) {
+    const uint32_t low_index = 0x10 + irq*2;
+    const uint32_t high_index = 0x10 + irq*2 + 1;
+
+    uint32_t high = IoApicIn((uint32_t *)high_index);
+    // set APIC ID
+    high &= ~0xff000000;
+    high |= apic_id << 24;
+    IoApicOut(high_index, high);
+
+    uint32_t low = IoApicIn((uint32_t *)low_index);
+
+    // unmask the IRQ
+    low &= ~(1<<16);
+
+    // set to physical delivery mode
+    low &= ~(1<<11);
+
+    // set to fixed delivery mode
+    low &= ~0x700;
+
+    // set delivery vector
+    low &= ~0xff;
+    low |= vector;
+
+    IoApicOut(()low_index, low);
+}
+*/
 void apicMain(void){
 
 		idt_init();
@@ -561,7 +590,7 @@ void apicMain(void){
 		pic_disable();
 		kprintf("APIC val: %x", check_apic());
 		kprintf("MSR val: %d", check_msr());
-		AcpiInit();
+//		AcpiInit();
 		cpu_set_apic_base(0x25000);
 		IOAPIC_BASE = (uint32_t *)0x45000;
 		APIC_BASE = (uint32_t *)cpu_get_apic_base();
@@ -573,7 +602,7 @@ void apicMain(void){
 		apicwrite(APIC_BASE + LAPIC_TPR, 0);
 		apicwrite(APIC_BASE + LAPIC_DFR, 0xffffffff);
 		apicwrite(APIC_BASE + LAPIC_LDR, 0x1000000);
-		apicwrite(APIC_BASE + LAPIC_SVR, 0x100|0xff);
+		apicwrite(APIC_BASE + LAPIC_SVR, 0x100|0x00);
 		IoApicInit();
 		timer_init();
 		IoApicSetEntry(IOAPIC_BASE, AcpiRemapIrq(0x00), 0x20);
@@ -586,7 +615,7 @@ void apicMain(void){
 
 //		mask_init();
 //		apicwrite(APIC_BASE + LAPIC_TIMER, 32 | 0x20000);
-//		apic_start_timer();
+		apic_start_timer();
 		
 		
 //		while(1)
