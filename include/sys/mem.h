@@ -6,10 +6,13 @@ struct page {
 	struct page *next;
 	struct page *previous;
 	int used;
+	int pages_allocated;
 };
 
 #define PAGE_SIZE  4096
 void calculate_free_list(uint64_t num_pages, uint64_t physfree);
 uint64_t *kmalloc(uint64_t size);
+void free(uint64_t *ptr);
+void memset(void *address, int value, int size);
 
 #endif

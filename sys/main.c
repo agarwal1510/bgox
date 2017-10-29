@@ -33,9 +33,9 @@ void start(uint32_t *modulep, void *physbase, void *physfree)
   calculate_free_list(num_pages, (uint64_t)physfree);
   uint64_t *ptr = kmalloc(2);
   kprintf("malloc'ed %p\n", ptr);
-  uint64_t* ptr2 = kmalloc(2);
+  uint64_t* ptr2 = kmalloc(5000);
   kprintf("malloc'ed again %p\n", ptr2);
-
+  free(ptr2);
   kprintf("physfree %p\n", (uint64_t)physfree);
   kprintf("tarfs in [%p:%p]\n", &_binary_tarfs_start, &_binary_tarfs_end);
 //  find_ahci();
