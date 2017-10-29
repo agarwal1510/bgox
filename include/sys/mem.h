@@ -8,7 +8,8 @@ struct page {
 	int used;
 };
 
-#define PAGE_SIZE 4096;
+#define PAGE_SIZE  4096
 void calculate_free_list(uint64_t num_pages, uint64_t physfree);
+uint64_t *kmalloc(uint64_t size);
 
 #endif
