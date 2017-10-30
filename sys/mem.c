@@ -5,6 +5,8 @@
 struct page *free_list;
 struct page *fl_head;
 struct page *fl_tail;
+uint64_t *pml4, *pdpt, *pdt;
+uint64_t *pte[512];
 
 void memset(void *address, int value, int size);
 
@@ -54,8 +56,12 @@ void calculate_free_list(uint64_t num_pages, uint64_t physfree) {
 }
 
 uint64_t *kmalloc(uint64_t size){
-	int pages = (size/PAGE_SIZE)+1; //TODO Fix pages when asked size = 4096KB
-
+	int pages;
+	if (size % PAGE_SIZE > 0) {
+		pages = (size/PAGE_SIZE)+1; //TODO Fix pages when asked size = 4096KB
+	} else {
+		pages = size/PAGE_SIZE;
+	}
 	int avail_pages = (fl_tail - fl_head)/sizeof(struct page);
 	uint64_t allocated = (fl_head - free_list)/sizeof(struct page);
 	kprintf("Avail pages: %d allocated: %d\n", avail_pages, allocated);
@@ -86,4 +92,34 @@ void free(uint64_t *ptr){
 }
 
 void memset (void *address, int value, int size) {                                                                                      unsigned char *p = address;                                                                                             for (int i = 0; i< size; i++)                                                                                            *p++ = (unsigned char)value;       
-} 
+}
+
+void init_page_table(uint64_t num_pages) {	
+	uint64_t num_pte = num_pages/PT_SIZE;
+	kprintf("Num pte %d %d", num_pages, num_pte);
+	pml4 = (uint64_t *)kmalloc(PAGE_SIZE);
+	pdpt = (uint64_t *)kmalloc(PAGE_SIZE);
+	pdt = (uint64_t *)kmalloc(PAGE_SIZE);
+	*pml4 = (uint64_t)pdpt;
+	*pdpt = (uint64_t)pdt;
+	for (int i = 0; i < num_pte; i++) {
+		pte[i] = (uint64_t *)kmalloc(PAGE_SIZE);
+		pdt[i] = (uint64_t)(pte[i]);	
+	}
+	// PT_SIZE 512
+	// PAGE_SIZE 4096
+	uint64_t inc = 0;
+	for (int i = 0; i < num_pte; i++) {
+		for (int j = 0; j < PT_SIZE; j++) {
+			pte[i][j] = KERNEL_VADDR + inc*PAGE_SIZE;
+			inc++;
+		}
+	}
+	kprintf("%p %p %p %p", pte[0][0], pte[1][0], pte[0][1], pte[2][1]);
+	kprintf("Address: %p %p %p %p %p %p %p\n", pml4, pdpt, *pdt, *(pdt+1), *pml4, *(pte), *(pte+1));
+	
+}
+
+//uint64_t translate_vaddr_physaddr(uint64_t) {
+//
+//}
