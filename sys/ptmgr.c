@@ -7,6 +7,8 @@
 uint64_t *pml4, *pdpt, *pdt;
 uint64_t *pte[512];
 
+pml4table* current_pml4 = 0;
+
 void init_page_table(uint64_t num_pages) {	
 		uint64_t num_pte = num_pages/PAGE_SIZE;
 	kprintf("Num pte %d %d", num_pages, num_pte);
@@ -78,6 +80,37 @@ inline pdp_entry* lookup_pdp_entry(pdptable *p, uint64_t virt_addr){
 inline pml4_entry* lookup_pml4_entry(pml4table *p, uint64_t virt_addr){
 
 	if (p)
-		return &p->pd[PAGE_PML4_INDEX(virt_addr)];
+		return &p->pml4[PAGE_PML4_INDEX(virt_addr)];
 	return 0;
+}
+
+pml4table* get_pml4(){
+
+	return current_pml4;
+
+}
+
+void map_virt_phys(void * phys, void * virt){
+	
+	pml4table *pml4_table = get_pml4();
+
+	pml4_entry *e = &pml4_table->pml4[PAGE_PML4_INDEX((uint64_t)virt)];
+
+	if ((*e & PML4_PRESENT) != PML4_PRESENT){
+			pdptable *pdp = (pdptable *)kmalloc(1);
+			if (pdp == NULL)
+					return;
+
+			memset(pdp, 0, 0x1000);
+
+			pml4_entry* pml4entry = &pml4_table->pml4[PAGE_PML4_INDEX((uint64_t)virt)];
+			pml4entry_add_attr(pml4entry, PML4_PRESENT);
+			pml4entry_add_attr(pml4entry, PML4_WRITABLE);
+			pml4_entry_set_frame(pml4entry, (uint64_t)pdp);
+
+		// Extend for PDP, PD, PT and populate page table entry
+
+	}
+
+
 }
