@@ -2,6 +2,7 @@
 #include<sys/kprintf.h>
 #include <sys/portio.h>
 #include <sys/ahci.h>
+#include <sys/mem.h>
 
 #define BUS_NUM 256
 #define DEVICE_NUM 32
@@ -40,7 +41,6 @@ void init_write();
 void stop_cmd(hba_port_t *port);
 void start_cmd(hba_port_t *port);
 
-void memset(void *address, int value, int size);
 void setBits(hba_port_t *port) {
 
 	port->cmd &= 0xFFFFFFFE;
@@ -94,11 +94,6 @@ void setBits(hba_port_t *port) {
 
 }
 
-void memset(void *address, int value, int size) {
-               unsigned char *p = address;
-               for (int i = 0; i< size; i++)
-               	*p++ = (unsigned char)value;
-}
 void set_bits_after_di(hba_port_t *port) {
 	port->cmd |= HBA_PxCMD_FRE;
 	port->cmd |= HBA_PxCMD_SUD;
