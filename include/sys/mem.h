@@ -2,6 +2,11 @@
 #define _MEM_H
 
 #include <sys/defs.h>
+/*struct page {
+	struct page *next;
+	int used;
+	int block_size;
+};*/
 
 #define KERNEL_VADDR 0xffffffff80000000
 

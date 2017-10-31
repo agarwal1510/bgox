@@ -15,9 +15,8 @@
 
 struct page {
 	struct page *next;
-	struct page *previous;
 	int used;
-	int pages_allocated;
+	int block_size;
 };
 
 typedef uint64_t pde_entry;
