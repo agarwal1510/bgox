@@ -6,6 +6,7 @@
 #include <sys/idt.h>
 #include <sys/pci.h>
 #include <sys/mem.h>
+#include <sys/ptmgr.h>
 
 #define INITIAL_STACK_SIZE 4096
 

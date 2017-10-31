@@ -1,15 +1,9 @@
 #include <sys/mem.h>
 #include <sys/defs.h>
 #include <sys/kprintf.h>
+#include <sys/ptops.h>
 
 struct page *free_list;
-uint64_t *pml4, *pdpt, *pdt;
-uint64_t *pte[512];
-
-#define PAGE_DIRECTORY_INDEX(x) (((x) >> 22) & 0x3ff)
-#define PAGE_TABLE_INDEX(x) (((x) >> 12) & 0x3ff)
-#define PAGE_GET_PHYSICAL_ADDRESS(x) (*x & ~0xfff)
-
 
 void memset(void *address, int value, int size);
 
@@ -18,7 +12,7 @@ struct page *get_page_at_address(uint64_t *address) {
 	return (struct page*)free_list + page_num*sizeof(struct page); 
 }
 
-int get_pages_allocated(uint64_t *ptr) {
+int get_num_pages_allocated(uint64_t *ptr) {
 	uint64_t page_num = (uint64_t)ptr/(uint64_t)PAGE_SIZE;
 	struct page *corresponding_page = free_list + page_num*sizeof(struct page);
 	return corresponding_page->block_size;
@@ -91,8 +85,8 @@ uint64_t *kmalloc(uint64_t size){
 }
 
 void free(uint64_t *ptr){
-	int num_pages = get_pages_allocated(ptr);
-	kprintf("Pages Allocated: %d\n", num_pages);
+	int num_pages = get_num_pages_allocated(ptr);
+	kprintf("Pages Allocated: %d", num_pages);
 	struct page *address_page = get_page_at_address(ptr);
 	memset(ptr, 0, num_pages*PAGE_SIZE);
 	while(num_pages != 0) {
@@ -103,36 +97,9 @@ void free(uint64_t *ptr){
 	}	
 }
 
-
-void memset (void *address, int value, int size) {                                                                                      unsigned char *p = address;                                                                                             for (int i = 0; i< size; i++)                                                                                            *p++ = (unsigned char)value;       
+void memset (void *address, int value, int size) {
+		unsigned char *p = address;
+		for (int i = 0; i< size; i++)
+			*p++ = (unsigned char)value;       
 }
 
-void init_page_table(uint64_t num_pages) {	
-	uint64_t num_pte = num_pages/PT_SIZE;
-	kprintf("Num pte %d %d", num_pages, num_pte);
-	pml4 = (uint64_t *)kmalloc(PAGE_SIZE);
-	pdpt = (uint64_t *)kmalloc(PAGE_SIZE);
-	pdt = (uint64_t *)kmalloc(PAGE_SIZE);
-	*pml4 = (uint64_t)pdpt;
-	*pdpt = (uint64_t)pdt;
-	for (int i = 0; i < num_pte; i++) {
-		pte[i] = (uint64_t *)kmalloc(PAGE_SIZE);
-		pdt[i] = (uint64_t)(pte[i]);	
-	}
-	// PT_SIZE 512
-	// PAGE_SIZE 4096
-	uint64_t inc = 0;
-	for (int i = 0; i < num_pte; i++) {
-		for (int j = 0; j < PT_SIZE; j++) {
-			pte[i][j] = KERNEL_VADDR + inc*PAGE_SIZE;
-			inc++;
-		}
-	}
-	kprintf("%p %p %p %p", pte[0][0], pte[1][0], pte[0][1], pte[2][1]);
-	kprintf("Address: %p %p %p %p %p %p %p\n", pml4, pdpt, *pdt, *(pdt+1), *pml4, *(pte), *(pte+1));
-	
-}
-
-//uint64_t translate_vaddr_physaddr(uint64_t vaddr) {
-//	
-//}
