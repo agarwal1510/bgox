@@ -108,9 +108,81 @@ void map_virt_phys(void * phys, void * virt){
 			pml4entry_add_attr(pml4entry, PML4_WRITABLE);
 			pml4_entry_set_frame(pml4entry, (uint64_t)pdp);
 
+			pdtable *pd = (pdtable *)kmalloc(1);
+			memset(pd, 0, 0x1000);
+			
+			pdp_entry *pdp_entry = &pdp->pdp[PAGE_PDP_INDEX((uint64_t)virt)];
+			pdp_add_attr(pdpentry, PDP_PRESENT);
+			pdp_add_attr(pdpentry, PDP_WRITABLE);
+			pdp_set_frame(pml4entry, (uint64_t)pd);
+
+			ptable *pd = (ptable *)kmalloc(1);
+			memset(pd, 0, 0x1000);
+			
+			pd_entry *pd_entry = &pd->pd[PAGE_PD_INDEX((uint64_t)virt)];
+			pd_add_attr(ptentry, PD_PRESENT);
+			pd_add_attr(ptentry, PD_WRITABLE);
+			pd_set_frame(ptentry, (uint64_t)virt);
+			
+			ptable *pt = (ptable *)kmalloc(1);
+			memset(pt, 0, 0x1000);
+			
+			pt_entry *pt_entry = &pt->pt[PAGE_PTE_INDEX((uint64_t)virt)];
+			pte_add_attr(ptentry, PTE_PRESENT);
+			pte_add_attr(ptentry, PTE_WRITABLE);
+			pte_set_frame(ptentry, (uint64_t)phys);
+		
+			
 		// Extend for PDP, PD, PT and populate page table entry
 
 	}
+}
+
+void vmem_init(void *physbase){
+
+
+		ptable* table = (ptable*) pmmngr_alloc_block ();
+		if (!table)
+				return;
+
+		//! allocates 3gb page table
+		ptable* table2 = (ptable*) pmmngr_alloc_block ();
+		if (!table2)
+				return;
+
+		//! clear page table
+//		vimmngr_ptable_clear (table);
+		memset(table, 0, 0x1000);
+
+		for (int i=0, frame=0x0, virt=0x00000000; i<512; i++, frame+=4096, virt+=4096) {
+
+				//! create a new page
+				pt_entry page=0;
+				pt_entry_add_attrib (&page, PTE_PRESENT);
+				pt_entry_set_frame (&page, frame);
+
+				//! ...and add it to the page table
+				table->pt [PAGE_PTE_INDEX(virt)] = page;
+		}
+
+		for (int i=0, frame=physbase, virt=KERN_BASE+physbase; i<512; i++, frame+=4096, virt+=4096) {
+
+				//! create a new page
+				pt_entry page=0;
+				pt_entry_add_attrib (&page, PTE_PRESENT);
+				pt_entry_set_frame (&page, frame);
+
+				//! ...and add it to the page table
+				table2->pt[PAGE_PTE_INDEX (virt) ] = page;
+		}
+
+		pml4* pml4 = (pml4*) pmmngr_alloc_blocks (3);
+	if (!dir)
+		return;
+ 
+	//! clear directory table and set it as current
+	memset (dir, 0, sizeof (pdirectory));
+
 
 
 }
