@@ -3,11 +3,13 @@
 #include <sys/kprintf.h>
 #include <sys/ptops.h>
 #include <sys/ptmgr.h>
+#include <sys/mem.h>
 
 uint64_t *pml4, *pdpt, *pdt;
 uint64_t *pte[512];
 
 pml4table* current_pml4 = 0;
+uint64_t curr_pml4br = 0;
 
 void init_page_table(uint64_t num_pages) {	
 		uint64_t num_pte = num_pages/PAGE_SIZE;
@@ -33,6 +35,37 @@ void init_page_table(uint64_t num_pages) {
 	kprintf("%p %p %p %p", pte[0][0], pte[1][0], pte[0][1], pte[2][1]);
 	kprintf("Address: %p %p %p %p %p %p %p\n", pml4, pdpt, *pdt, *(pdt+1), *pml4, *(pte), *(pte+1));
 	
+}
+
+void	ptmgr_paging_enable (bool b) {
+
+#ifdef _MSC_VER
+	_asm_ {
+		mov	eax, cr0
+		cmp [b], 1
+		je	enable
+		jmp disable
+enable:
+		or eax, 0x80000000		//set bit 31
+		mov	cr0, eax
+		jmp done
+disable:
+		and eax, 0x7FFFFFFF		//clear bit 31
+		mov	cr0, eax
+done:
+	}
+#endif
+}
+
+
+void ptmgr_load_PML4BR (uint64_t addr) {
+
+#ifdef _MSC_VER
+	_asm {
+		mov	eax, [addr]
+		mov	cr3, eax		// PDBR is cr3 register in i86
+	}
+#endif
 }
 
 // PTE ROUTINE START
@@ -83,6 +116,15 @@ inline pml4_entry* lookup_pml4_entry(pml4table *p, uint64_t virt_addr){
 		return &p->pml4[PAGE_PML4_INDEX(virt_addr)];
 	return 0;
 }
+inline bool ptmgr_switch_pml4 (pml4table* pml4) {
+
+		if (!pml4)
+				return false;
+
+		current_pml4 = pml4;
+		ptmgr_load_PML4BR(curr_pml4br);
+		return true;
+}
 
 pml4table* get_pml4(){
 
@@ -104,33 +146,30 @@ void map_virt_phys(void * phys, void * virt){
 			memset(pdp, 0, 0x1000);
 
 			pml4_entry* pml4entry = &pml4_table->pml4[PAGE_PML4_INDEX((uint64_t)virt)];
-			pml4entry_add_attr(pml4entry, PML4_PRESENT);
-			pml4entry_add_attr(pml4entry, PML4_WRITABLE);
+			pml4_entry_add_attr(pml4entry, PML4_PRESENT);
+			pml4_entry_add_attr(pml4entry, PML4_WRITABLE);
 			pml4_entry_set_frame(pml4entry, (uint64_t)pdp);
 
 			pdtable *pd = (pdtable *)kmalloc(1);
 			memset(pd, 0, 0x1000);
 			
-			pdp_entry *pdp_entry = &pdp->pdp[PAGE_PDP_INDEX((uint64_t)virt)];
-			pdp_add_attr(pdpentry, PDP_PRESENT);
-			pdp_add_attr(pdpentry, PDP_WRITABLE);
-			pdp_set_frame(pml4entry, (uint64_t)pd);
+			pdp_entry *pdpentry = &pdp->pdp[PAGE_PDP_INDEX((uint64_t)virt)];
+			pdp_entry_add_attr(pdpentry, PDP_PRESENT);
+			pdp_entry_add_attr(pdpentry, PDP_WRITABLE);
+			pdp_entry_set_frame(pdpentry, (uint64_t)pd);
 
-			ptable *pd = (ptable *)kmalloc(1);
+			ptable *pt = (ptable *)kmalloc(1);
 			memset(pd, 0, 0x1000);
 			
-			pd_entry *pd_entry = &pd->pd[PAGE_PD_INDEX((uint64_t)virt)];
-			pd_add_attr(ptentry, PD_PRESENT);
-			pd_add_attr(ptentry, PD_WRITABLE);
-			pd_set_frame(ptentry, (uint64_t)virt);
+			pde_entry *pdentry = &pd->pd[PAGE_DIR_INDEX((uint64_t)virt)];
+			pde_entry_add_attr(pdentry, PDE_PRESENT);
+			pde_entry_add_attr(pdentry, PDE_WRITABLE);
+			pde_entry_set_frame(pdentry, (uint64_t)pt);
 			
-			ptable *pt = (ptable *)kmalloc(1);
-			memset(pt, 0, 0x1000);
-			
-			pt_entry *pt_entry = &pt->pt[PAGE_PTE_INDEX((uint64_t)virt)];
-			pte_add_attr(ptentry, PTE_PRESENT);
-			pte_add_attr(ptentry, PTE_WRITABLE);
-			pte_set_frame(ptentry, (uint64_t)phys);
+			pte_entry *ptentry = &pt->pt[PAGE_TABLE_INDEX((uint64_t)virt)];
+			pte_entry_add_attr(ptentry, PTE_PRESENT);
+			pte_entry_add_attr(ptentry, PTE_WRITABLE);
+			pte_entry_set_frame(ptentry, (uint64_t)phys);
 		
 			
 		// Extend for PDP, PD, PT and populate page table entry
@@ -141,12 +180,12 @@ void map_virt_phys(void * phys, void * virt){
 void vmem_init(void *physbase){
 
 
-		ptable* table = (ptable*) pmmngr_alloc_block ();
+		ptable* table = (ptable*) kmalloc (1);
 		if (!table)
 				return;
 
 		//! allocates 3gb page table
-		ptable* table2 = (ptable*) pmmngr_alloc_block ();
+		ptable* table2 = (ptable*) kmalloc (1);
 		if (!table2)
 				return;
 
@@ -157,32 +196,83 @@ void vmem_init(void *physbase){
 		for (int i=0, frame=0x0, virt=0x00000000; i<512; i++, frame+=4096, virt+=4096) {
 
 				//! create a new page
-				pt_entry page=0;
-				pt_entry_add_attrib (&page, PTE_PRESENT);
-				pt_entry_set_frame (&page, frame);
+				pte_entry page=0;
+				pte_entry_add_attr(&page, PTE_PRESENT);
+				pte_entry_set_frame (&page, frame);
 
 				//! ...and add it to the page table
-				table->pt [PAGE_PTE_INDEX(virt)] = page;
+				table->pt[PAGE_TABLE_INDEX(virt)] = page;
 		}
 
-		for (int i=0, frame=physbase, virt=KERN_BASE+physbase; i<512; i++, frame+=4096, virt+=4096) {
+		for (int i=0, frame=(uint64_t)physbase, virt=(uint64_t)(KERNEL_VADDR+physbase); i<512; i++, frame+=4096, virt+=4096) {
 
 				//! create a new page
-				pt_entry page=0;
-				pt_entry_add_attrib (&page, PTE_PRESENT);
-				pt_entry_set_frame (&page, frame);
+				pte_entry page=0;
+				pte_entry_add_attr(&page, PTE_PRESENT);
+				pte_entry_set_frame (&page, frame);
 
 				//! ...and add it to the page table
-				table2->pt[PAGE_PTE_INDEX (virt) ] = page;
+				table2->pt[PAGE_TABLE_INDEX (virt) ] = page;
 		}
 
-		pml4* pml4 = (pml4*) pmmngr_alloc_blocks (3);
-	if (!dir)
-		return;
- 
+		pml4table* pml4 = (pml4table*) kmalloc(1);
+		if (!pml4)
+			return;
+		memset (pml4, 0, sizeof (pml4));
+		
+		pdptable* pdp = (pdptable*) kmalloc(1);
+		if (!pdp)
+			return;
+		memset (pdp, 0, sizeof (pdp));
+		
+		pdtable* pd = (pdtable*) kmalloc(1);
+		if (!pd)
+			return;
+		memset (pd, 0, sizeof (pd));
+		
+		
+		pdptable* pdp2 = (pdptable*) kmalloc(1);
+		if (!pdp2)
+			return;
+		memset (pdp2, 0, sizeof (pdp2));
+		
+		pdtable* pd2 = (pdtable*) kmalloc(1);
+		if (!pd2)
+			return;
+		memset (pd2, 0, sizeof (pd2));
+
+		pml4_entry* pml4e = &pml4->pml4 [PAGE_PML4_INDEX((uint64_t)(KERNEL_VADDR+physbase))];
+		pml4_entry_add_attr (pml4e, PML4_PRESENT);
+		pml4_entry_add_attr (pml4e, PML4_WRITABLE);
+		pml4_entry_set_frame (pml4e, (uint64_t)pdp);
+		
+		pml4_entry* pml4e2 = &pml4->pml4 [PAGE_PML4_INDEX((uint64_t)(0x0))];
+		pml4_entry_add_attr (pml4e2, PML4_PRESENT);
+		pml4_entry_add_attr (pml4e2, PML4_WRITABLE);
+		pml4_entry_set_frame (pml4e2, (uint64_t)pdp2);
+
+		pdp_entry* pdpe = &pdp->pdp[PAGE_PDP_INDEX((uint64_t)(KERNEL_VADDR+physbase))];
+		pdp_entry_add_attr (pdpe, PDP_PRESENT);
+		pdp_entry_add_attr (pdpe, PDP_WRITABLE);
+		pdp_entry_set_frame (pdpe, (uint64_t)pd);
+		
+		pdp_entry* pdpe2 = &pdp->pdp[PAGE_PDP_INDEX((uint64_t)(0x0))];
+		pdp_entry_add_attr (pdpe2, PDP_PRESENT);
+		pdp_entry_add_attr (pdpe2, PDP_WRITABLE);
+		pdp_entry_set_frame (pdpe2, (uint64_t)pd2);
+		
+		pde_entry* pde = &pd->pd[PAGE_DIR_INDEX((uint64_t)(KERNEL_VADDR+physbase))];
+		pde_entry_add_attr (pde, PDE_PRESENT);
+		pde_entry_add_attr (pde, PDE_WRITABLE);
+		pde_entry_set_frame (pde, (uint64_t)table);
+		
+		pde_entry* pde2 = &pd->pd[PAGE_DIR_INDEX((uint64_t)(0x0))];
+		pde_entry_add_attr (pde2, PDE_PRESENT);
+		pde_entry_add_attr (pde2, PDE_WRITABLE);
+		pde_entry_set_frame (pde2, (uint64_t)table2);
 	//! clear directory table and set it as current
-	memset (dir, 0, sizeof (pdirectory));
+		curr_pml4br = (uint64_t)&pml4->pml4;
 
-
+		ptmgr_switch_pml4 (pml4);
 
 }

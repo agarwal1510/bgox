@@ -34,7 +34,7 @@ bool pde_entry_is_user(pde_entry e);
 
 void pdp_entry_add_attr(pdp_entry *e, uint64_t attr);
 
-void pdp_entry_del_attr(ptp_entry *e, uint64_t attr);
+void pdp_entry_del_attr(pdp_entry *e, uint64_t attr);
 
 void pdp_entry_set_frame(pdp_entry *e, uint64_t phy_addr);
 
