@@ -43,6 +43,7 @@ void start(uint32_t *modulep, void *physbase, void *physfree)
   kprintf("malloc'ed again %p\n", ptr4);
   free(ptr3);
   free(ptr4);
+  vmem_init(physbase);
   //init_page_table(num_pages);
   kprintf("physfree %p\n", (uint64_t)physfree);
   kprintf("tarfs in [%p:%p]\n", &_binary_tarfs_start, &_binary_tarfs_end);

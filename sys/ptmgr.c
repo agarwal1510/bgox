@@ -174,36 +174,24 @@ void vmem_init(void *physbase){
 				return;
 
 		//! allocates 3gb page table
-		ptable* table2 = (ptable*) kmalloc (1);
-		if (!table2)
-				return;
+//		ptable* table2 = (ptable*) kmalloc (1);
+//		if (!table2)
+//				return;
 
 		//! clear page table
 //		vimmngr_ptable_clear (table);
 		memset(table, 0, 0x1000);
 
-		for (int i=0, frame=0x0, virt=0x00000000; i<512; i++, frame+=4096, virt+=4096) {
+//		for (int i=0, frame=0x0, virt=0x00000000; i<512; i++, frame+=4096, virt+=4096) {
 
 				//! create a new page
-				pte_entry page=0;
-				pte_entry_add_attr(&page, PTE_PRESENT);
-				pte_entry_set_frame (&page, frame);
+//				pte_entry page=0;
+//				pte_entry_add_attr(&page, PTE_PRESENT);
+//				pte_entry_set_frame (&page, frame);
 
 				//! ...and add it to the page table
-				table->pt[PAGE_TABLE_INDEX(virt)] = page;
-		}
-
-		for (int i=0, frame=(uint64_t)physbase, virt=(uint64_t)(KERNEL_VADDR+physbase); i<512; i++, frame+=4096, virt+=4096) {
-
-				//! create a new page
-				pte_entry page=0;
-				pte_entry_add_attr(&page, PTE_PRESENT);
-				pte_entry_set_frame (&page, frame);
-
-				//! ...and add it to the page table
-				table2->pt[PAGE_TABLE_INDEX (virt) ] = page;
-		}
-
+//				table->pt[PAGE_TABLE_INDEX(virt)] = page;
+//		}
 		pml4table* pml4 = (pml4table*) kmalloc(1);
 		if (!pml4)
 			return;
@@ -219,49 +207,83 @@ void vmem_init(void *physbase){
 			return;
 		memset (pd, 0, sizeof (pd));
 		
-		
-		pdptable* pdp2 = (pdptable*) kmalloc(1);
-		if (!pdp2)
-			return;
-		memset (pdp2, 0, sizeof (pdp2));
-		
-		pdtable* pd2 = (pdtable*) kmalloc(1);
-		if (!pd2)
-			return;
-		memset (pd2, 0, sizeof (pd2));
 
-		pml4_entry* pml4e = &pml4->pml4 [PAGE_PML4_INDEX((uint64_t)(KERNEL_VADDR+physbase))];
-		pml4_entry_add_attr (pml4e, PML4_PRESENT);
-		pml4_entry_add_attr (pml4e, PML4_WRITABLE);
-		pml4_entry_set_frame (pml4e, (uint64_t)pdp);
-		
-		pml4_entry* pml4e2 = &pml4->pml4 [PAGE_PML4_INDEX((uint64_t)(0x0))];
-		pml4_entry_add_attr (pml4e2, PML4_PRESENT);
-		pml4_entry_add_attr (pml4e2, PML4_WRITABLE);
-		pml4_entry_set_frame (pml4e2, (uint64_t)pdp2);
+		for (int i=0, frame=(uint64_t)physbase, virt=(uint64_t)(KERNEL_VADDR+physbase); i<512; i++, frame+=4096, virt+=4096) {
 
-		pdp_entry* pdpe = &pdp->pdp[PAGE_PDP_INDEX((uint64_t)(KERNEL_VADDR+physbase))];
-		pdp_entry_add_attr (pdpe, PDP_PRESENT);
-		pdp_entry_add_attr (pdpe, PDP_WRITABLE);
-		pdp_entry_set_frame (pdpe, (uint64_t)pd);
+				//! create a new page
+				pte_entry page=0;
+				pte_entry_add_attr(&page, PTE_PRESENT);
+				pte_entry_add_attr(&page, PTE_WRITABLE);
+				pte_entry_set_frame (&page, frame);
+
+				//! ...and add it to the page table
+				table->pt[PAGE_TABLE_INDEX (virt) ] = page;
+
+				pde_entry pde = 0;
+				pde_entry_add_attr(&pde, PDE_PRESENT);
+				pde_entry_add_attr(&pde, PDE_WRITABLE);
+				pde_entry_set_frame(&pde, (uint64_t)pte_entry_get_pfn(page));
+				pd->pd[PAGE_DIR_INDEX((virt))] = pde;
+				
+				pdp_entry pdpe = 0;
+				pdp_entry_add_attr(&pdpe, PDP_PRESENT);
+				pdp_entry_add_attr(&pdpe, PDP_WRITABLE);
+				pdp_entry_set_frame(&pdpe, (uint64_t)pdp_entry_get_pfn(pde));
+				pdp->pdp[PAGE_PDP_INDEX((virt))] = pdpe;
+				
+				pml4_entry pml4e = 0;
+				pml4_entry_add_attr(&pml4e, PDE_PRESENT);
+				pml4_entry_add_attr(&pml4e, PDE_WRITABLE);
+				pml4_entry_set_frame(&pml4e, (uint64_t)pml4_entry_get_pfn(pdpe));
+				pml4->pml4[PAGE_PML4_INDEX((uint64_t)(virt))] = pml4e;
+		}
+		uint64_t virt = (uint64_t)(KERNEL_VADDR+physbase);
+		kprintf("\nVIRTUAL: %p\n", (uint64_t)virt);
+		kprintf("\nTRANSLATE: %p\n", (uint64_t)pte_entry_get_pfn(table->pt[PAGE_TABLE_INDEX(virt)]));
 		
-		pdp_entry* pdpe2 = &pdp->pdp[PAGE_PDP_INDEX((uint64_t)(0x0))];
-		pdp_entry_add_attr (pdpe2, PDP_PRESENT);
-		pdp_entry_add_attr (pdpe2, PDP_WRITABLE);
-		pdp_entry_set_frame (pdpe2, (uint64_t)pd2);
 		
-		pde_entry* pde = &pd->pd[PAGE_DIR_INDEX((uint64_t)(KERNEL_VADDR+physbase))];
-		pde_entry_add_attr (pde, PDE_PRESENT);
-		pde_entry_add_attr (pde, PDE_WRITABLE);
-		pde_entry_set_frame (pde, (uint64_t)table);
+//		pdptable* pdp2 = (pdptable*) kmalloc(1);
+//		if (!pdp2)
+//			return;
+//		memset (pdp2, 0, sizeof (pdp2));
 		
-		pde_entry* pde2 = &pd->pd[PAGE_DIR_INDEX((uint64_t)(0x0))];
-		pde_entry_add_attr (pde2, PDE_PRESENT);
-		pde_entry_add_attr (pde2, PDE_WRITABLE);
-		pde_entry_set_frame (pde2, (uint64_t)table2);
+//		pdtable* pd2 = (pdtable*) kmalloc(1);
+//		if (!pd2)
+//			return;
+//		memset (pd2, 0, sizeof (pd2));
+
+//		pml4_entry* pml4e = &pml4->pml4 [PAGE_PML4_INDEX((uint64_t)(KERNEL_VADDR+physbase))];
+//		pml4_entry_add_attr (pml4e, PML4_PRESENT);
+///		pml4_entry_add_attr (pml4e, PML4_WRITABLE);
+//		pml4_entry_set_frame (pml4e, (uint64_t)pdp);
+//		
+//		pml4_entry* pml4e2 = &pml4->pml4 [PAGE_PML4_INDEX((uint64_t)(0x0))];
+//		pml4_entry_add_attr (pml4e2, PML4_PRESENT);
+//		pml4_entry_add_attr (pml4e2, PML4_WRITABLE);
+//		pml4_entry_set_frame (pml4e2, (uint64_t)pdp2);
+
+//		pdp_entry* pdpe = &pdp->pdp[PAGE_PDP_INDEX((uint64_t)(KERNEL_VADDR+physbase))];
+//		pdp_entry_add_attr (pdpe, PDP_PRESENT);
+//		pdp_entry_add_attr (pdpe, PDP_WRITABLE);
+//		pdp_entry_set_frame (pdpe, (uint64_t)pd);
+		
+//		pdp_entry* pdpe2 = &pdp->pdp[PAGE_PDP_INDEX((uint64_t)(0x0))];
+//		pdp_entry_add_attr (pdpe2, PDP_PRESENT);
+//		pdp_entry_add_attr (pdpe2, PDP_WRITABLE);
+//		pdp_entry_set_frame (pdpe2, (uint64_t)pd2);
+		
+//		pde_entry* pde = &pd->pd[PAGE_DIR_INDEX((uint64_t)(KERNEL_VADDR+physbase))];
+//		pde_entry_add_attr (pde, PDE_PRESENT);
+//		pde_entry_add_attr (pde, PDE_WRITABLE);
+//		pde_entry_set_frame (pde, (uint64_t)table);
+		
+//		pde_entry* pde2 = &pd->pd[PAGE_DIR_INDEX((uint64_t)(0x0))];
+//		pde_entry_add_attr (pde2, PDE_PRESENT);
+//		pde_entry_add_attr (pde2, PDE_WRITABLE);
+//		pde_entry_set_frame (pde2, (uint64_t)table2);
 	//! clear directory table and set it as current
 		curr_pml4br = (uint64_t)&pml4->pml4;
 
-		ptmgr_switch_pml4 (pml4);
-
+//		ptmgr_switch_pml4 (pml4);
+//		ptmgr_paging_enable(true);
 }

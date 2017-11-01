@@ -96,5 +96,6 @@ enum PAGE_PML4_FLAGS {
 	PML4_FRAME			=	0x0000FFFFFFFFF000,	//1111111111111111111000000000000
 };
 void init_page_table(uint64_t num_pages);
+void vmem_init(void* physbase);
 
 #endif
