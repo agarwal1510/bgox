@@ -37,35 +37,24 @@ void init_page_table(uint64_t num_pages) {
 	
 }
 
-void	ptmgr_paging_enable (bool b) {
-
-#ifdef _MSC_VER
-	_asm_ {
-		mov	eax, cr0
-		cmp [b], 1
-		je	enable
-		jmp disable
-enable:
-		or eax, 0x80000000		//set bit 31
-		mov	cr0, eax
-		jmp done
-disable:
-		and eax, 0x7FFFFFFF		//clear bit 31
-		mov	cr0, eax
-done:
+void ptmgr_paging_enable (bool b) {
+	
+	uint64_t cr0;
+	__asm__ volatile ("mov %%cr0, %0;" : "=b" (cr0):);
+	if (b) {
+		cr0 |= 0x80000000;
+		__asm__ volatile ("mov %0, %%cr0;" :: "b" (cr0));
+	} else {
+		cr0 &= 0x7FFFFFFF;
+		__asm__ volatile ("mov %0, %%cr0;" :: "b" (cr0));
 	}
-#endif
 }
 
 
 void ptmgr_load_PML4BR (uint64_t addr) {
 
-#ifdef _MSC_VER
-	_asm {
-		mov	eax, [addr]
-		mov	cr3, eax		// PDBR is cr3 register in i86
-	}
-#endif
+	__asm__ volatile ( "mov %0, %%cr3;"
+			 :: "r" (addr));
 }
 
 // PTE ROUTINE START
