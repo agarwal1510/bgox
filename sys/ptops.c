@@ -14,7 +14,7 @@ void pte_entry_del_attr(pte_entry *e, uint64_t attr){
 void pte_entry_set_frame(pte_entry *e, uint64_t phy_addr){
 	
 	
-	*e = (*e & ~PTE_FRAME) |(phy_addr);
+	*e = (*e & ~PTE_FRAME) |((uint64_t)phy_addr << (uint64_t)12);
 
 }
 
@@ -55,7 +55,8 @@ void pde_entry_del_attr(pde_entry *e, uint64_t attr){
 void pde_entry_set_frame(pde_entry *e, uint64_t phy_addr){
 	
 //	*e = (*e & 0xffful) | (phy_addr << 12);
-	*e = (*e & ~PTE_FRAME) |(phy_addr << 12);
+	*e = (*e & ~PTE_FRAME) |((uint64_t)phy_addr << (uint64_t)12);
+//	*e = (*e & ~PTE_FRAME) |(phy_addr << 12);
 
 }
 
@@ -96,7 +97,8 @@ void pdp_entry_del_attr(pdp_entry *e, uint64_t attr){
 void pdp_entry_set_frame(pdp_entry *e, uint64_t phy_addr){
 
      //   *e = (*e & 0xffful) | (phy_addr << 12);
-	*e = (*e & ~PTE_FRAME) |(phy_addr << 12);
+	*e = (*e & ~PTE_FRAME) |((uint64_t)phy_addr << (uint64_t)12);
+//	*e = (*e & ~PTE_FRAME) |(phy_addr << 12);
 
 }
 
@@ -136,8 +138,9 @@ void pml4_entry_del_attr(pml4_entry *e, uint64_t attr){
 
 void pml4_entry_set_frame(pml4_entry *e, uint64_t phy_addr){
 
+	*e = (*e & ~PTE_FRAME) |((uint64_t)phy_addr << (uint64_t)12);
     //    *e = (*e & 0xffful) | (phy_addr << 12);
-	*e = (*e & ~PTE_FRAME) |(phy_addr << 12);
+	//*e = (*e & ~PTE_FRAME) |(phy_addr << 12);
 
 }
 

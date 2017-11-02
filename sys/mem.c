@@ -2,7 +2,7 @@
 #include <sys/defs.h>
 #include <sys/kprintf.h>
 #include <sys/ptops.h>
-
+#include <sys/ptmgr.h>
 struct page *free_list;
 
 void memset(void *address, int value, int size);
@@ -76,7 +76,9 @@ uint64_t *kmalloc(uint64_t size){
 				temp->block_size = pages;
 				temp = temp->next;
 			}
-			return ret;
+//			uint64_t base = KERNEL_VADDR;
+			kprintf("%p %p", KERNEL_VADDR, ret);
+			return (uint64_t *)((uint64_t)ret);
 		}
 		temp = temp->next;
 		count++;
@@ -102,4 +104,3 @@ void memset (void *address, int value, int size) {
 		for (int i = 0; i< size; i++)
 			*p++ = (unsigned char)value;       
 }
-
