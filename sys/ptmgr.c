@@ -208,7 +208,7 @@ void vmem_init(void *physbase){
 		memset (pd, 0, sizeof (pd));
 		
 
-		for (int i=0, frame=(uint64_t)physbase, virt=(uint64_t)(KERNEL_VADDR+physbase); i<512; i++, frame+=4096, virt+=4096) {
+		for (int i=0, frame=(uint64_t)physbase, virt=(uint64_t)(KERNEL_VADDR+physbase); i<12; i++, frame+=4096, virt+=4096) {
 
 				//! create a new page
 				pte_entry page=0;
@@ -222,23 +222,28 @@ void vmem_init(void *physbase){
 				pde_entry pde = 0;
 				pde_entry_add_attr(&pde, PDE_PRESENT);
 				pde_entry_add_attr(&pde, PDE_WRITABLE);
-				pde_entry_set_frame(&pde, (uint64_t)pte_entry_get_pfn(page));
+				pde_entry_set_frame(&pde, (uint64_t)table);
 				pd->pd[PAGE_DIR_INDEX((virt))] = pde;
 				
 				pdp_entry pdpe = 0;
 				pdp_entry_add_attr(&pdpe, PDP_PRESENT);
 				pdp_entry_add_attr(&pdpe, PDP_WRITABLE);
-				pdp_entry_set_frame(&pdpe, (uint64_t)pdp_entry_get_pfn(pde));
+				pdp_entry_set_frame(&pdpe, (uint64_t)pd);
 				pdp->pdp[PAGE_PDP_INDEX((virt))] = pdpe;
 				
 				pml4_entry pml4e = 0;
 				pml4_entry_add_attr(&pml4e, PDE_PRESENT);
 				pml4_entry_add_attr(&pml4e, PDE_WRITABLE);
-				pml4_entry_set_frame(&pml4e, (uint64_t)pml4_entry_get_pfn(pdpe));
+				pml4_entry_set_frame(&pml4e, (uint64_t)pdp);
 				pml4->pml4[PAGE_PML4_INDEX((uint64_t)(virt))] = pml4e;
+				
+				kprintf("%p %p %p %p\n", pml4->pml4[PAGE_PML4_INDEX((uint64_t)(virt))], pdpe, pde, page);
+				//kprintf("V: %p T %p", virt, frame);
 		}
 		uint64_t virt = (uint64_t)(KERNEL_VADDR+physbase);
 		kprintf("\nVIRTUAL: %p\n", (uint64_t)virt);
+		kprintf("\ntest: %p\n", 0x20000000 << 3);
+		kprintf("\nSHIFT: %p %d\n",(uint64_t)physbase, (uint64_t)(KERNEL_VADDR+physbase) >> 12);
 		kprintf("\nTRANSLATE: %p\n", (uint64_t)pte_entry_get_pfn(table->pt[PAGE_TABLE_INDEX(virt)]));
 		
 		
@@ -284,6 +289,6 @@ void vmem_init(void *physbase){
 	//! clear directory table and set it as current
 		curr_pml4br = (uint64_t)&pml4->pml4;
 
-//		ptmgr_switch_pml4 (pml4);
-//		ptmgr_paging_enable(true);
+		//ptmgr_switch_pml4 (pml4);
+		//ptmgr_paging_enable(true);
 }

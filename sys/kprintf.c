@@ -133,7 +133,7 @@ void str_reverse(char *str, char *dest){
 	dest[i] = '\0';
 }
 int itoa(unsigned long long num, char *dest, int base){
-	int i = 0;
+	unsigned long long i = 0;
 	if (num == 0){
 		dest[i++] = '0';
 		dest[i++] = 0;
@@ -150,7 +150,7 @@ int itoa(unsigned long long num, char *dest, int base){
 		num /= 10;
 		}
 		else if (base == 16){
-			int rem = num % 16;
+			unsigned long long rem = num % 16;
 			if (rem > 9){
 				dest[i++] = rem - 10 + 'a';
 			}
@@ -267,7 +267,7 @@ void kprintf(const char *fmt, ...)
 					str_substr(fmt_const, 2, str_len(fmt_const)-1, trail);
 					const char* const_trail = trail;
 
-					const int num = va_arg(al, int);
+					const unsigned long long num = va_arg(al, uint64_t);
 					char temp_tr[FMT_LEN];
 					itoa(num, temp_tr, base);
 					
