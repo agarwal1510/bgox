@@ -64,12 +64,13 @@ uint64_t *kmalloc(uint64_t size){
 		pages = size/PAGE_SIZE;
 	}
 	struct page *temp = free_list;
-	kprintf("Temp addr: %p", (uint64_t)temp);
+	//kprintf("Temp addr: %p", (uint64_t)temp);
 	while(temp != NULL) {
 		if (temp->used == 0 && temp->block_size >= pages) {
 			temp->used = 1;
 			temp->block_size = pages;
 			uint64_t *ret = (uint64_t *)(count*PAGE_SIZE);
+			memset(ret, 0, pages*PAGE_SIZE);
 			temp = temp->next;
 			while (--pages != 0) {
 				temp->used = 1;
@@ -77,7 +78,7 @@ uint64_t *kmalloc(uint64_t size){
 				temp = temp->next;
 			}
 //			uint64_t base = KERNEL_VADDR;
-			kprintf("%p %p", KERNEL_VADDR, ret);
+			kprintf("\n%p", ret);
 			return (uint64_t *)((uint64_t)ret);
 		}
 		temp = temp->next;
