@@ -44,14 +44,14 @@ void calculate_free_list(uint64_t num_pages, uint64_t physfree) {
 	free_list->used = -1;
 	//Init pages occupied by freelist in freelist->used = 1;
 	int used_flspace = num_pages*sizeof(struct page)/PAGE_SIZE;
-	kprintf("loop ctr: %d %d %d", used_ctr, free_ctr, used_flspace);
+//	kprintf("loop ctr: %d %d %d", used_ctr, free_ctr, used_flspace);
 	while(used_flspace != 0){
 		free_ptr->used = 1;
 		free_ptr->block_size = used_flspace;
 		free_ptr = free_ptr->next;
 		used_flspace--;
 	}
-	kprintf("\nLast free list addr: %p", (uint64_t)free_ptr);
+//	kprintf("\nLast free list addr: %p", (uint64_t)free_ptr);
 	free_list = (struct page*)physfree;
 }
 
@@ -78,7 +78,7 @@ uint64_t *kmalloc(uint64_t size){
 				temp = temp->next;
 			}
 //			uint64_t base = KERNEL_VADDR;
-			kprintf("\n%p", ret);
+//			kprintf("\n%p", ret);
 			return ret;
 		}
 		temp = temp->next;

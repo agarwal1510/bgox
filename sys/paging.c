@@ -23,7 +23,7 @@ static uint64_t* alloc_pde(uint64_t *pdpe_table, int pdpe_off)
 
 static uint64_t* alloc_pdpe(uint64_t *pml4_table, int pml4_off)
 {
-	kprintf("PML4 off: %d %p", pml4_off, pml4_table);
+//	kprintf("PML4 off: %d %p", pml4_off, pml4_table);
     uint64_t* pdpe_table = kmalloc(1);
     pml4_table[pml4_off] = (uint64_t)(pdpe_table) | RW_KERNEL_FLAGS;   
     return (uint64_t*)VADDR(pdpe_table);
@@ -43,26 +43,26 @@ static void init_map_virt_phys_addr(uint64_t vaddr, uint64_t paddr, uint64_t no_
     pdpe_off = (vaddr >> 30) & 0x1FF;
     pml4_off = (vaddr >> 39) & 0x1FF;
 
-     kprintf(" $$ NEW MAPPING $$ OFF => %p %d %d %d %d ", vaddr, pml4_off, pdpe_off, pde_off, pte_off);
+//     kprintf(" $$ NEW MAPPING $$ OFF => %p %d %d %d %d ", vaddr, pml4_off, pdpe_off, pde_off, pte_off);
 
     phys_addr = (uint64_t) *(ker_pml4_t + pml4_off);
-    kprintf("\nPML4: %p %p %p",phys_addr, ker_pml4_t, pml4_off);
+//    kprintf("\nPML4: %p %p %p",phys_addr, ker_pml4_t, pml4_off);
     if (IS_PRESENT_PAGE(phys_addr)) {
 	    phys_addr = phys_addr >> 12 << 12; 
         pdpe_table =(uint64_t*)phys_addr; 
         phys_addr = (uint64_t) *(pdpe_table + pdpe_off);
-	kprintf("\nInside pml4: %p %p %d", phys_addr, pdpe_table, pdpe_off);
+//	kprintf("\nInside pml4: %p %p %d", phys_addr, pdpe_table, pdpe_off);
         if (IS_PRESENT_PAGE(phys_addr)) {
 		phys_addr = phys_addr >> 12 << 12;
             pde_table =(uint64_t*) phys_addr; 
 
             phys_addr  = (uint64_t) *(pde_table + pde_off);
-		kprintf("\nInside pdp: %p %p %d", phys_addr, pde_table, pde_off);
+//		kprintf("\nInside pdp: %p %p %d", phys_addr, pde_table, pde_off);
             if (IS_PRESENT_PAGE(phys_addr)) {
 		    phys_addr = phys_addr >> 12 << 12;
                 pte_table =(uint64_t*) phys_addr;
-		uint64_t ptee = (uint64_t) *(pte_table + pte_off);
-		kprintf("\nInside pde: %p %p %p", phys_addr, pte_table, ptee);
+//		uint64_t ptee = (uint64_t) *(pte_table + pte_off);
+//		kprintf("\nInside pde: %p %p %p", phys_addr, pte_table, ptee);
             } else {
                 pte_table = alloc_pte(pde_table, pde_off);
             }
@@ -77,7 +77,7 @@ static void init_map_virt_phys_addr(uint64_t vaddr, uint64_t paddr, uint64_t no_
     }
 
     phys_addr = paddr;  
-	kprintf("Pte off: %d", pte_off);
+//	kprintf("Pte off: %d", pte_off);
     if (no_of_pages + pte_off <= ENTRIES_PER_PTE) {
         for (i = pte_off; i < (pte_off + no_of_pages); i++) {
             pte_table[i] = phys_addr | RW_KERNEL_FLAGS; 
@@ -85,11 +85,11 @@ static void init_map_virt_phys_addr(uint64_t vaddr, uint64_t paddr, uint64_t no_
 	    //break;
 	    phys_addr += PAGESIZE;
         }
-        kprintf("\n SIZE = %d PDPE Address %p, PDE Address %p, PTE Address %p", no_of_pages, pdpe_table , pde_table, pte_table);
+  //      kprintf("\n SIZE = %d PDPE Address %p, PDE Address %p, PTE Address %p", no_of_pages, pdpe_table , pde_table, pte_table);
     } else {
         int lno_of_pages = no_of_pages, no_of_pte_t;
 
-        kprintf("\n SIZE = %d PDPE Address %p, PDE Address %p, PTE Address %p", lno_of_pages, pdpe_table ,pde_table, pte_table);
+  //      kprintf("\n SIZE = %d PDPE Address %p, PDE Address %p, PTE Address %p", lno_of_pages, pdpe_table ,pde_table, pte_table);
         for ( i = pte_off ; i < ENTRIES_PER_PTE; i++) {
             pte_table[i] = phys_addr | RW_KERNEL_FLAGS;
             phys_addr += PAGESIZE;
@@ -99,7 +99,7 @@ static void init_map_virt_phys_addr(uint64_t vaddr, uint64_t paddr, uint64_t no_
 
         for (j = 1; j <= no_of_pte_t; j++) {   
             pte_table = alloc_pte(pde_table, pde_off+j);
-            kprintf("\n SIZE = %d PDPE Address %p, PDE Address %p, PTE Address %p", lno_of_pages, pdpe_table ,pde_table, pte_table);
+ //           kprintf("\n SIZE = %d PDPE Address %p, PDE Address %p, PTE Address %p", lno_of_pages, pdpe_table ,pde_table, pte_table);
             for(k = 0; k < ENTRIES_PER_PTE; k++ ) { 
                 pte_table[k] = phys_addr | RW_KERNEL_FLAGS;
                 phys_addr += PAGESIZE;
@@ -108,7 +108,7 @@ static void init_map_virt_phys_addr(uint64_t vaddr, uint64_t paddr, uint64_t no_
         lno_of_pages = lno_of_pages - (ENTRIES_PER_PTE * pte_off);
         pte_table = alloc_pte(pde_table, pde_off+j);
         
-        kprintf("\n SIZE = %d PDPE Address %p, PDE Address %p, PTE Address %p", lno_of_pages, pdpe_table ,pde_table, pte_table);
+ //       kprintf("\n SIZE = %d PDPE Address %p, PDE Address %p, PTE Address %p", lno_of_pages, pdpe_table ,pde_table, pte_table);
         for(k = 0; k < lno_of_pages; k++ ) { 
             pte_table[k] = phys_addr | RW_KERNEL_FLAGS;
             phys_addr += PAGESIZE;
