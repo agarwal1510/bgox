@@ -1,7 +1,7 @@
 #include <sys/mem.h>
 #include <sys/kprintf.h>
 
-#define RW_KERNEL_FLAGS 3UL
+#define RW_KERNEL_FLAGS 7UL
 #define VADDR(PADDR) (KERNEL_VADDR + (uint64_t)PADDR)
 #define PAGESIZE 4096
 #define ENTRIES_PER_PTE 512
@@ -10,14 +10,14 @@
 static uint64_t* alloc_pte(uint64_t *pde_table, int pde_off)
 {
 	uint64_t *pte_table = kmalloc(1);
-    pde_table[pde_off] = ((uint64_t)VADDR(pte_table)) | RW_KERNEL_FLAGS;   
+    pde_table[pde_off] = (uint64_t)(pte_table) | RW_KERNEL_FLAGS;   
     return (uint64_t*)VADDR(pte_table);
 } 
 
 static uint64_t* alloc_pde(uint64_t *pdpe_table, int pdpe_off)
 {
     uint64_t* pde_table = kmalloc(1);
-    pdpe_table[pdpe_off] = ((uint64_t)VADDR(pde_table)) | RW_KERNEL_FLAGS;   
+    pdpe_table[pdpe_off] = (uint64_t)(pde_table) | RW_KERNEL_FLAGS;   
     return (uint64_t*)VADDR(pde_table);
 }
 
@@ -25,16 +25,12 @@ static uint64_t* alloc_pdpe(uint64_t *pml4_table, int pml4_off)
 {
 	kprintf("PML4 off: %d %p", pml4_off, pml4_table);
     uint64_t* pdpe_table = kmalloc(1);
-    pml4_table[pml4_off] = ((uint64_t)VADDR(pdpe_table)) | RW_KERNEL_FLAGS;   
+    pml4_table[pml4_off] = (uint64_t)(pdpe_table) | RW_KERNEL_FLAGS;   
     return (uint64_t*)VADDR(pdpe_table);
 }
 
 static uint64_t *ker_pml4_t;
 static uint64_t *ker_cr3;
-uint64_t* get_ker_pml4_t()
-{
-    return ker_pml4_t;
-}
 
 static void init_map_virt_phys_addr(uint64_t vaddr, uint64_t paddr, uint64_t no_of_pages)
 {
@@ -131,7 +127,7 @@ void init_paging(uint64_t kernmem, uint64_t physbase, uint64_t no_of_pages)
     // Allocate free memory for PML4 table 
     ker_cr3 = kmalloc(1);
 
-    ker_pml4_t = (uint64_t*) VADDR(ker_cr3);
+    ker_pml4_t = (uint64_t *) VADDR(ker_cr3);
     //kprintf("\tKernel PML4t:%p", ker_pml4_t);
 
     //ker_pml4_t[510] = ((uint64_t)ker_cr3) | RW_KERNEL_FLAGS;   
@@ -140,15 +136,16 @@ void init_paging(uint64_t kernmem, uint64_t physbase, uint64_t no_of_pages)
     // Mappings for virtual address range [0xFFFFFFFF80200000, 0xFFFFFFFF80406000]
     // to physical address range [0x200000, 0x406000]
     // 2 MB for Kernal + 6 Pages for PML4, PDPE, PDE, PTE(3) tables
-    init_map_virt_phys_addr(kernmem, physbase, 518);
+    init_map_virt_phys_addr(0x0, 0x0, 24632);
+    init_map_virt_phys_addr(kernmem, physbase, 24120);
 
     // Use existing Video address mapping: Virtual memory 0xFFFFFFFF800B8000 to Physical memory 0xB8000
     
     init_map_virt_phys_addr(0xFFFFFFFF800B8000, 0xB8000, 1);
-    init_map_virt_phys_addr(0xFFFFFFFF800B8000, 0xB8000, 1);
+    //init_map_virt_phys_addr(0xFFFFFFFF800B8000, 0xB8000, 1);
     
-    //LOAD_CR3((uint64_t)ker_cr3);
-    kprintf("CR3 value: %p %p", (uint64_t)ker_cr3, (uint64_t)kernmem);
+    LOAD_CR3((uint64_t)ker_cr3);
+    //kprintf("CR3 value: %p %p", (uint64_t)ker_cr3, (uint64_t)kernmem);
     // Set CR3 register to address of PML4 table
     
     // Set value of top virtual address

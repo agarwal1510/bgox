@@ -2,7 +2,7 @@
 #include <sys/gdt.h>
 #include <sys/kprintf.h>
 #include <sys/tarfs.h>
-#include <sys/ahci.h>
+//#include <sys/ahci.h>
 #include <sys/idt.h>
 #include <sys/pci.h>
 #include <sys/mem.h>
@@ -25,10 +25,9 @@ void start(uint32_t *modulep, void *physbase, void *physfree)
   for(smap = (struct smap_t*)(modulep+2); smap < (struct smap_t*)((char*)modulep+modulep[1]+2*4); ++smap) {
     if (smap->type == 1 /* memory */ && smap->length != 0) {
       last_mem_ptr = smap->base + smap->length;
-      //kprintf("Available Physical Memory [%p-%p]\n", smap->base, last_mem_ptr);
+      kprintf("Available Physical Memory [%p-%p]\n", smap->base, last_mem_ptr);
     }
   }
- // kmain();
   //kprintf("last page: %p\n", last_mem_ptr);
   uint64_t num_pages = last_mem_ptr/0x1000;
   calculate_free_list(num_pages, (uint64_t)physfree);
@@ -46,8 +45,9 @@ void start(uint32_t *modulep, void *physbase, void *physfree)
   //vmem_init(physbase);
   init_paging(KERNEL_VADDR + (uint64_t)physbase, (uint64_t)physbase, 800);
   //init_page_table(num_pages);
- //kprintf("physfree %p\n", (uint64_t)physfree);
-  //kprintf("tarfs in [%p:%p]\n", &_binary_tarfs_start, &_binary_tarfs_end);
+ kprintf("physfree %p\n", (uint64_t)physfree);
+  kprintf("tarfs in [%p:%p]\n", &_binary_tarfs_start, &_binary_tarfs_end);
+  kmain();
 //  find_ahci();
   while(1);
 }

@@ -74,9 +74,9 @@ bool allocate_page_pt(pte_entry *e){
 
 void free_page_pt(pte_entry *e){
 
-	void *p = (void *)pte_entry_get_pfn(*e);
-	if (p)
-		free(p);
+	//void *p = (void *)pte_entry_get_pfn(*e);
+	//if (p)
+	//	free(p);
 	
 	pte_entry_del_attr(e, PTE_PRESENT);
 }

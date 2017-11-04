@@ -6,7 +6,7 @@
 struct page *free_list;
 
 void memset(void *address, int value, int size);
-
+/*
 struct page *get_page_at_address(uint64_t *address) {
 	uint64_t page_num = (uint64_t)address/(uint64_t)PAGE_SIZE; 
 	return (struct page*)free_list + page_num*sizeof(struct page); 
@@ -17,7 +17,7 @@ int get_num_pages_allocated(uint64_t *ptr) {
 	struct page *corresponding_page = free_list + page_num*sizeof(struct page);
 	return corresponding_page->block_size;
 }
-
+*/
 void calculate_free_list(uint64_t num_pages, uint64_t physfree) {
 	free_list = (struct page*)physfree;
 	uint64_t used_pages = physfree/0x1000;
@@ -69,7 +69,7 @@ uint64_t *kmalloc(uint64_t size){
 		if (temp->used == 0 && temp->block_size >= pages) {
 			temp->used = 1;
 			temp->block_size = pages;
-			uint64_t *ret = (uint64_t *)(count*PAGE_SIZE);
+			uint64_t *ret = (uint64_t *)((count+1)*PAGE_SIZE);
 			memset(ret, 0, pages*PAGE_SIZE);
 			temp = temp->next;
 			while (--pages != 0) {
@@ -79,14 +79,14 @@ uint64_t *kmalloc(uint64_t size){
 			}
 //			uint64_t base = KERNEL_VADDR;
 			kprintf("\n%p", ret);
-			return (uint64_t *)((uint64_t)ret);
+			return ret;
 		}
 		temp = temp->next;
 		count++;
 	}
 	return NULL;
 }
-
+/*
 void free(uint64_t *ptr){
 	int num_pages = get_num_pages_allocated(ptr);
 	kprintf("Pages Allocated: %d", num_pages);
@@ -99,7 +99,7 @@ void free(uint64_t *ptr){
 		num_pages--;
 	}	
 }
-
+*/
 void memset (void *address, int value, int size) {
 		unsigned char *p = address;
 		for (int i = 0; i< size; i++)
