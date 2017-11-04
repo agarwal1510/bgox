@@ -2,6 +2,8 @@
 #include<sys/kprintf.h>
 #include <sys/portio.h>
 #include <sys/ahci.h>
+#include <sys/mem.h>
+
 #define BUS_NUM 256
 #define DEVICE_NUM 32
 #define FUNC_NUM 8
@@ -38,7 +40,6 @@ uint64_t ahci_addr;
 void init_write();
 void stop_cmd(hba_port_t *port);
 void start_cmd(hba_port_t *port);
-void memset(void *address, int value, int size);
 
 void setBits(hba_port_t *port) {
 
@@ -67,6 +68,7 @@ void setBits(hba_port_t *port) {
         for (int i=0; i < 1000000; i++);
         port->sctl = 0x300;
         port->serr_rwc = 0xffffffff;
+	port->cmd |= HBA_PxCMD_ST;
 
 //cmd.st = 0
 //cmd.cr = 0
@@ -108,7 +110,7 @@ void set_bits_after_di(hba_port_t *port) {
 //		break;
 	}
 	kprintf("Over 2\n");
-	port->serr_rwc = 0xffffffff;
+//	port->serr_rwc = 0xffffffff;
 	while(1)
 	{
 		if (port->tfd & HBA_PxTDF_BSY)
@@ -201,11 +203,6 @@ void stop_cmd(hba_port_t *port)
 	port->cmd &= ~HBA_PxCMD_FRE;
 }
 
-void memset(void *address, int value, int size) {
-		unsigned char *p = address;
-		for (int i = 0; i< size; i++)
-				*p++ = (unsigned char)value;
-}
 
 int find_cmdslot(hba_port_t *m_port)
 {
@@ -282,7 +279,7 @@ int read(hba_port_t *port, uint32_t startl, uint32_t starth, uint32_t count, uin
 		cmdfis->counth = (count >> 8 )& 0xff;
 		//kprintf("tfd: %x sstc %x", port->tfd, port->ssts);
 		// The below loop waits until the port is no longer busy before issuing a new command
-		//set_bits_after_di(port);
+		set_bits_after_di(port);
 		while ((port->tfd & (ATA_DEV_BUSY | ATA_DEV_DRQ)) && spin < 1000000)
 		{
 				spin++;
@@ -377,7 +374,7 @@ int write(hba_port_t *port, uint32_t startl, uint32_t starth, uint32_t count, ui
 		cmdfis->countl = count & 0xff;
 		cmdfis->counth = (count >> 8 ) & 0xff;
 
-		//set_bits_after_di(port);
+		set_bits_after_di(port);
 		// The below loop waits until the port is no longer busy before issuing a new command
 		while ((port->tfd & (ATA_DEV_BUSY | ATA_DEV_DRQ)) && spin < 1000000)
 		{
@@ -548,7 +545,7 @@ void init_write(){
 				uint64_t *var = (uint64_t*)((uint64_t)0x300000 + (uint64_t)0x1000*i);
 				*var = 23;
 				setBits(&(((hba_mem_t*)ahci_addr)->ports[0]));
-				set_bits_after_di(&(((hba_mem_t*)ahci_addr)->ports[0]));
+//				set_bits_after_di(&(((hba_mem_t*)ahci_addr)->ports[0]));
 				write(&(((hba_mem_t*)ahci_addr)->ports[0]), 8*i, 0, 1, (uint64_t)(0x300000 + 0x1000*i));
 		}
 		//		kprintf("Before Write: %d\n", TEST_VAR);
@@ -563,7 +560,7 @@ void init_write(){
 		
 		for(int i = 0; i < 1; i++){
 				setBits(&(((hba_mem_t*)ahci_addr)->ports[0]));
-				set_bits_after_di(&(((hba_mem_t*)ahci_addr)->ports[0]));
+//				set_bits_after_di(&(((hba_mem_t*)ahci_addr)->ports[0]));
 				read(&((hba_mem_t*)ahci_addr)->ports[0], 8*i, 0, 1, (uint64_t)0x600000);
 				kprintf("%d ", TEST_OUT);
 		}
