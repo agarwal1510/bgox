@@ -98,4 +98,5 @@ enum PAGE_PML4_FLAGS {
 //void init_page_table(uint64_t num_pages);
 //void vmem_init(void* physbase);
 void init_paging(uint64_t kernmem, uint64_t physbase, uint64_t num_pages);
+void init_map_virt_phys_addr(uint64_t vaddr, uint64_t physaddr, uint64_t num_pages);
 #endif
