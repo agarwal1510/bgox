@@ -4,7 +4,7 @@
 #include <sys/defs.h>
 
 #define PAGE_SIZE  4096
-#define PAGES_PER_PT 512
+#define PAGES_PER_PTE 512
 #define PAGES_PER_PD 512
 #define PAGES_PER_PML4 512
 #define PAGES_PER_PDP 512
@@ -12,6 +12,10 @@
 #define PAGE_DIR_INDEX(x) (((x) >> 21) & 0x1ff)
 #define PAGE_PDP_INDEX(x) (((x) >> 30) & 0x1ff)
 #define PAGE_PML4_INDEX(x) (((x) >> 39) & 0x1ff)
+#define VADDR(PADDR) (KERNEL_VADDR + (uint64_t)PADDR)
+#define IS_PRESENT_PAGE(addr) ((uint64_t)addr & 1)
+#define RW_KERNEL_FLAGS 7UL
+#define ENTRIES_PER_PTE 512
 
 struct page {
 	struct page *next;
@@ -25,7 +29,7 @@ typedef uint64_t pdp_entry;
 typedef uint64_t pml4_entry;
 
 typedef struct ptable {
-	pte_entry pt [PAGES_PER_PT];
+	pte_entry pt [PAGES_PER_PTE];
 }ptable;
 
 typedef struct pdtable {
