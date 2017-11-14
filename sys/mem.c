@@ -79,7 +79,8 @@ uint64_t *kmalloc(uint64_t size){
 			}
 //			uint64_t base = KERNEL_VADDR;
 //			kprintf("\n%p", ret);
-			return ret;
+
+			return (uint64_t *)VADDR(ret);
 		}
 		temp = temp->next;
 		count++;

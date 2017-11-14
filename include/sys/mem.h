@@ -8,7 +8,7 @@
 	int block_size;
 };*/
 
-#define KERNEL_VADDR 0xffffffff80000000
+//#define KERNEL_VADDR 0xffffffff80000000
 
 void calculate_free_list(uint64_t num_pages, uint64_t physfree);
 uint64_t *kmalloc(uint64_t size);

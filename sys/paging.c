@@ -10,14 +10,14 @@
 
 static uint64_t* alloc_pte(uint64_t *pde_table, int pde_off)
 {
-	uint64_t *pte_table = kmalloc(1);
+	uint64_t *pte_table = (uint64_t *)PADDR(kmalloc(1));
     pde_table[pde_off] = (uint64_t)(pte_table) | RW_KERNEL_FLAGS;   
     return (uint64_t*)VADDR(pte_table);
 } 
 
 static uint64_t* alloc_pde(uint64_t *pdpe_table, int pdpe_off)
 {
-    uint64_t* pde_table = kmalloc(1);
+    uint64_t* pde_table = (uint64_t *)PADDR(kmalloc(1));
     pdpe_table[pdpe_off] = (uint64_t)(pde_table) | RW_KERNEL_FLAGS;   
     return (uint64_t*)VADDR(pde_table);
 }
@@ -25,7 +25,7 @@ static uint64_t* alloc_pde(uint64_t *pdpe_table, int pdpe_off)
 static uint64_t* alloc_pdpe(uint64_t *pml4_table, int pml4_off)
 {
 //	kprintf("PML4 off: %d %p", pml4_off, pml4_table);
-    uint64_t* pdpe_table = kmalloc(1);
+    uint64_t* pdpe_table = (uint64_t *)PADDR(kmalloc(1));
     pml4_table[pml4_off] = (uint64_t)(pdpe_table) | RW_KERNEL_FLAGS;   
     return (uint64_t*)VADDR(pdpe_table);
 }
@@ -126,7 +126,7 @@ void LOAD_CR3(uint64_t addr) {
 void init_paging(uint64_t kernmem, uint64_t physbase, uint64_t no_of_pages)
 {
     // Allocate free memory for PML4 table 
-    ker_cr3 = kmalloc(1);
+    ker_cr3 = (uint64_t *)PADDR(kmalloc(1));
 
     ker_pml4_t = (uint64_t *) VADDR(ker_cr3);
     //kprintf("\tKernel PML4t:%p", ker_pml4_t);

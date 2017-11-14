@@ -12,7 +12,9 @@
 #define PAGE_DIR_INDEX(x) (((x) >> 21) & 0x1ff)
 #define PAGE_PDP_INDEX(x) (((x) >> 30) & 0x1ff)
 #define PAGE_PML4_INDEX(x) (((x) >> 39) & 0x1ff)
-#define VADDR(PADDR) (KERNEL_VADDR + (uint64_t)PADDR)
+#define KERNEL_VADDR 0xffffffff80000000
+#define VADDR(PADD) (KERNEL_VADDR + (uint64_t)PADD)
+#define PADDR(VADD) ((uint64_t)VADD - KERNEL_VADDR)
 #define IS_PRESENT_PAGE(addr) ((uint64_t)addr & 1)
 #define RW_KERNEL_FLAGS 7UL
 #define ENTRIES_PER_PTE 512
