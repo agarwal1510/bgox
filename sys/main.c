@@ -5,6 +5,7 @@
 //#include <sys/ahci.h>
 #include <sys/idt.h>
 #include <sys/pci.h>
+#include <sys/apic.h>
 #include <sys/mem.h>
 #include <sys/ptmgr.h>
 
@@ -36,8 +37,9 @@ void start(uint32_t *modulep, void *physbase, void *physfree)
   kprintf("physfree %p\n", (uint64_t)physfree);
   kprintf("tarfs in [%p:%p]\n", &_binary_tarfs_start, &_binary_tarfs_end);
   
-  kmain();
+  //kmain();
 
+  apicMain();
 //  find_ahci();
   while(1);
 }
