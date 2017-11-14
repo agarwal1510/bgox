@@ -1,11 +1,12 @@
 #include <sys/mem.h>
 #include <sys/kprintf.h>
+#include <sys/ptmgr.h>
 
-#define RW_KERNEL_FLAGS 7UL
-#define VADDR(PADDR) (KERNEL_VADDR + (uint64_t)PADDR)
-#define PAGESIZE 4096
-#define ENTRIES_PER_PTE 512
-#define IS_PRESENT_PAGE(addr) ((uint64_t)addr & 1)
+//#define RW_KERNEL_FLAGS 7UL
+//#define VADDR(PADDR) (KERNEL_VADDR + (uint64_t)PADDR)
+//#define PAGESIZE 4096
+//#define ENTRIES_PER_PTE 512
+//#define IS_PRESENT_PAGE(addr) ((uint64_t)addr & 1)
 
 static uint64_t* alloc_pte(uint64_t *pde_table, int pde_off)
 {
@@ -83,7 +84,7 @@ static void init_map_virt_phys_addr(uint64_t vaddr, uint64_t paddr, uint64_t no_
             pte_table[i] = phys_addr | RW_KERNEL_FLAGS; 
             //kprintf("Phys: %p", phys_addr);
 	    //break;
-	    phys_addr += PAGESIZE;
+	    phys_addr += PAGE_SIZE;
         }
   //      kprintf("\n SIZE = %d PDPE Address %p, PDE Address %p, PTE Address %p", no_of_pages, pdpe_table , pde_table, pte_table);
     } else {
@@ -92,7 +93,7 @@ static void init_map_virt_phys_addr(uint64_t vaddr, uint64_t paddr, uint64_t no_
   //      kprintf("\n SIZE = %d PDPE Address %p, PDE Address %p, PTE Address %p", lno_of_pages, pdpe_table ,pde_table, pte_table);
         for ( i = pte_off ; i < ENTRIES_PER_PTE; i++) {
             pte_table[i] = phys_addr | RW_KERNEL_FLAGS;
-            phys_addr += PAGESIZE;
+            phys_addr += PAGE_SIZE;
         }
         lno_of_pages = lno_of_pages - (ENTRIES_PER_PTE - pte_off);
         no_of_pte_t = lno_of_pages/ENTRIES_PER_PTE;
@@ -102,7 +103,7 @@ static void init_map_virt_phys_addr(uint64_t vaddr, uint64_t paddr, uint64_t no_
  //           kprintf("\n SIZE = %d PDPE Address %p, PDE Address %p, PTE Address %p", lno_of_pages, pdpe_table ,pde_table, pte_table);
             for(k = 0; k < ENTRIES_PER_PTE; k++ ) { 
                 pte_table[k] = phys_addr | RW_KERNEL_FLAGS;
-                phys_addr += PAGESIZE;
+                phys_addr += PAGE_SIZE;
             }
         }
         lno_of_pages = lno_of_pages - (ENTRIES_PER_PTE * pte_off);
@@ -111,7 +112,7 @@ static void init_map_virt_phys_addr(uint64_t vaddr, uint64_t paddr, uint64_t no_
  //       kprintf("\n SIZE = %d PDPE Address %p, PDE Address %p, PTE Address %p", lno_of_pages, pdpe_table ,pde_table, pte_table);
         for(k = 0; k < lno_of_pages; k++ ) { 
             pte_table[k] = phys_addr | RW_KERNEL_FLAGS;
-            phys_addr += PAGESIZE;
+            phys_addr += PAGE_SIZE;
         }
     }
 }
