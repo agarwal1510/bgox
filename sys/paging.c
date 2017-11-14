@@ -33,7 +33,7 @@ static uint64_t* alloc_pdpe(uint64_t *pml4_table, int pml4_off)
 static uint64_t *ker_pml4_t;
 static uint64_t *ker_cr3;
 
-static void init_map_virt_phys_addr(uint64_t vaddr, uint64_t paddr, uint64_t no_of_pages)
+void init_map_virt_phys_addr(uint64_t vaddr, uint64_t paddr, uint64_t no_of_pages)
 {
     uint64_t *pdpe_table = NULL, *pde_table = NULL, *pte_table = NULL;
 
@@ -146,7 +146,7 @@ void init_paging(uint64_t kernmem, uint64_t physbase, uint64_t no_of_pages)
     //init_map_virt_phys_addr(0xFFFFFFFF800B8000, 0xB8000, 1);
     
     LOAD_CR3((uint64_t)ker_cr3);
-    //kprintf("CR3 value: %p %p", (uint64_t)ker_cr3, (uint64_t)kernmem);
+    kprintf("CR3 value: %p %p", (uint64_t)ker_cr3, (uint64_t)kernmem);
     // Set CR3 register to address of PML4 table
     
     // Set value of top virtual address
