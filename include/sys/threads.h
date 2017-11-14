@@ -15,9 +15,11 @@ struct pcb {
 	int exit_status;
 };
 
-struct task_list {
-	struct task_list *next;
+struct task_entry {
+	struct task_entry *next;
 	struct pcb *thread;
+	int data;
 };
 
+void switch_thread();
 #endif

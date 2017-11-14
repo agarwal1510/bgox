@@ -8,7 +8,7 @@
 #include <sys/apic.h>
 #include <sys/mem.h>
 #include <sys/ptmgr.h>
-
+#include <sys/threads.h>
 #define INITIAL_STACK_SIZE 4096
 
 uint8_t initial_stack[INITIAL_STACK_SIZE]__attribute__((aligned(16)));
@@ -39,8 +39,9 @@ void start(uint32_t *modulep, void *physbase, void *physfree)
   
   //kmain();
 
-  apicMain();
+//  apicMain();
 //  find_ahci();
+	switch_thread();
   while(1);
 }
 
