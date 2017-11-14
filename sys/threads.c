@@ -47,13 +47,13 @@ void thread2() {
 void switch_thread() {
 	
 	struct pcb *process1 = (struct pcb *) kmalloc(sizeof(struct pcb));
-	void (*funcptr)() = &thread1;
+	void *funcptr = thread1;
 	process1->kstack[STACK_SIZE - 1] = 0x10;
 	process1->kstack[STACK_SIZE - 2] = 0x08;
 	process1->kstack[STACK_SIZE - 3] = 0x200202UL;
 	process1->kstack[STACK_SIZE - 4] = 0x08;
 	process1->kstack[STACK_SIZE - 5] = 0x08;
-	process1->rip = (*funcptr)();
+	process1->rip = funcptr;
 	process1->kstack[STACK_SIZE - 21] = (uint64_t)context_switch;
 	process1->rsp = (uint64_t)&process1->kstack[STACK_SIZE - 22];
 
