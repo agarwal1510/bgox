@@ -330,7 +330,7 @@ void idt_init(void)
 #define IOREDTBL                        0x10
 
 // ------------------------------------------------------------------------------------------------
-static void IoApicOut(uint64_t *base, uint8_t reg, uint32_t val)
+/*static void IoApicOut(uint64_t *base, uint8_t reg, uint32_t val)
 {
     apicwrite(base + IOREGSEL, reg);
     apicwrite(base + IOWIN, val);
@@ -342,31 +342,31 @@ static uint32_t IoApicIn(uint64_t *base, uint8_t reg)
     apicwrite(base + IOREGSEL, reg);
     return apicread(base + IOWIN);
 }
-
+*/
 // ------------------------------------------------------------------------------------------------
 void IoApicSetEntry(uint32_t *base, uint8_t index, uint64_t data)
 {
-    IoApicOut(base, IOREDTBL + index * 2, (uint32_t)data);
-    kprintf("***Here: %x %x***", data, IoApicIn(base, IOREDTBL + index* 2));
-	IoApicOut(base, IOREDTBL + index * 2 + 1, (uint32_t)(data >> 32));
+//    IoApicOut(base, IOREDTBL + index * 2, (uint32_t)data);
+//    kprintf("***Here: %x %x***", data, IoApicIn(base, IOREDTBL + index* 2));
+//	IoApicOut(base, IOREDTBL + index * 2 + 1, (uint32_t)(data >> 32));
 }
 
 // ------------------------------------------------------------------------------------------------
 void IoApicInit()
 {
     // Get number of entries supported by the IO APIC
-    uint32_t x = IoApicIn(IOAPIC_BASE, IOAPICVER);
-    kprintf("x: %p", x);
-    int count = (((uint32_t)x >> (uint32_t)16) & 0xff) + 1;    // maximum redirection entry
+//    uint32_t x = IoApicIn(IOAPIC_BASE, IOAPICVER);
+//    kprintf("x: %p", x);
+//    int count = (((uint32_t)x >> (uint32_t)16) & 0xff) + 1;    // maximum redirection entry
 
 
     // Disable all entries
-    for (int i = 0; i < count; ++i)
-    {
+//    for (int i = 0; i < count; ++i)
+//    {
 //    	kprintf("Here at SetEntry\n");
-        IoApicSetEntry(IOAPIC_BASE, i, 1 << 16);
-    }
-    kprintf("I/O APIC pins = %d\n", count);
+//        IoApicSetEntry(IOAPIC_BASE, i, 1 << 16);
+//    }
+//    kprintf("I/O APIC pins = %d\n", count);
 }
 
 static void AcpiParseApic(AcpiMadt *madt)
@@ -374,7 +374,7 @@ static void AcpiParseApic(AcpiMadt *madt)
     s_madt = madt;
 
     kprintf("Local APIC Address = 0x%x\n", madt->localApicAddr);
-    APIC_BASE = (uint64_t *)(uintptr_t)madt->localApicAddr;
+//    APIC_BASE = (uint64_t *)(uintptr_t)madt->localApicAddr;
 
     uint8_t *p = (uint8_t *)(madt + 1);
     uint8_t *end = (uint8_t *)madt + madt->header.length;
@@ -401,7 +401,7 @@ static void AcpiParseApic(AcpiMadt *madt)
             ApicIoApic *s = (ApicIoApic *)p;
 
             kprintf("Found I/O APIC: %d 0x%x %d\n", s->ioApicId, s->ioApicAddress, s->globalSystemInterruptBase);
-            IOAPIC_BASE = (uint64_t *)(uintptr_t)s->ioApicAddress;
+  //          IOAPIC_BASE = (uint64_t *)(uintptr_t)s->ioApicAddress;
         }
         else if (type == APIC_TYPE_INTERRUPT_OVERRIDE)
         {
