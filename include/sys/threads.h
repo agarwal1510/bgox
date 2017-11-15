@@ -22,4 +22,5 @@ struct task_entry {
 };
 
 void switch_thread();
+void thread1();
 #endif

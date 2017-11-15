@@ -42,6 +42,8 @@ void start(uint32_t *modulep, void *physbase, void *physfree)
 //  apicMain();
 //  find_ahci();
 	switch_thread();
+	thread1();
+//	thread2();
   while(1);
 }
 
