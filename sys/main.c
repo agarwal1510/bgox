@@ -9,12 +9,20 @@
 #include <sys/mem.h>
 #include <sys/ptmgr.h>
 #include <sys/threads.h>
-#define INITIAL_STACK_SIZE 4096
 
-uint8_t initial_stack[INITIAL_STACK_SIZE]__attribute__((aligned(16)));
+uint64_t initial_stack[STACK_SIZE]__attribute__((aligned(16)));
 uint32_t* loader_stack;
 extern char kernmem, physbase;
+struct pcb *bootProcess;
+//void thread1(){
 
+
+//}
+void thread_handler(){
+	kprintf("Handler Thread called\n");
+	while(1){}
+//	return;
+}
 void start(uint32_t *modulep, void *physbase, void *physfree)
 {
   struct smap_t {
@@ -36,14 +44,10 @@ void start(uint32_t *modulep, void *physbase, void *physfree)
   kprintf("Page Tables Setup complete\n");
   kprintf("physfree %p\n", (uint64_t)physfree);
   kprintf("tarfs in [%p:%p]\n", &_binary_tarfs_start, &_binary_tarfs_end);
-  
-  //kmain();
 
 //  apicMain();
 //  find_ahci();
-	switch_thread();
-	//thread1();
-//	thread2();
+  switch_thread();
   while(1);
 }
 
@@ -51,13 +55,13 @@ void boot(void)
 {
   // note: function changes rsp, local stack variables can't be practically used
   register char *temp1, *temp2;
-
+  
   for(temp2 = (char*)0xb8001; temp2 < (char*)0xb8000+160*25; temp2 += 2) *temp2 = 7 /* white */;
   __asm__ volatile (
     "movq %%rsp, %0;"
     "movq %1, %%rsp;"
     :"=g"(loader_stack)
-    :"r"(&initial_stack[INITIAL_STACK_SIZE])
+    :"r"(&initial_stack[STACK_SIZE-1])
   );
   init_gdt();
   start(

@@ -3,7 +3,7 @@
 
 #include <sys/defs.h>
 
-#define STACK_SIZE 512
+#define STACK_SIZE 4096
 
 struct pcb {
 	uint64_t rsp;
@@ -21,6 +21,7 @@ struct task_entry {
 	int data;
 };
 
+void add_to_task_list(struct pcb *process);
 void switch_thread();
-void thread1();
+void schedule();
 #endif
