@@ -45,6 +45,7 @@ void start(uint32_t *modulep, void *physbase, void *physfree)
   kprintf("physfree %p\n", (uint64_t)physfree);
   kprintf("tarfs in [%p:%p]\n", &_binary_tarfs_start, &_binary_tarfs_end);
 
+<<<<<<< HEAD
 //i  struct pcb *bootProcess = (struct pcb*)kmalloc(sizeof(struct pcb));
    
 //  for(int i = 0; i < STACK_SIZE; i++){
@@ -79,6 +80,12 @@ void start(uint32_t *modulep, void *physbase, void *physfree)
   kprintf("%p %p", thread2->rsp, bootProcess->rsp);
   schedule();
 */
+=======
+//  apicMain();
+//  find_ahci();
+	switch_thread();
+	//thread1();
+>>>>>>> 0336ef48cb9ebf0b51e47d24a4f3c3647113aea5
 //	thread2();
   switch_thread();
   while(1);
