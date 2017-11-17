@@ -45,48 +45,8 @@ void start(uint32_t *modulep, void *physbase, void *physfree)
   kprintf("physfree %p\n", (uint64_t)physfree);
   kprintf("tarfs in [%p:%p]\n", &_binary_tarfs_start, &_binary_tarfs_end);
 
-<<<<<<< HEAD
-//i  struct pcb *bootProcess = (struct pcb*)kmalloc(sizeof(struct pcb));
-   
-//  for(int i = 0; i < STACK_SIZE; i++){
-//	bootProcess->kstack[i] = initial_stack[i];
-//  }
-//  uint64_t sp;
-//  __asm__ volatile ("movq %%rsp, %0" : "=m"(sp));
-//  kprintf("%p %p\n", bootProcess->kstack[STACK_SIZE-123], (uint64_t)(initial_stack[STACK_SIZE-123]));
-//  kprintf("%p %p\n", sp, (uint64_t)&(initial_stack[STACK_SIZE-1]));
-//  kprintf("%d", ((uint64_t)&(initial_stack[STACK_SIZE-1]) - sp));
-//  __asm__ volatile (
-//    "movq %0, %%rsp;"
-//    :
-//    :"r"(&bootProcess[STACK_SIZE-80])
-//    :
-//  );
-//  set_tss_rsp(&bootProcess[STACK_SIZE-80]);
-//  uint64_t sp2;
-//  __asm__ volatile ("movq %%rsp, %0" : "=m"(sp2));
-//  kprintf("%p %p\n", sp, (uint64_t)&(bootProcess[STACK_SIZE]));
-  /*
-  struct pcb *thread2 = (struct pcb*)kmalloc(sizeof(struct pcb));
-  for(int i = 0; i < STACK_SIZE; i++){
-  	thread2->kstack[i] = i;
-  }
-  void *funcptr = &thread_handler;
-  thread2->kstack[STACK_SIZE-1] = (uint64_t)funcptr;
-  thread2->rsp = (uint64_t)&(thread2->kstack[STACK_SIZE-5]);
-  
-  add_to_task_list(thread2);
-  
-  kprintf("%p %p", thread2->rsp, bootProcess->rsp);
-  schedule();
-*/
-=======
 //  apicMain();
 //  find_ahci();
-	switch_thread();
-	//thread1();
->>>>>>> 0336ef48cb9ebf0b51e47d24a4f3c3647113aea5
-//	thread2();
   switch_thread();
   while(1);
 }
