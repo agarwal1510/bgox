@@ -5,7 +5,7 @@
 
 #define STACK_SIZE 4096
 
-struct pcb {
+struct tcb {
 	uint64_t rsp;
 	uint64_t kstack[STACK_SIZE];
 	uint64_t pid;
@@ -15,13 +15,24 @@ struct pcb {
 	int exit_status;
 };
 
-struct task_entry {
-	struct task_entry *next;
-	struct pcb *thread;
+struct pcb {
+	uint64_t rsp;
+	uint64_t kstack[STACK_SIZE];
+	uint64_t pid;
+	uint64_t cr3;
+	uint64_t rip;
+//	enum {RUNNING, SLEEPING, ZOMBIE} state;
+	int exit_status;
+};
+
+struct ktask_entry {
+	struct ktask_entry *next;
+	struct tcb *thread;
 	int data;
 };
 
-void add_to_task_list(struct pcb *process);
+void add_to_ktask_list(struct tcb *process);
 void switch_thread();
+void switch_user_thread();
 void schedule();
 #endif

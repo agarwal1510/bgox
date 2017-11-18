@@ -44,10 +44,13 @@ void start(uint32_t *modulep, void *physbase, void *physfree)
   kprintf("Page Tables Setup complete\n");
   kprintf("physfree %p\n", (uint64_t)physfree);
   kprintf("tarfs in [%p:%p]\n", &_binary_tarfs_start, &_binary_tarfs_end);
+  
+//  set_tss_rsp(initial_stack);
 
 //  apicMain();
 //  find_ahci();
   switch_thread();
+//  switch_user_thread();
   while(1);
 }
 

@@ -7,17 +7,17 @@
 //extern void pushAllReg();
 //extern void popAllReg();
 
-void switch_to(struct pcb *next, struct pcb *me);
+void switch_to(struct tcb *next, struct tcb *me);
 
-struct pcb *process1, *process2;
-struct task_entry *tasks = NULL;
-struct task_entry *head = NULL;
-struct task_entry *previous = NULL;
+struct tcb *process1, *process2;
+struct ktask_entry *tasks = NULL;
+struct ktask_entry *head = NULL;
+struct ktask_entry *previous = NULL;
 
-void add_to_task_list(struct pcb *process) {
+void add_to_ktask_list(struct tcb *process) {
 
 	if (tasks == NULL){
-		tasks = (struct task_entry *)kmalloc(sizeof(struct task_entry));
+		tasks = (struct ktask_entry *)kmalloc(sizeof(struct ktask_entry));
 		tasks->thread = process;
 		tasks->next = NULL;
 		head = tasks;
@@ -28,7 +28,7 @@ void add_to_task_list(struct pcb *process) {
 		tasks = tasks->next;
 	}
 
-	struct task_entry *new_task = (struct task_entry *)kmalloc(sizeof(struct task_entry));
+	struct ktask_entry *new_task = (struct ktask_entry *)kmalloc(sizeof(struct ktask_entry));
 	new_task->thread = process;
 	new_task->next = NULL;
 	tasks->next  = new_task;
@@ -49,7 +49,7 @@ void schedule() {
 
 }
 
-void switch_to(struct pcb *next, struct pcb *me) {
+void switch_to(struct tcb *next, struct tcb *me) {
 	//kprintf("Nextrsp: %p\n", next->rsp);
 	//kprintf("Mersp: %p\n", me->rsp);
 
@@ -113,6 +113,37 @@ void thread2() {
 
 void switch_thread(){	
 
+	process1 = (struct tcb *) kmalloc(sizeof(struct tcb));
+	void *funcptr = &thread1;
+
+	for(int i = 0; i < STACK_SIZE; i ++){
+		process1->kstack[i] = 0;
+	}
+
+	process1->kstack[STACK_SIZE - 1] = (uint64_t)funcptr;
+	process1->rip = (uint64_t)funcptr;
+	process1->rsp = (uint64_t)(&(process1->kstack[STACK_SIZE - 1]));
+
+	process2 = (struct tcb *) kmalloc(sizeof(struct tcb));
+	void *funcptr2 = &thread2;
+
+	for(int i = 0; i < STACK_SIZE; i ++){
+		process2->kstack[i] = 0;
+	}
+	kprintf("Stack bound: %p\n", (uint64_t)&process2->kstack[STACK_SIZE-1]);
+	process2->kstack[STACK_SIZE - 1] = (uint64_t)funcptr2;
+	process2->rip = (uint64_t)funcptr2;
+	process2->rsp = (uint64_t)(&(process2->kstack[STACK_SIZE - 16]));
+
+	add_to_ktask_list(process1);
+	add_to_ktask_list(process2);
+	//	schedule();
+	//	__asm__ volatile ("movq %0, %%rsp;"::"m"(process1->rsp));
+	thread1();
+}
+
+void switch_user_thread(){	
+/*
 	process1 = (struct pcb *) kmalloc(sizeof(struct pcb));
 	void *funcptr = &thread1;
 
@@ -140,4 +171,4 @@ void switch_thread(){
 	//	schedule();
 	//	__asm__ volatile ("movq %0, %%rsp;"::"m"(process1->rsp));
 	thread1();
-}
+*/}
