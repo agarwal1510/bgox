@@ -17,7 +17,7 @@ struct tcb {
 
 struct pcb {
 	uint64_t rsp;
-	uint64_t kstack[STACK_SIZE];
+	uint64_t ustack[STACK_SIZE];
 	uint64_t pid;
 	uint64_t cr3;
 	uint64_t rip;
