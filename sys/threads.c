@@ -165,7 +165,7 @@ void switch_user_thread(){
 		u_process1->kstack[STACK_SIZE - 6 - i] = i;	
 	}
 //	u_process1->rip = (uint64_t)funcptr;
-	u_process1->rsp = (uint64_t)(&(u_process1->kstack[STACK_SIZE - 20]));
+	u_process1->rsp = (uint64_t)(&(u_process1->kstack[STACK_SIZE - 2]));
 
 
 

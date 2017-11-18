@@ -23,6 +23,9 @@ void thread_handler(){
 	while(1){}
 //	return;
 }
+void myfunc(){
+	kprintf("Nigga be in user mode");
+}
 void start(uint32_t *modulep, void *physbase, void *physfree)
 {
   struct smap_t {
@@ -45,20 +48,35 @@ void start(uint32_t *modulep, void *physbase, void *physfree)
   kprintf("physfree %p\n", (uint64_t)physfree);
   kprintf("tarfs in [%p:%p]\n", &_binary_tarfs_start, &_binary_tarfs_end);
   
-  set_tss_rsp(initial_stack);
 
 //  apicMain();
 //  find_ahci();
- // switch_thread();
-  switch_user_thread();
+// switch_thread();
+  __asm__ __volatile__("\
+  	mov $0x23, %ax;\
+	mov %ax, %ds;\
+	mov %ax, %es;\
+	mov %ax, %fs;\
+	mov %ax, %gs;\
+	mov %rsp, %rax;\
+	push $0x23;\
+	push %rax;\
+	pushf;\
+	push $0x1B;\
+	push $1f;\
+	iretq;\
+	1:\
+	call myfunc\
+	");
+// while(1){}
+//  switch_user_thread();
   while(1);
 }
-
 void boot(void)
 {
   // note: function changes rsp, local stack variables can't be practically used
   register char *temp1, *temp2;
-  
+
   for(temp2 = (char*)0xb8001; temp2 < (char*)0xb8000+160*25; temp2 += 2) *temp2 = 7 /* white */;
   __asm__ volatile (
     "movq %%rsp, %0;"
