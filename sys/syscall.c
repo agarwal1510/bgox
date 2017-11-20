@@ -1,6 +1,7 @@
 #include <sys/syscall.h>
 #include <sys/defs.h>
 #include <sys/kprintf.h>
+#include <sys/idt.h>
 
 static void *syscalls[1] = {
 	&kprintf
@@ -13,6 +14,7 @@ uint32_t num_syscalls = 1;
 
 
 void syscall_handler(registers_t *regs){
+	while(1);
 	if (regs->eax >= num_syscalls)
 		return;
 
@@ -40,5 +42,5 @@ void syscall_handler(registers_t *regs){
 }
 
 void syscall_init(){
-	register_interrput_handler(0x80, &syscall_handler);
+	setup_gate(0x80, (uint64_t)&syscall_handler);
 }

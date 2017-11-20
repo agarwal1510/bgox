@@ -155,3 +155,12 @@ void init_paging(uint64_t kernmem, uint64_t physbase, uint64_t no_of_pages)
     // Setting available free memory for kmalloc() to zero
     //init_kmalloc();
 }
+
+void load_cr3_user() {
+	
+    uint64_t *ker_cr3_u = (uint64_t *)PADDR(kmalloc(1));
+    uint64_t *ker_pml4_t_u = (uint64_t *) VADDR(ker_cr3_u);
+    ker_pml4_t_u[511] = ker_pml4_t[511];
+    kprintf("PML4: %p %p", ker_pml4_t_u[511], ker_pml4_t[511]);
+    LOAD_CR3((uint64_t)ker_cr3_u);
+}

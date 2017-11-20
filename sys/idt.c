@@ -187,12 +187,12 @@ void idt_init(void)
 {
 	setup_gate(32, (uint64_t)isr0);
 	setup_gate(33, (uint64_t)isr1);
-	setup_gate(0x80, (uint64_t)syscall_handler);
+	//setup_gate(0x80, (uint64_t)syscall_handler);
 	_x86_64_asm_lidt(&idtr);
 }
 
 void mask_init(void){
-	outb(0x21 , 0xFC); //11111100
+	outb(0x21 , 0xFF); //11111100
 }
 
 void kmain(void){

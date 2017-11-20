@@ -2,7 +2,7 @@
 
 .global _x86_64_asm_lidt
 .global isr0
-//.global isr1
+.global isr1
 .global timer_init
 .extern irq_timer_handler
 //.extern irq_kb_handler
@@ -30,6 +30,6 @@ isr0:
 
 isr1:
 	cli
-//	call irq_kb_handler
+	call irq_kb_handler
 	sti
 	iretq

@@ -9,6 +9,7 @@
 #include <sys/mem.h>
 #include <sys/ptmgr.h>
 #include <sys/threads.h>
+#include <sys/syscall.h>
 
 uint64_t initial_stack[STACK_SIZE]__attribute__((aligned(16)));
 uint32_t* loader_stack;
@@ -24,7 +25,7 @@ void thread_handler(){
 //	return;
 }
 void myfunc(){
-	kprintf("Nigga be in user mode");
+	syscall_kprintf("Nigga be in user mode");
 }
 void start(uint32_t *modulep, void *physbase, void *physfree)
 {
@@ -52,6 +53,8 @@ void start(uint32_t *modulep, void *physbase, void *physfree)
 //  apicMain();
 //  find_ahci();
 // switch_thread();
+kmain();
+syscall_init();
   __asm__ __volatile__("\
   	mov $0x23, %ax;\
 	mov %ax, %ds;\
