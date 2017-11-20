@@ -1,5 +1,38 @@
+#ifndef _SYSCALL_H
+#define _SYSCALL_H
+
+#include <sys/kprintf.h>
+#include <sys/defs.h>
+
+void syscall_init();
+
+#define DECL_SYSCALL0(fn) int syscall_##fn();
+#define DECL_SYSCALL1(fn,p1) int syscall_##fn(p1);
+
+#define DEFN_SYSCALL0(fn, num) \
+int syscall_##fn() \
+{ \
+	int a; \
+	__asm__ volatile("int $0x80" : "=a" (a) : "0" (num)); \
+	return a; \
+}
+
+#define DEFN_SYSCALL1(fn, num, P1) \
+int syscall_##fn(P1 p1) \
+{ \
+	int a; \
+	__asm__ volatile("int $0x80" : "=a" (a) : "0" (num), "b" ((long)p1)); \
+	return a; \
+}
+
+
+DECL_SYSCALL1(kprintf, const char*)
+//DECL_SYSCALL1(write_hex, const char*)
+
+//////////////////////////////////////////
+
 #define _syscall0(type,name) \
-	type name() \
+		type name() \
 	{ \
 			long __res; \
 			__asm__ volatile ("int $0x80" \
@@ -50,3 +83,5 @@
 						: "memory"); \
 		return (type)__res; \
 }
+
+#endif
