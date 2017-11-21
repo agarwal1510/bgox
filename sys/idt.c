@@ -80,9 +80,9 @@ void irq_kb_handler(void){
 						:"rax","rsi","rcx"
 					  );  
 
-		kprintf("Interrupt received %d %s", syscall_no, buf);
-		outb(0x20, 0x20);
-	outb(0xa0, 0x20);
+		kprintf("Interrupt received %s", buf);
+//		outb(0x20, 0x20);
+//	outb(0xa0, 0x20);
 	while(1){}
 	char status = inb(KB_STATUS);
 	if (status & 0x01){

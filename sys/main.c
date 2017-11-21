@@ -30,6 +30,7 @@ void thread_handler(){
 //	return;
 }*/
 void myfunc(){
+	while(1);
 //__asm__ volatile("int $0x80");
 //	syscall_kprintf("Nigga be in user mode");
 }
@@ -63,23 +64,23 @@ kmain();
 //syscall_init();
 set_tss_rsp(initial_stack);
 
-  __asm__ __volatile__("\
-	mov $0x23, %ax;\
-	mov %ax, %ds;\
-	mov %ax, %es;\
-	mov %ax, %fs;\
-	mov %ax, %gs;\
-	mov %rsp, %rax;\
-	push $0x23;\
-	push %rax;\
-	pushf;\
-	push $0x1B;\
-	push $1f;\
-	iretq;\
-	1:");
-
+//TODO disable interrupts before this and renable after pushf using EFLAGS;
+  __asm__ __volatile__("mov $0x23, %ax\n"
+	"mov %ax, %ds\n"
+	"mov %ax, %es\n"
+	"mov %ax, %fs\n"
+	"mov %ax, %gs\n"
+	"mov %rsp, %rax\n"
+	"push $0x23\n"
+	"push %rax\n"
+	"pushf\n"
+	"push $0x1B\n"
+	"push $1f\n"
+	"iretq\n"
+	"1:\n");
 
 syscall_kprintf("Teri maa ki chut\n");
+
 // while(1){}
 //  switch_user_thread();
   while(1);

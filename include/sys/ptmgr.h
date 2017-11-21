@@ -17,6 +17,7 @@
 #define PADDR(VADD) ((uint64_t)VADD - KERNEL_VADDR)
 #define IS_PRESENT_PAGE(addr) ((uint64_t)addr & 1)
 #define RW_KERNEL_FLAGS 7UL
+#define RW_USER_FLAGS 7UL
 #define ENTRIES_PER_PTE 512
 
 struct page {
@@ -104,6 +105,6 @@ enum PAGE_PML4_FLAGS {
 //void init_page_table(uint64_t num_pages);
 //void vmem_init(void* physbase);
 void init_paging(uint64_t kernmem, uint64_t physbase, uint64_t num_pages);
-void init_map_virt_phys_addr(uint64_t vaddr, uint64_t physaddr, uint64_t num_pages);
+void init_map_virt_phys_addr(uint64_t vaddr, uint64_t physaddr, uint64_t num_pages, int access);
 void load_cr3_user();
 #endif
