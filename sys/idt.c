@@ -11,11 +11,12 @@
 extern void load_idt(unsigned long *idt_ptr);
 extern void isr0(void);
 extern void isr1(void);
+extern void isr128(void);
 extern void timer_init(void);
 extern unsigned char kbdus[128];
 int SHIFT_ON = 0;
 int CTRL_ON = 0;
-struct gate_str{
+/*struct gate_str{
 		uint16_t offset_low;     // offset bits 0...15
 		uint16_t selector;       // a code segment selector in GDT or LDT 16...31
 		uint8_t zero;           // unused set to 0, set at 96...127
@@ -24,6 +25,21 @@ struct gate_str{
 		uint32_t offset_high;  // offset bits 16..31, set at 48...63
 		uint32_t ist;           // unused set to 0, set at 96...127
 }  __attribute__((packed));
+*/
+struct gate_str
+{
+		uint16_t offset_low;
+		uint16_t selector;
+		unsigned ist : 3;
+		unsigned reserved0 : 5;
+		unsigned type_attr : 4;
+		unsigned zero : 1;
+		unsigned dpl : 2;
+		unsigned p : 1;
+		uint16_t offset_mid;
+		uint32_t offset_high;
+		uint32_t reserved1;
+} __attribute__((packed));
 
 struct gate_str IDT[MAX_IDT];
 int ticks = 0;
@@ -52,9 +68,22 @@ void irq_timer_handler(void){
 }
 
 void irq_kb_handler(void){
-	outb(0x20, 0x20);
-	outb(0xa0, 0x20);
+		uint64_t syscall_no = 0;
+		uint64_t buf, third, fourth;
+		//Save register values
+		__asm volatile("movq %%rax, %0;"
+						"movq %%rbx, %1;"
+						"movq %%rcx, %2;"
+						"movq %%rdx, %3;"
+						: "=g"(syscall_no),"=g"(buf), "=g"(third), "=g"(fourth)
+						:
+						:"rax","rsi","rcx"
+					  );  
 
+		kprintf("Interrupt received %d %s", syscall_no, buf);
+		outb(0x20, 0x20);
+	outb(0xa0, 0x20);
+	while(1){}
 	char status = inb(KB_STATUS);
 	if (status & 0x01){
 //		outb(KB_STATUS, 0x20);
@@ -179,15 +208,23 @@ void setup_gate(int32_t num, uint64_t handler_addr){
 	IDT[num].offset_mid = ((handler_addr >> 16) & 0xFFFF);
 	IDT[num].offset_high = ((handler_addr >> 32) & 0xFFFFFFFF);
 	IDT[num].selector = 0x08;
-	IDT[num].type_attr = 0x8e;
+	IDT[num].type_attr = 0x0e;
 	IDT[num].zero = 0x0;
 	IDT[num].ist = 0x0;
+	IDT[num].reserved0 = 0;
+	IDT[num].p = 1;
+	IDT[num].dpl = 3;
+
+//    idt_entries[num].ist = ist;
+//		    idt_entries[num].type = type;
+		//	    idt_entries[num].zero = 0;
+	//				    idt_entries[num].p = 1;
 }
 void idt_init(void)
 {
 	setup_gate(32, (uint64_t)isr0);
-	setup_gate(33, (uint64_t)isr1);
-	//setup_gate(0x80, (uint64_t)syscall_handler);
+	setup_gate(33, (uint64_t)&isr0);
+	setup_gate(0x80, (uint64_t)isr128);
 	_x86_64_asm_lidt(&idtr);
 }
 
@@ -200,5 +237,5 @@ void kmain(void){
 	pic_init();
 	idt_init();
 	mask_init();
-	timer_init();
+//	timer_init();
 }

@@ -7,7 +7,7 @@ static void *syscalls[1] = {
 	&kprintf
 };
 
-DEFN_SYSCALL1(kprintf, 0, const char*);
+//DEFN_SYSCALL1(kprintf, 0, const char*);
 //DEFN_SYSCALL1(write_hex, 1, const char*);
 
 uint32_t num_syscalls = 1;

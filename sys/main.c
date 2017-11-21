@@ -14,18 +14,24 @@
 uint64_t initial_stack[STACK_SIZE]__attribute__((aligned(16)));
 uint32_t* loader_stack;
 extern char kernmem, physbase;
-struct pcb *bootProcess;
+//struct pcb *bootProcess;
+DEFN_SYSCALL1(kprintf, 0, const char*);
 //void thread1(){
 
 
 //}
+/*
 void thread_handler(){
-	kprintf("Handler Thread called\n");
+//	__asm__ volatile("int $0x21");
+	
+//	kprintf("Handler Thread called\n");
+	
 	while(1){}
 //	return;
-}
+}*/
 void myfunc(){
-	syscall_kprintf("Nigga be in user mode");
+//__asm__ volatile("int $0x80");
+//	syscall_kprintf("Nigga be in user mode");
 }
 void start(uint32_t *modulep, void *physbase, void *physfree)
 {
@@ -54,9 +60,11 @@ void start(uint32_t *modulep, void *physbase, void *physfree)
 //  find_ahci();
 // switch_thread();
 kmain();
-syscall_init();
+//syscall_init();
+set_tss_rsp(initial_stack);
+
   __asm__ __volatile__("\
-  	mov $0x23, %ax;\
+	mov $0x23, %ax;\
 	mov %ax, %ds;\
 	mov %ax, %es;\
 	mov %ax, %fs;\
@@ -68,9 +76,10 @@ syscall_init();
 	push $0x1B;\
 	push $1f;\
 	iretq;\
-	1:\
-	call myfunc\
-	");
+	1:");
+
+
+syscall_kprintf("Teri maa ki chut\n");
 // while(1){}
 //  switch_user_thread();
   while(1);
