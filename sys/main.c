@@ -78,9 +78,15 @@ void start(uint32_t *modulep, void *physbase, void *physfree)
 //  find_ahci();
 // switch_thread();
 init_tarfs();
-uint64_t p = opendir("lib/");
+uint64_t p = opendir("usr/");
 kprintf("%p", p);
 read_dir(p);
+file* fd = open("nigga");
+kprintf("handle for %s %p\n", fd->name, fd->addr);
+char buf[100] = {0};
+if (read(fd, buf, 15) > 0){
+	kprintf("buffer read: %s", buf);
+}
 kmain();
 //syscall_init();
 set_tss_rsp(initial_stack);

@@ -2,7 +2,7 @@
 #include <sys/defs.h>
 #include <sys/kprintf.h>
 #include <sys/strings.h>
-
+#include <sys/mem.h>
 tarfs_e tarfs_list[TARFS_MAX];
 int tarf_idx = 0;
 uint64_t power (uint64_t x, int e) {
@@ -10,7 +10,9 @@ uint64_t power (uint64_t x, int e) {
 
         return x * power(x, e-1);
 }
-
+uint64_t max(uint64_t a, uint64_t b){
+	return (a > b) ? a : b;
+}
 int atoi(char *str)
 {
         int res = 0;  // Initialize result
@@ -46,7 +48,7 @@ void init_tarfs(){
 	int temp_ptr = 0;
 	int idx = 0;
 	while(str_len(tarfs_head->name) > 0){
-		kprintf("%s\n", tarfs_head->name);
+		kprintf("%s %s\n", tarfs_head->name, tarfs_head->size);
 		
 		tarfs_e tarfs_entry;
 		
@@ -83,7 +85,7 @@ uint64_t opendir(char *dir) {
 						return (uint64_t)entry.addr;
 				}
 		}   
-		kprintf("No such file or directory");
+		kprintf("Opendir %s: No such directory\n", dir);
 		return 0;
 }
 
@@ -106,4 +108,45 @@ uint64_t read_dir(uint64_t addr)
 				}  
 		}  
 		return 0;
+}
+
+
+file *open(char *filename) {
+		file* fd = (file *) kmalloc(sizeof(file));
+		tarfs_e entry;
+		for(int i = 0; i < tarf_idx; i++){
+				entry = tarfs_list[i];
+				if (str_cmp(filename, entry.name) == 1 && entry.type == TYPE_FILE) {
+						fd->addr = entry.addr;
+						kprintf("size: %d, entry.size", entry.size);
+						fd->size = entry.size;
+						str_cpy(fd->name, filename);
+						return fd;
+				}
+		}
+		kprintf("Open %s: No such file\n", filename);
+		return NULL;
+}        
+
+int close(file *fd) {
+		fd->addr = 0;
+		fd->size = 0;
+		str_cpy(fd->name, "");
+//		free((uint64_t *)fd);
+		return 1;
+}
+
+
+size_t read(file* fd, void *buf, size_t bytes){
+	if (fd->size == 0)
+		return 0;
+	int bytestoRead = (max(bytes, fd->size) == fd->size ? bytes : fd->size);
+	char* fileaddr = (char *)(fd->addr + 512);
+	int i = 0;
+	char *tempbuf = (char *)buf;
+	for(i = 0; i < bytestoRead; i++){
+		tempbuf[i] = *fileaddr++;
+	}
+	tempbuf[i] = '\0';
+	return bytestoRead;
 }
