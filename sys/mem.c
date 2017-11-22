@@ -6,10 +6,13 @@
 struct page *free_list;
 
 void memset(void *address, int value, int size);
-/*
+
 struct page *get_page_at_address(uint64_t *address) {
-	uint64_t page_num = (uint64_t)address/(uint64_t)PAGE_SIZE; 
-	return (struct page*)free_list + page_num*sizeof(struct page); 
+	uint64_t page_num = (uint64_t)PADDR(address)/(uint64_t)PAGE_SIZE; 
+	//kprintf("Corr num: %d %p %p", page_num, free_list, address);
+	struct page *corr = (struct page*)free_list + page_num*sizeof(struct page); 
+	//kprintf("Corr: %p %p", corr, free_list);
+	return corr;
 }
 
 int get_num_pages_allocated(uint64_t *ptr) {
@@ -17,7 +20,7 @@ int get_num_pages_allocated(uint64_t *ptr) {
 	struct page *corresponding_page = free_list + page_num*sizeof(struct page);
 	return corresponding_page->block_size;
 }
-*/
+
 void calculate_free_list(uint64_t num_pages, uint64_t physfree) {
 	free_list = (struct page*)physfree;
 	uint64_t used_pages = physfree/0x1000;
@@ -63,13 +66,14 @@ uint64_t *kmalloc(uint64_t size){
 	} else {
 		pages = size/PAGE_SIZE;
 	}
+	//kprintf("Pages: %d", pages);
 	struct page *temp = free_list;
 	//kprintf("Temp addr: %p", (uint64_t)temp);
 	while(temp != NULL) {
 		if (temp->used == 0 && temp->block_size >= pages) {
 			temp->used = 1;
 			temp->block_size = pages;
-			uint64_t *ret = (uint64_t *)((count+1)*PAGE_SIZE);
+			uint64_t *ret = (uint64_t *)((count)*PAGE_SIZE);
 			memset(ret, 0, pages*PAGE_SIZE);
 			temp = temp->next;
 			while (--pages != 0) {
@@ -87,11 +91,11 @@ uint64_t *kmalloc(uint64_t size){
 	}
 	return NULL;
 }
-/*
+
 void free(uint64_t *ptr){
-	int num_pages = get_num_pages_allocated(ptr);
-	kprintf("Pages Allocated: %d", num_pages);
 	struct page *address_page = get_page_at_address(ptr);
+	int num_pages = address_page->block_size;
+	//kprintf("Pages Allocated: %p %d", address_page, num_pages);	
 	memset(ptr, 0, num_pages*PAGE_SIZE);
 	while(num_pages != 0) {
 		address_page->used = 0;
@@ -100,7 +104,7 @@ void free(uint64_t *ptr){
 		num_pages--;
 	}	
 }
-*/
+
 void memset (void *address, int value, int size) {
 		unsigned char *p = address;
 		for (int i = 0; i< size; i++)
