@@ -219,7 +219,7 @@ int find_cmdslot(hba_port_t *m_port)
 		return -1;
 }
 
-int read(hba_port_t *port, uint32_t startl, uint32_t starth, uint32_t count, uint64_t buf)
+int read_pci(hba_port_t *port, uint32_t startl, uint32_t starth, uint32_t count, uint64_t buf)
 {
 		port->is_rwc = 0xffff;		// Clear pending interrupt bits
 		int spin = 0; // Spin lock timeout counter
@@ -561,7 +561,7 @@ void init_write(){
 		for(int i = 0; i < 1; i++){
 				setBits(&(((hba_mem_t*)ahci_addr)->ports[0]));
 //				set_bits_after_di(&(((hba_mem_t*)ahci_addr)->ports[0]));
-				read(&((hba_mem_t*)ahci_addr)->ports[0], 8*i, 0, 1, (uint64_t)0x600000);
+				read_pci(&((hba_mem_t*)ahci_addr)->ports[0], 8*i, 0, 1, (uint64_t)0x600000);
 				kprintf("%d ", TEST_OUT);
 		}
 

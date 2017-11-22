@@ -37,7 +37,17 @@ typedef struct tarfs_entry {
   int type;
 }tarfs_e;
 
+typedef struct file_entry {
+	char name[MAX_PATH_LEN];
+	int size;
+	uint64_t addr;
+} file;
+
 void init_tarfs();
 uint64_t opendir(char *dir);
 uint64_t read_dir(uint64_t dir);
+
+file *open(char *filename);
+int close(file *fd);
+size_t read(file* fd, void *buf, size_t bytes);
 #endif
