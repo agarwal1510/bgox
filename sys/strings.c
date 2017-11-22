@@ -32,8 +32,19 @@ void str_concat(const char *prev, const char *current, char *dest){
 }
 int str_cmp(const char* str1, const char* str2){
 
-                return (*str1 == *str2 && *str1 == '\0') ? 1 : (*str1 == *str2 ? str_cmp(++str1, ++str2) : -1);
+		return (*str1 == *str2 && *str1 == '\0') ? 1 : (*str1 == *str2 ? str_cmp(++str1, ++str2) : -1);
 
+}
+int strn_cmp( const char * s1, const char * s2, size_t n){
+		while ( n && *s1 && ( *s1 == *s2 )){
+				++s1;
+				++s2;
+				--n;
+		}
+		if ( n == 0 )
+				return 0;
+		else
+				return ( *(unsigned char *)s1 - *(unsigned char *)s2 );
 }
 
 int str_split_delim(const char *str, char delim, char out[][FMT_LEN]){

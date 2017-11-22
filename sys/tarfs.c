@@ -1,23 +1,10 @@
 #include <sys/tarfs.h>
 #include <sys/defs.h>
 #include <sys/kprintf.h>
+#include <sys/strings.h>
+
 tarfs_e tarfs_list[TARFS_MAX];
-
-int strlen(const char *str){
-	int len = 0;
-    for (len = 0; str[len]; (len)++);
-
-	return len;
-}
-
-void strcpy(char *to_str, char *frm_str){
-		int i=0;
-		for(i=0;frm_str[i] != '\0'; i++){
-				to_str[i] = frm_str[i];
-		}
-		to_str[i] = '\0';
-}
-
+int tarf_idx = 0;
 uint64_t power (uint64_t x, int e) {
 		if (e == 0) return 1;
 
@@ -58,17 +45,19 @@ void init_tarfs(){
 	posix_header *tarfs_head = (posix_header *)&_binary_tarfs_start;
 	int temp_ptr = 0;
 	int idx = 0;
-	while(strlen(tarfs_head->name) != 0){
+	while(str_len(tarfs_head->name) > 0){
 		kprintf("%s\n", tarfs_head->name);
 		
 		tarfs_e tarfs_entry;
 		
 		int entry_size = octTodec(atoi(tarfs_head->size));
 		
-		strcpy(tarfs_entry.name, tarfs_head->name);
+		str_cpy(tarfs_entry.name, tarfs_head->name);
 		tarfs_entry.size = entry_size;
+		tarfs_entry.type = atoi(tarfs_head->typeflag);
+		tarfs_entry.addr = (uint64_t)tarfs_head;
 		tarfs_list[idx++] = tarfs_entry;
-		
+
 		if (entry_size == 0)
 			temp_ptr += 512;
 		else{
@@ -78,8 +67,43 @@ void init_tarfs(){
 			else
 				temp_ptr += entry_size + (512 - entry_size % 512) + 512;
 		}
-		tarfs_head = (posix_header *)(&_binary_tarfs_start + temp_ptr);
-		
+		tarfs_head = (posix_header *)(&_binary_tarfs_start + temp_ptr);	
 	}
+	
+	tarf_idx = idx;
 
+}
+
+uint64_t opendir(char *dir) {
+		tarfs_e entry;
+		for(int i = 0; i < tarf_idx; i++){
+				entry = tarfs_list[i];
+//				kprintf("query: %s %s %d\n", entry.name, dir, entry.type);
+				if (entry.type == TYPE_DIRECTORY && (str_cmp(entry.name, dir) == 1)) {
+						return (uint64_t)entry.addr;
+				}
+		}   
+		kprintf("No such file or directory");
+		return 0;
+}
+
+uint64_t read_dir(uint64_t addr)
+{
+		tarfs_e entry;
+		char dir[MAX_PATH_LEN];
+		int len = 0, parent = -1;
+		for(int i = 0; i < tarf_idx && str_len(entry.name) > 0; i++){
+				entry = tarfs_list[i];
+				if(entry.addr == addr){
+					parent = i;
+					str_cpy(dir, entry.name);
+					len = str_len(dir);
+	//				kprintf("Found parent: %s %d\n",dir,len); 
+				}  
+				else if(parent >= 0 && strn_cmp(entry.name, dir, str_len(dir)) == 0){  
+					
+					kprintf("Reading: %s %s %d %s\n", entry.name, dir, str_len(dir), entry.name + len);
+				}  
+		}  
+		return 0;
 }
