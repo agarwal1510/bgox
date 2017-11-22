@@ -36,8 +36,8 @@ void myfunc(){
 }
 void start(uint32_t *modulep, void *physbase, void *physfree)
 {
-  struct smap_t {
-    uint64_t base, length;
+		struct smap_t {
+				uint64_t base, length;
     uint32_t type;
   }__attribute__((packed)) *smap;
   uint64_t last_mem_ptr = 0;
@@ -48,18 +48,31 @@ void start(uint32_t *modulep, void *physbase, void *physfree)
       kprintf("Available Physical Memory [%p-%p]\n", smap->base, last_mem_ptr);
     }
   }
-  
   uint64_t num_pages = last_mem_ptr/0x1000;
   calculate_free_list(num_pages, (uint64_t)physfree);
   init_paging(KERNEL_VADDR + (uint64_t)physbase, (uint64_t)physbase, 800);
   kprintf("Page Tables Setup complete\n");
   kprintf("physfree %p\n", (uint64_t)physfree);
   kprintf("tarfs in [%p:%p]\n", &_binary_tarfs_start, &_binary_tarfs_end);
-  
+//  struct posix_header_ustar *tarfshead = (struct posix_header_ustar*)(&_binary_tarfs_start+512);
+//  int temp = 0;
+//  int size = octalToDecimal(atoi(tarfshead->size));
 
+//  kprintf("size: %d", size);
+  
+//  if(size == 0)
+//		  temp = temp + 512;
+//  else
+//		  temp +=  (size%512==0) ? size + 512 : size + (512 - size%512) + 512;
+  //  tarfshead += sizeof(struct posix_header_ustar);
+  //  tarfshead = (struct posix_header_ustar*)(tarfshead + 512);
+//  kprintf("%s\n", tarfshead->name);
+//  tarfshead = (struct posix_header_ustar*)(&_binary_tarfs_start+temp);
+//  kprintf("%s\n", tarfshead->size);
 //  apicMain();
 //  find_ahci();
 // switch_thread();
+init_tarfs();
 kmain();
 //syscall_init();
 set_tss_rsp(initial_stack);
