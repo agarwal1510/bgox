@@ -5,6 +5,7 @@
 #define TARFS_MAX 1024
 #define TYPE_DIRECTORY 5
 #define TYPE_FILE 0
+#define MAX_PATH_LEN 100
 
 extern char _binary_tarfs_start;
 extern char _binary_tarfs_end;
@@ -37,5 +38,6 @@ typedef struct tarfs_entry {
 }tarfs_e;
 
 void init_tarfs();
-
+uint64_t opendir(char *dir);
+uint64_t read_dir(uint64_t dir);
 #endif

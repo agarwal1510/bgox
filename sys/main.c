@@ -73,6 +73,9 @@ void start(uint32_t *modulep, void *physbase, void *physfree)
 //  find_ahci();
 // switch_thread();
 init_tarfs();
+uint64_t p = opendir("lib/");
+kprintf("%p", p);
+read_dir(p);
 kmain();
 //syscall_init();
 set_tss_rsp(initial_stack);

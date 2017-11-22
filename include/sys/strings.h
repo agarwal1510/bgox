@@ -1,9 +1,12 @@
 #ifndef _STRINGS_H
 #define _STRINGS_H
 
+#include <sys/defs.h>
+
 #define FMT_LEN 100
 
 int str_cmp(const char *s1, const char *s2);
+int strn_cmp(const char *s, const char *d, size_t n);
 int str_len(const char *s);
 void str_cpy(char *to_str, char *from_str);
 void str_concat(const char *prev, const char *current, char *dest);
