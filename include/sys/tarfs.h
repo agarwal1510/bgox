@@ -3,6 +3,8 @@
 #include <sys/defs.h>
 
 #define TARFS_MAX 1024
+#define TYPE_DIRECTORY 5
+#define TYPE_FILE 0
 
 extern char _binary_tarfs_start;
 extern char _binary_tarfs_end;
