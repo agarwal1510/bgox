@@ -6,7 +6,7 @@
 
 tarfs_e tarfs_list[100];
 
-uint64_t opendir(char *dir) {
+/*uint64_t opendir(char *dir) {
 	tarfs_e entry;
 	int i = 0;
 	while (1) {
@@ -18,7 +18,7 @@ uint64_t opendir(char *dir) {
 	}
 	kprintf("No such file or directory");
 	return 0;
-}
+}*/
 
 /*uint64_t readdir(uint64_t addr) {
 	tarfs_e entry;
