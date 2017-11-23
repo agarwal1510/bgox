@@ -10,6 +10,7 @@
 #include <sys/ptmgr.h>
 #include <sys/threads.h>
 #include <sys/syscall.h>
+#include <sys/elf64.h>
 
 uint64_t initial_stack[STACK_SIZE]__attribute__((aligned(16)));
 uint32_t* loader_stack;
@@ -54,34 +55,22 @@ void start(uint32_t *modulep, void *physbase, void *physfree)
   kprintf("Page Tables Setup complete\n");
   kprintf("physfree %p\n", (uint64_t)physfree);
   kprintf("tarfs in [%p:%p]\n", &_binary_tarfs_start, &_binary_tarfs_end);
-//  struct posix_header_ustar *tarfshead = (struct posix_header_ustar*)(&_binary_tarfs_start+512);
-//  int temp = 0;
-//  int size = octalToDecimal(atoi(tarfshead->size));
 
-//  kprintf("size: %d", size);
-  
-//  if(size == 0)
-//		  temp = temp + 512;
-//  else
-//		  temp +=  (size%512==0) ? size + 512 : size + (512 - size%512) + 512;
-  //  tarfshead += sizeof(struct posix_header_ustar);
-  //  tarfshead = (struct posix_header_ustar*)(tarfshead + 512);
-//  kprintf("%s\n", tarfshead->name);
-//  tarfshead = (struct posix_header_ustar*)(&_binary_tarfs_start+temp);
-//  kprintf("%s\n", tarfshead->size);
 //  apicMain();
 //  find_ahci();
 // switch_thread();
 init_tarfs();
-uint64_t p = opendir("usr/");
-kprintf("%p", p);
+uint64_t p = opendir("bin/");
+//kprintf("%p", p);
 read_dir(p);
-file* fd = open("nigga");
+file* fd = open("bin/hello");
 kprintf("handle for %s %p\n", fd->name, fd->addr);
-char buf[100] = {0};
-if (read(fd, buf, 15) > 0){
-	kprintf("buffer read: %s", buf);
-}
+//char buf[100] = {0};
+elf_parse(fd->addr+512);
+
+//if (read(fd, buf, 15) > 0){
+//	kprintf("buffer read: %s", buf);
+//}
 kmain();
 //syscall_init();
 set_tss_rsp(initial_stack);
