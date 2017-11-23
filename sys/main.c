@@ -76,7 +76,13 @@ elf_parse(fd->addr+512);
 //if (read(fd, buf, 15) > 0){
 //	kprintf("buffer read: %s", buf);
 //}
+
 kmain();
+
+//uint64_t add = (uint64_t) 0xffffffff8eeeeeee;
+//struct page *pa = (struct page *)add;
+//kprintf("%d", pa->block_size);
+
 //syscall_init();
 set_tss_rsp(initial_stack);
 

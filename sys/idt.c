@@ -12,6 +12,8 @@ extern void load_idt(unsigned long *idt_ptr);
 extern void isr0(void);
 extern void isr1(void);
 extern void isr128(void);
+extern void isr14(void);
+extern void isr13(void);
 extern void timer_init(void);
 extern unsigned char kbdus[128];
 int SHIFT_ON = 0;
@@ -53,6 +55,21 @@ struct idtr_t
 struct idtr_t idtr = {((sizeof(struct gate_str))*MAX_IDT), (uint64_t)&IDT};
 
 void _x86_64_asm_lidt(struct idtr_t *idtr);
+
+
+void page_fault_handler(void) {
+	uint64_t pf_addr;
+	__asm__ volatile ("movq %%cr2, %0":"=r"(pf_addr));
+	kprintf("Page Fault address: %p\n", pf_addr);
+	while(1);
+}
+
+void general_protection_fault_handler(void) {
+	uint64_t pf_addr;
+	__asm__ volatile ("movq %%cr2, %0":"=r"(pf_addr));
+	kprintf("GPF Handler: %p\n", pf_addr);
+	while(1);
+}
 
 void irq_timer_handler(void){
 	outb(0x20, 0x20);
@@ -225,6 +242,8 @@ void idt_init(void)
 	setup_gate(32, (uint64_t)isr0);
 	setup_gate(33, (uint64_t)&isr0);
 	setup_gate(0x80, (uint64_t)isr128);
+	setup_gate(13, (uint64_t)isr13);
+	setup_gate(14, (uint64_t)isr14);
 	_x86_64_asm_lidt(&idtr);
 }
 
