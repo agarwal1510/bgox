@@ -5,7 +5,7 @@
 
 #define STACK_SIZE 4096
 
-struct vm_area_struct {
+typedef struct vm_area_struct {
 	struct mm_struct *vm_mm;
 	uint64_t vm_start;
 	uint64_t vm_end;
@@ -13,12 +13,12 @@ struct vm_area_struct {
 	uint64_t vm_pgoff;
 	uint64_t vm_flags;
 	struct vm_area_struct *vm_next;
-};
+} vm_area_struct;
 
-struct mm_struct {
+typedef struct mm_struct {
 	uint32_t count;
 	struct vm_area_struct *mmap;
-};
+} mm_struct;
 
 
 struct tcb {
