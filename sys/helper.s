@@ -13,6 +13,7 @@
 .extern irq_timer_handler
 .extern page_fault_handler
 .extern general_protection_fault_handler
+.extern syscall_handler
 //.extern irq_kb_handler
 
 timer_init:
@@ -134,7 +135,7 @@ isr128:
         pushq %r13
         pushq %r14
         pushq %r15
-	call irq_kb_handler
+	call syscall_handler
 	popq %r15
         popq %r14
         popq %r13

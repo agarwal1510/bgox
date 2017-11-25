@@ -13,7 +13,7 @@ static void *syscalls[1] = {
 uint32_t num_syscalls = 1;
 
 
-void syscall_handler(registers_t *regs){
+void syscall_handler1(registers_t *regs){
 	while(1);
 	if (regs->eax >= num_syscalls)
 		return;
@@ -42,5 +42,5 @@ void syscall_handler(registers_t *regs){
 }
 
 void syscall_init(){
-	setup_gate(0x80, (uint64_t)&syscall_handler);
+	setup_gate(0x80, (uint64_t)&syscall_handler1);
 }

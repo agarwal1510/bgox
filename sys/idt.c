@@ -19,28 +19,28 @@ extern unsigned char kbdus[128];
 int SHIFT_ON = 0;
 int CTRL_ON = 0;
 /*struct gate_str{
-		uint16_t offset_low;     // offset bits 0...15
-		uint16_t selector;       // a code segment selector in GDT or LDT 16...31
-		uint8_t zero;           // unused set to 0, set at 96...127
-		uint8_t type_attr;       // type and attributes 40...43, Gate Type 0...3
-		uint16_t offset_mid;  // offset bits 16..31, set at 48...63
-		uint32_t offset_high;  // offset bits 16..31, set at 48...63
-		uint32_t ist;           // unused set to 0, set at 96...127
-}  __attribute__((packed));
-*/
+  uint16_t offset_low;     // offset bits 0...15
+  uint16_t selector;       // a code segment selector in GDT or LDT 16...31
+  uint8_t zero;           // unused set to 0, set at 96...127
+  uint8_t type_attr;       // type and attributes 40...43, Gate Type 0...3
+  uint16_t offset_mid;  // offset bits 16..31, set at 48...63
+  uint32_t offset_high;  // offset bits 16..31, set at 48...63
+  uint32_t ist;           // unused set to 0, set at 96...127
+  }  __attribute__((packed));
+ */
 struct gate_str
 {
-		uint16_t offset_low;
-		uint16_t selector;
-		unsigned ist : 3;
-		unsigned reserved0 : 5;
-		unsigned type_attr : 4;
-		unsigned zero : 1;
-		unsigned dpl : 2;
-		unsigned p : 1;
-		uint16_t offset_mid;
-		uint32_t offset_high;
-		uint32_t reserved1;
+	uint16_t offset_low;
+	uint16_t selector;
+	unsigned ist : 3;
+	unsigned reserved0 : 5;
+	unsigned type_attr : 4;
+	unsigned zero : 1;
+	unsigned dpl : 2;
+	unsigned p : 1;
+	uint16_t offset_mid;
+	uint32_t offset_high;
+	uint32_t reserved1;
 } __attribute__((packed));
 
 struct gate_str IDT[MAX_IDT];
@@ -48,8 +48,8 @@ int ticks = 0;
 int sec = -1;
 struct idtr_t
 {
-		uint16_t size;
-		uint64_t addr;
+	uint16_t size;
+	uint64_t addr;
 } __attribute__((packed));
 
 struct idtr_t idtr = {((sizeof(struct gate_str))*MAX_IDT), (uint64_t)&IDT};
@@ -61,14 +61,16 @@ void page_fault_handler(void) {
 	uint64_t pf_addr;
 	__asm__ volatile ("movq %%cr2, %0":"=r"(pf_addr));
 	kprintf("Page Fault address: %p\n", pf_addr);
-	while(1);
+	//__asm__ volatile ("hlt;");
+	//	while(1);
 }
 
 void general_protection_fault_handler(void) {
 	uint64_t pf_addr;
 	__asm__ volatile ("movq %%cr2, %0":"=r"(pf_addr));
 	kprintf("GPF Handler: %p\n", pf_addr);
-	while(1);
+	__asm__ volatile ("hlt;");
+	//while(1);
 }
 
 void irq_timer_handler(void){
@@ -84,26 +86,39 @@ void irq_timer_handler(void){
 	ticks++;
 }
 
-void irq_kb_handler(void){
-		uint64_t syscall_no = 0;
-		uint64_t buf, third, fourth;
-		//Save register values
-		__asm volatile("movq %%rax, %0;"
-						"movq %%rbx, %1;"
-						"movq %%rcx, %2;"
-						"movq %%rdx, %3;"
-						: "=g"(syscall_no),"=g"(buf), "=g"(third), "=g"(fourth)
-						:
-						:"rax","rsi","rcx"
-					  );  
+void syscall_handler(void) {
 
-		kprintf("Interrupt received %s", buf);
-//		outb(0x20, 0x20);
-//	outb(0xa0, 0x20);
+	uint64_t syscall_num = 0;
+	uint64_t buf, third, fourth;
+	//Save register values
+	__asm volatile("movq %%rax, %0;"
+			"movq %%rbx, %1;"
+			"movq %%rcx, %2;"
+			"movq %%rdx, %3;"
+			: "=g"(syscall_num),"=g"(buf), "=g"(third), "=g"(fourth)
+			:
+			:"rax","rsi","rcx"
+		      );  
+
+	kprintf("Interrupt received %s", buf);
 	while(1){}
+	
+	if (syscall_num == 2) { //Fork
+	
+	} else if (syscall_num == 3) { //Read
+
+	} else if (syscall_num == 4) { //Write
+		kprintf("%s", buf);
+	}
+}
+
+void irq_kb_handler(void){
+	outb(0x20, 0x20);
+	outb(0xa0, 0x20);
+	//while(1){}
 	char status = inb(KB_STATUS);
 	if (status & 0x01){
-//		outb(KB_STATUS, 0x20);
+		//		outb(KB_STATUS, 0x20);
 		unsigned int key = inb(KB_DATA);
 		if (key < 0){
 			kprintf("OOPS");
@@ -199,26 +214,26 @@ void irq_kb_handler(void){
 					default:
 						kprintf_at("%c", 148, 24, kbdus[key] - 32);	
 						break;
-					}
+				}
 			}
 			else
-			kprintf_at("%c", 148, 24, kbdus[key]);
+				kprintf_at("%c", 148, 24, kbdus[key]);
 		}
 	}
 }
 
 
 void pic_init(void){ // SETUP Master and Slave PICS
-    outb(0x20, 0x11);
-    outb(0xA0, 0x11); 
-    outb(0x21, 0x20);
-    outb(0xA1, 0x28);
-    outb(0x21, 0x04);
-    outb(0xA1, 0x02);
-    outb(0x21, 0x01);
-    outb(0xA1, 0x01);
-    outb(0x21, 0xff);
-    outb(0xA1, 0xff);
+	outb(0x20, 0x11);
+	outb(0xA0, 0x11); 
+	outb(0x21, 0x20);
+	outb(0xA1, 0x28);
+	outb(0x21, 0x04);
+	outb(0xA1, 0x02);
+	outb(0x21, 0x01);
+	outb(0xA1, 0x01);
+	outb(0x21, 0xff);
+	outb(0xA1, 0xff);
 }
 void setup_gate(int32_t num, uint64_t handler_addr){
 	IDT[num].offset_low = (handler_addr & 0xFFFF);
@@ -232,18 +247,18 @@ void setup_gate(int32_t num, uint64_t handler_addr){
 	IDT[num].p = 1;
 	IDT[num].dpl = 3;
 
-//    idt_entries[num].ist = ist;
-//		    idt_entries[num].type = type;
-		//	    idt_entries[num].zero = 0;
+	//    idt_entries[num].ist = ist;
+	//		    idt_entries[num].type = type;
+	//	    idt_entries[num].zero = 0;
 	//				    idt_entries[num].p = 1;
 }
 void idt_init(void)
 {
-	setup_gate(32, (uint64_t)isr0);
-	setup_gate(33, (uint64_t)&isr0);
-	setup_gate(0x80, (uint64_t)isr128);
 	setup_gate(13, (uint64_t)isr13);
 	setup_gate(14, (uint64_t)isr14);
+	setup_gate(32, (uint64_t)isr0);
+	setup_gate(33, (uint64_t)isr1);
+	setup_gate(128, (uint64_t)isr128);
 	_x86_64_asm_lidt(&idtr);
 }
 
@@ -256,5 +271,5 @@ void kmain(void){
 	pic_init();
 	idt_init();
 	mask_init();
-//	timer_init();
+	//	timer_init();
 }
