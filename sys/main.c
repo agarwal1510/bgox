@@ -50,17 +50,19 @@ void start(uint32_t *modulep, void *physbase, void *physfree)
     }
   }
   uint64_t num_pages = last_mem_ptr/0x1000;
+  kprintf("Num pages: %d", num_pages);
   calculate_free_list(num_pages, (uint64_t)physfree);
   //uint64_t *ptr = kmalloc(8500);
   //kprintf("Kmalloc %p %d\n", ptr, ((struct page*)ptr)->block_size);
   //free(ptr);
   //uint64_t *ptr2 = kmalloc(8000);
   //kprintf("Lmalloc2 %p", ptr2);
-  init_paging(KERNEL_VADDR + (uint64_t)physbase, (uint64_t)physbase, 800);
+  init_paging(KERNEL_VADDR + (uint64_t)physbase, (uint64_t)physbase, num_pages);
   kprintf("Page Tables Setup complete\n");
   kprintf("physfree %p\n", (uint64_t)physfree);
   kprintf("tarfs in [%p:%p]\n", &_binary_tarfs_start, &_binary_tarfs_end);
 
+  //load_cr3_user();
 //  apicMain();
 //  find_ahci();
 // switch_thread();

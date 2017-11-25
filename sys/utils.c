@@ -34,3 +34,11 @@ uint64_t octTodec(uint64_t octal){
         }   
         return decimal;
 }
+
+uint64_t get_starting_page(uint64_t addr) {
+	return addr - addr % 0x1000;
+}
+
+uint64_t get_ending_page(uint64_t addr) {
+	return get_starting_page(addr + (uint64_t)0x1000 - 1);
+}
