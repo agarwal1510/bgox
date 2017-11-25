@@ -7,7 +7,7 @@
 #include <sys/pci.h>
 #include <sys/apic.h>
 #include <sys/mem.h>
-#include <sys/ptmgr.h>
+#include <sys/paging.h>
 #include <sys/threads.h>
 #include <sys/syscall.h>
 #include <sys/elf64.h>
@@ -71,7 +71,7 @@ read_dir(p);
 file* fd = open("bin/hello");
 kprintf("handle for %s %p\n", fd->name, fd->addr);
 //char buf[100] = {0};
-elf_parse(fd->addr+512);
+elf_parse(fd->addr+512,(file *)fd->addr);
 
 //if (read(fd, buf, 15) > 0){
 //	kprintf("buffer read: %s", buf);

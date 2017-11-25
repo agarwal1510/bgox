@@ -3,6 +3,8 @@
 #include <sys/kprintf.h>
 #include <sys/ptops.h>
 #include <sys/ptmgr.h>
+#include <sys/memutils.h>
+
 struct page *free_list;
 
 void memset(void *address, int value, int size);
@@ -103,10 +105,4 @@ void free(uint64_t *ptr){
 		address_page = address_page->next;
 		num_pages--;
 	}	
-}
-
-void memset (void *address, int value, int size) {
-		unsigned char *p = address;
-		for (int i = 0; i< size; i++)
-			*p++ = (unsigned char)value;       
 }

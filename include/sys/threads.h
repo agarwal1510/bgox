@@ -15,15 +15,6 @@ struct tcb {
 	int exit_status;
 };
 
-struct pcb {
-	uint64_t rsp;
-	uint64_t ustack[STACK_SIZE];
-	uint64_t pid;
-	uint64_t cr3;
-	uint64_t rip;
-//	enum {RUNNING, SLEEPING, ZOMBIE} state;
-	int exit_status;
-};
 
 struct ktask_entry {
 	struct ktask_entry *next;

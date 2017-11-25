@@ -1,6 +1,7 @@
 #ifndef _ELF64_H
 #define _ELF64_H
 #include <sys/defs.h>
+#include <sys/tarfs.h>
 
 #define EI_NIDENT 16
 
@@ -65,6 +66,6 @@ typedef struct {
   Elf64_Xword   p_align;
 } Elf64_Phdr;
 
-void elf_parse(uint64_t estart_addr);
+void elf_parse(uint64_t estart_addr, file *fileptr);
 
 #endif

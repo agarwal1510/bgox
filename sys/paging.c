@@ -1,6 +1,6 @@
 #include <sys/mem.h>
 #include <sys/kprintf.h>
-#include <sys/ptmgr.h>
+#include <sys/paging.h>
 
 //#define RW_KERNEL_FLAGS 7UL
 //#define VADDR(PADDR) (KERNEL_VADDR + (uint64_t)PADDR)
@@ -39,8 +39,6 @@ static uint64_t* alloc_pdpe(uint64_t *pml4_table, int pml4_off, int access)
 		return (uint64_t*)VADDR(pdpe_table);
 }
 
-static uint64_t *ker_pml4_t;
-static uint64_t *ker_cr3;
 
 void init_map_virt_phys_addr(uint64_t vaddr, uint64_t paddr, uint64_t no_of_pages, int access)
 {
