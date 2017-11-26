@@ -42,6 +42,6 @@ struct ktask_entry {
 void add_to_ktask_list(struct tcb *process);
 void switch_thread();
 void switch_user_thread();
-void schedule();
+//void schedule();
 
 #endif

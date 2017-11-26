@@ -20,6 +20,14 @@ typedef struct task_struct {
 	uint64_t entry;
 } task_struct;
 
-task_struct *ready_queue[1024];
+typedef struct ready_task {
+	task_struct *process;
+	struct ready_task *next;
+	struct ready_task *prev;
+
+}ready_task;
+//task_struct *ready_queue;
 //uint64_t num_processes = 0;
+void schedule();
+void add_to_task_list(task_struct *process);
 #endif

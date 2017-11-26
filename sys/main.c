@@ -8,7 +8,8 @@
 #include <sys/apic.h>
 #include <sys/mem.h>
 #include <sys/paging.h>
-#include <sys/threads.h>
+//#include <sys/threads.h>
+#include <sys/process.h>
 #include <sys/syscall.h>
 #include <sys/elf64.h>
 
@@ -62,60 +63,72 @@ void start(uint32_t *modulep, void *physbase, void *physfree)
   kprintf("physfree %p\n", (uint64_t)physfree);
   kprintf("tarfs in [%p:%p]\n", &_binary_tarfs_start, &_binary_tarfs_end);
 
-//  apicMain();
-//  find_ahci();
-// switch_thread();
-kmain();
+  task_struct *pcb_boot = (task_struct *)kmalloc(sizeof(task_struct));  //kernel 
+  pcb_boot->pml4 =(uint64_t)ker_pml4_t;  // kernel's page table   
+  pcb_boot->cr3 = ker_cr3; // kernel's page table   
+  pcb_boot->pid = 0;  // I'm kernel init process  so pid 0  
+  //  pcb_boot->kstack = (uint64_t *)initial_stack; //my stack is already created by prof :)  
+//  __asm__ volatile ("movq %%rsp, %0" : "=m"(pcb_boot->rsp));
+  kprintf("\nEntry: %p\n", pcb_boot->rsp);
+  add_to_task_list(pcb_boot);
+  //  apicMain();
+  //  find_ahci();
+  // switch_thread();
+  kmain();
 
-init_tarfs();
-
-
-uint64_t p = opendir("bin/");
-//kprintf("%p", p);
-read_dir(p);
-file* fd = open("bin/hello");
-kprintf("handle for %s %p\n", fd->name, fd->addr);
-//char buf[100] = {0};
-elf_parse(fd->addr+512,(file *)fd->addr);
-//load_cr3_user();
-
-//if (read(fd, buf, 15) > 0){
-//	kprintf("buffer read: %s", buf);
-//}
+  init_tarfs();
 
 
-//uint64_t add = (uint64_t) 0xffffffff8eeeeeee;
-//struct page *pa = (struct page *)add;
-//kprintf("%d", pa->block_size);
+  uint64_t p = opendir("bin/");
+  //kprintf("%p", p);
+  read_dir(p);
+  file* fd = open("bin/hello");
+  //kprintf("handle for %s %p\n", fd->name, fd->addr);
+  //char buf[100] = {0};
 
-//syscall_init();
-set_tss_rsp(initial_stack);
+  task_struct *pcb_hello = elf_parse(fd->addr+512,(file *)fd->addr);
+  kprintf("\nEntry: %p\n", pcb_hello->rsp);
+  add_to_task_list(pcb_hello);
 
-//TODO disable interrupts before this and renable after pushf using EFLAGS;
-  __asm__ __volatile__("mov $0x23, %ax\n"
-	"mov %ax, %ds\n"
-	"mov %ax, %es\n"
-	"mov %ax, %fs\n"
-	"mov %ax, %gs\n"
-	"mov %rsp, %rax\n"
-	"push $0x23\n"
-	"push %rax\n"
-	"pushf\n"
-	"push $0x1B\n"
-	"push $1f\n"
-	"iretq\n"
-	"1:\n");
+  //if (read(fd, buf, 15) > 0){
+  //	kprintf("buffer read: %s", buf);
+  //}
 
-syscall_kprintf("Teri maa ki chut\n");
 
-// while(1){}
-//  switch_user_thread();
+  //uint64_t add = (uint64_t) 0xffffffff8eeeeeee;
+  //struct page *pa = (struct page *)add;
+  //kprintf("%d", pa->block_size);
+
+  //syscall_init();
+  set_tss_rsp(initial_stack);
+
+  schedule();
+
+  //TODO disable interrupts before this and renable after pushf using EFLAGS;
+  /*  __asm__ __volatile__("mov $0x23, %ax\n"
+	  "mov %ax, %ds\n"
+	  "mov %ax, %es\n"
+	  "mov %ax, %fs\n"
+	  "mov %ax, %gs\n"
+	  "mov %rsp, %rax\n"
+	  "push $0x23\n"
+	  "push %rax\n"
+	  "pushf\n"
+	  "push $0x1B\n"
+	  "push $1f\n"
+	  "iretq\n"
+	  "1:\n");
+
+	  syscall_kprintf("Teri maa ki chut\n");
+   */
+  // while(1){}
+  //  switch_user_thread();
   while(1);
 }
 void boot(void)
 {
-  // note: function changes rsp, local stack variables can't be practically used
-  register char *temp1, *temp2;
+		// note: function changes rsp, local stack variables can't be practically used
+		register char *temp1, *temp2;
 
   for(temp2 = (char*)0xb8001; temp2 < (char*)0xb8000+160*25; temp2 += 2) *temp2 = 7 /* white */;
   __asm__ volatile (

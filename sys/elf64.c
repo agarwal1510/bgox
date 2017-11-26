@@ -63,7 +63,7 @@ int elf_check_supported(Elf64_Ehdr *hdr) {
 	return true;
 }
 
-void elf_run_bin(Elf64_Ehdr *elfhdr, file *fileptr){
+task_struct *elf_run_bin(Elf64_Ehdr *elfhdr, file *fileptr){
 
 	struct page *process_page = (struct page *)kmalloc(1);
 
@@ -168,20 +168,21 @@ void elf_run_bin(Elf64_Ehdr *elfhdr, file *fileptr){
 			vm->vm_pgoff = phdr->p_offset;  
 		}
 	}             	
-	
+
 	pcb->entry = elfhdr->e_entry;
-	
 
+	pcb->kstack[507] = (uint64_t)pcb->entry; 
 
+	__asm__ volatile("movq %0, %%cr3":: "b"(ker_cr3));
+	return pcb;
 }
 
-void elf_parse(uint64_t addr, file *fileptr){
+task_struct *elf_parse(uint64_t addr, file *fileptr){
 	Elf64_Ehdr *elfhdr = (Elf64_Ehdr *)addr;
 	if (elf_check_supported(elfhdr) == true){
 		kprintf("ELF file supported by machine\n");
 	}
 	kprintf("Now load the Program headers into a new page and start executing\n");
-	elf_run_bin(elfhdr, fileptr);
-	return;
+	return elf_run_bin(elfhdr, fileptr);
 }
 
