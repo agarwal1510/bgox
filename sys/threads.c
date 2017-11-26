@@ -19,29 +19,6 @@ struct ktask_entry *previous = NULL;
 
 
 
-struct vm_area_struct *vma_malloc(struct mm_struct *mm) {
-	
-	struct vm_area_struct *vma;
-	if (mm->mmap != NULL) {
-		vma = mm->mmap;
-		while (vma->vm_next != NULL) {
-			vma = vma->vm_next;
-		}
-		vma->vm_next = vma + sizeof(struct vm_area_struct);
-		mm->count += 1;
-		return vma->vm_next;
-
-	} else {
-		vma = (struct vm_area_struct *)kmalloc(1);
-		mm->mmap = vma;
-		mm->count += 1;
-		return vma;
-	}
-}
-
-
-
-
 void add_to_ktask_list(struct tcb *process) {
 
 	if (tasks == NULL){

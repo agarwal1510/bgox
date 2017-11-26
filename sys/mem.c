@@ -4,6 +4,8 @@
 #include <sys/ptops.h>
 #include <sys/paging.h>
 #include <sys/memutils.h>
+#include <sys/mathutils.h>
+#include <sys/process.h>
 
 struct page *free_list;
 
@@ -105,4 +107,33 @@ void free(uint64_t *ptr){
 		address_page = address_page->next;
 		num_pages--;
 	}	
+}
+
+void region_alloc(task_struct *pcb, uint64_t va, uint64_t size) {
+	uint64_t start = get_starting_page(va);
+	uint64_t end = get_ending_page(va+size);
+	uint64_t v;
+	for (v = start; v < end; v += PAGE_SIZE) {
+		uint64_t *addr = kmalloc(1);
+		init_map_virt_phys_addr((uint64_t)v, PADDR(addr), 1, (uint64_t *)(pcb->pml4), 1);
+	}
+}
+struct vm_area_struct *vma_malloc(struct mm_struct *mm) {
+
+        struct vm_area_struct *vma;
+        if (mm->mmap != NULL) {
+                vma = mm->mmap;
+                while (vma->vm_next != NULL) {
+                        vma = vma->vm_next;
+                }
+                vma->vm_next = vma + sizeof(struct vm_area_struct);
+                mm->count += 1;
+                return vma->vm_next;
+
+        } else {
+                vma = (struct vm_area_struct *)kmalloc(1);
+                mm->mmap = vma;
+                mm->count += 1;
+                return vma;
+        }
 }

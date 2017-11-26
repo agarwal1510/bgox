@@ -5,7 +5,7 @@
 #include <sys/threads.h>
 
 #define MAX_PROCESSES 1024
-static int PID = 0;
+//static int PID = 0;
 
 typedef struct task_struct {
 	uint64_t *rsp;
@@ -17,8 +17,9 @@ typedef struct task_struct {
 	mm_struct *mm;
 	uint64_t pml4;
 	int exit_status;
+	uint64_t entry;
 } task_struct;
 
 task_struct *ready_queue[1024];
-uint64_t num_processes = 0;
+//uint64_t num_processes = 0;
 #endif

@@ -9,6 +9,7 @@
 # define ELFCLASS32	(2)  // 64-bit Architecture
 # define EM_386		(0x3E)  // x86-64 Machine Type
 # define EV_CURRENT	(1)  // ELF Current Version
+# define ELF_PROG_LOAD 1
 
 typedef uint64_t Elf64_Addr;
 typedef uint16_t Elf64_Half;

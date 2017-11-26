@@ -2,6 +2,7 @@
 #define _MEM_H
 
 #include <sys/defs.h>
+#include <sys/process.h>
 /*struct page {
 	struct page *next;
 	int used;
@@ -14,4 +15,6 @@ void calculate_free_list(uint64_t num_pages, uint64_t physfree);
 uint64_t *kmalloc(uint64_t size);
 void free(uint64_t *ptr);
 void memset(void *address, int value, int size);
+struct vm_area_struct *vma_malloc(struct mm_struct *mm);
+void region_alloc(task_struct *pcb, uint64_t va, uint64_t size);
 #endif

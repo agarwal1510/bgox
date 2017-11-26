@@ -12,6 +12,7 @@ typedef struct vm_area_struct {
 	uint64_t vm_file;
 	uint64_t vm_pgoff;
 	uint64_t vm_flags;
+	uint64_t vm_mmsz;
 	struct vm_area_struct *vm_next;
 } vm_area_struct;
 
@@ -42,6 +43,5 @@ void add_to_ktask_list(struct tcb *process);
 void switch_thread();
 void switch_user_thread();
 void schedule();
-struct vm_area_struct *vma_malloc(struct mm_struct *mm);
 
 #endif
