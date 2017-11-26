@@ -8,7 +8,7 @@
 static int PID = 0;
 
 typedef struct task_struct {
-	uint64_t rsp;
+	uint64_t *rsp;
 	uint64_t kstack[STACK_SIZE];
 	uint64_t *ustack;
 	uint64_t pid;

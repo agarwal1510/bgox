@@ -8,6 +8,7 @@
 #include <sys/strings.h>
 #include <sys/paging.h>
 #include <sys/threads.h>
+extern void isr128(void);
 
 int elf_check_file(Elf64_Ehdr *elfhdr){
 
@@ -99,6 +100,32 @@ void elf_run_bin(Elf64_Ehdr *elfhdr, file *fileptr){
 kprintf("pcb->cr3=%p",pcb->cr3);
 
 
+  pcb->kstack[506] = 1; pcb->kstack[505] = 2;  pcb->kstack[504] = 3;  pcb->kstack[503] = 4;
+   pcb->kstack[502] = 5; pcb->kstack[501] = 6;  pcb->kstack[500] = 7;  pcb->kstack[499] = 8;
+   pcb->kstack[498] = 9; pcb->kstack[497] = 10; pcb->kstack[496] = 11; pcb->kstack[495] = 12; 
+   pcb->kstack[494] = 13; pcb->kstack[493] = 14; pcb->kstack[492] = 15; 
+   
+   pcb->kstack[491] = (uint64_t)(&isr128+34); 
+
+    //pcb->rsp = (&pcb->kstack[493]);
+    pcb->rsp = &(pcb->kstack[490]);
+
+    pcb->kstack[511] = 0x23 ;                               
+    pcb->kstack[510]=(uint64_t)(&pcb->ustack[511]);
+
+ //   print("stack=%x",pcb->kstack[510]);
+    pcb->kstack[509] = 0x246;                                            
+    pcb->kstack[508] = 0x1b ;
+
+	// LOAD ICODE HERE
+
+
+
+////////////////////////////////////////////////////////////////////////////////////
+
+
+
+         
 //	for(int i = 1; i <= 15; i++)
 //		pcb->kstack[PAGES_PER_PML4 - 5 - i] = i;
 	
