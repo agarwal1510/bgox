@@ -12,7 +12,7 @@ typedef struct task_struct {
 	uint64_t kstack[STACK_SIZE];
 	uint64_t *ustack;
 	uint64_t pid;
-	uint64_t cr3;
+	uint64_t *cr3;
 	char tname[100];
 	mm_struct *mm;
 	uint64_t pml4;

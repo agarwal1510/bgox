@@ -62,7 +62,7 @@ void page_fault_handler(void) {
 	__asm__ volatile ("movq %%cr2, %0":"=r"(pf_addr));
 	kprintf("Page Fault address: %p\n", pf_addr);
 	//__asm__ volatile ("hlt;");
-	//	while(1);
+		while(1);
 }
 
 void general_protection_fault_handler(void) {
@@ -70,7 +70,7 @@ void general_protection_fault_handler(void) {
 	__asm__ volatile ("movq %%cr2, %0":"=r"(pf_addr));
 	kprintf("GPF Handler: %p\n", pf_addr);
 	__asm__ volatile ("hlt;");
-	//while(1);
+	while(1);
 }
 
 void irq_timer_handler(void){

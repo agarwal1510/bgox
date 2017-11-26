@@ -70,13 +70,13 @@ void elf_run_bin(Elf64_Ehdr *elfhdr, file *fileptr){
 
 //	ready_queue[num_processes++] = pcb;
 
-	pcb->mm = (mm_struct *)((char *)(pcb + 1)); //WHY ?
-	pcb->mm->count = 0;
-	pcb->mm->mmap = NULL;
+//	pcb->mm = (mm_struct *)((char *)(pcb + 1)); //WHY ?
+//	pcb->mm->count = 0;
+//	pcb->mm->mmap = NULL;
 
 	pcb->pid = PID++;
 
-	memcpy(pcb->tname, fileptr->name, str_len(fileptr->name));
+//	memcpy(pcb->tname, fileptr->name, str_len(fileptr->name));
 
 	uint64_t *pml4a=(uint64_t *)(process_page);//
 	
@@ -84,27 +84,31 @@ void elf_run_bin(Elf64_Ehdr *elfhdr, file *fileptr){
 	for(uint64_t i=0; i < PAGES_PER_PML4; i++) 
 		pml4a[i] = 0;
 
-	pml4a[PAGES_PER_PML4 - 1] = (uint64_t)ker_cr3;
+	kprintf("%p %p", ker_pml4_t, ker_cr3);
+	
+	init_map_virt_phys_addr(0x0, 0x0, 24000, pml4a, 1);
+	
+	pml4a[PAGES_PER_PML4 - 1] = (uint64_t)(ker_pml4_t[511]);
 	pcb->pml4 = (uint64_t)pml4a;
-	pcb->cr3 = (uint64_t)PADDR(pml4a);
-
+	pcb->cr3 = (uint64_t *)PADDR(pml4a);
 //	pcb->ustack=kmalloc_user((pml4e_t *)pcb->pml4e,STACK_SIZE);
-//	__asm__ volatile ( "movq %0, %%cr3;"
-  //                        :: "r" (pcb->cr3));
-//	__asm__ volatile("movq %0, %%cr3":: "b"(pcb->cr3));
-	kprintf("pcb->cr3=%p",pcb->cr3);
-	kprintf("pcb->cr3=%p",ker_cr3);
+	__asm__ volatile ( "movq %0, %%cr3;"
+                          :: "r" (pcb->cr3));
 
-	for(int i = 1; i <= 15; i++)
-		pcb->kstack[STACK_SIZE - 5 - i] = i;
+	
+kprintf("pcb->cr3=%p",pcb->cr3);
+
+
+//	for(int i = 1; i <= 15; i++)
+//		pcb->kstack[PAGES_PER_PML4 - 5 - i] = i;
 	
 //	pcb->kstack[4080] = (uint64_t)(&isr32+34); 
 //	pcb->rsp = &(pcb->kstack[4080]);
-
-	 pcb->kstack[STACK_SIZE - 1] = 0x23 ;
+//
+//	 pcb->kstack[STACK_SIZE - 1] = 0x23 ;
 //	 pcb->kstack[STACK_SIZE - 2]=(uint64_t)(&pcb->pml4[STACK_SIZE - 1]);
-	 pcb->kstack[STACK_SIZE - 3] = 0x246;
-	 pcb->kstack[STACK_SIZE - 4] = 0x1b ;  
+//	 pcb->kstack[STACK_SIZE - 3] = 0x246;
+//	 pcb->kstack[STACK_SIZE - 4] = 0x1b ;  
 
 /*
 	 Elf64_Phdr *phdr = (Elf64_Phdr *)(elfhdr + elfhdr->e_phoff);

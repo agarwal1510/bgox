@@ -62,11 +62,14 @@ void start(uint32_t *modulep, void *physbase, void *physfree)
   kprintf("physfree %p\n", (uint64_t)physfree);
   kprintf("tarfs in [%p:%p]\n", &_binary_tarfs_start, &_binary_tarfs_end);
 
-  //load_cr3_user();
 //  apicMain();
 //  find_ahci();
 // switch_thread();
+kmain();
+
 init_tarfs();
+
+
 uint64_t p = opendir("bin/");
 //kprintf("%p", p);
 read_dir(p);
@@ -74,12 +77,12 @@ file* fd = open("bin/hello");
 kprintf("handle for %s %p\n", fd->name, fd->addr);
 //char buf[100] = {0};
 elf_parse(fd->addr+512,(file *)fd->addr);
+//load_cr3_user();
 
 //if (read(fd, buf, 15) > 0){
 //	kprintf("buffer read: %s", buf);
 //}
 
-kmain();
 
 //uint64_t add = (uint64_t) 0xffffffff8eeeeeee;
 //struct page *pa = (struct page *)add;

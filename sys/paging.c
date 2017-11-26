@@ -198,12 +198,18 @@ void load_cr3_user() {
 	uint64_t *ker_cr3_u = (uint64_t *)PADDR(kmalloc(1));
 	//uint64_t *ker_pml4_t_u = (uint64_t *) get_highest_virtaddr();
 	uint64_t *ker_pml4_t_u = (uint64_t *)VADDR(ker_cr3_u);
-	set_highest_virtaddr((uint64_t)ker_pml4_t_u + PAGE_SIZE);
-	uint64_t add = (uint64_t)ker_pml4_t_u << 16 >> 55 << 3;
-	kprintf("Tadd: %p %p %p\n", add, ker_pml4_t_u, add | 0xFFFFFF7FBFDFE000UL);
+
+//	set_highest_virtaddr((uint64_t)ker_pml4_t_u + PAGE_SIZE);
+//	uint64_t add = (uint64_t)ker_pml4_t_u << 16 >> 55 << 3;
+	
+//	kprintf("Tadd: %p %p %p\n", add, ker_pml4_t_u, add | 0xFFFFFF7FBFDFE000UL);
 	//while(1);
-	init_map_virt_phys_addr((uint64_t)ker_pml4_t_u, (uint64_t)ker_cr3_u, 1, (uint64_t *)ker_pml4_t_u, 1); 
+//	init_map_virt_phys_addr(0x0, 0x0, 24162, ker_pml4_t_u, 1);
+//	init_map_virt_phys_addr((uint64_t)ker_pml4_t_u, (uint64_t)ker_cr3_u, 1, (uint64_t *)ker_pml4_t_u, 1); 
 	ker_pml4_t_u[511] = ker_pml4_t[511];
+//	init_map_virt_phys_addr(0xFFFFFFFF800B8000, 0xB8000, 1, ker_pml4_t_u,0);
 	kprintf("User PML4: %p %p %p %p\n", ker_cr3_u, ker_pml4_t_u, ker_pml4_t_u[511], ker_pml4_t[511]);
-	//LOAD_CR3((uint64_t)ker_cr3_u);
+	LOAD_CR3((uint64_t)ker_cr3_u);
+	kprintf("Here");
+	while(1);
 }
