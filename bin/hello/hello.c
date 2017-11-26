@@ -1,6 +1,6 @@
 #include<stdio.h>
+
 int main(){
-	puts("hello");
-	
+	print("Teri Maa ki chut");
 	return 0;
 }

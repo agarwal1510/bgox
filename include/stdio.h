@@ -5,6 +5,7 @@ static const int EOF = -1;
 
 int putchar(int c);
 int puts(const char *s);
+void print(const char *s);
 int printf(const char *format, ...);
 int gets(char *s);
 

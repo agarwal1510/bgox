@@ -119,6 +119,7 @@ void region_alloc(task_struct *pcb, uint64_t va, uint64_t size) {
 		kprintf("Add: %p", addr);
 		init_map_virt_phys_addr((uint64_t)v, PADDR(addr), 1, (uint64_t *)(pcb->pml4), 1);
 	}
+	kprintf("Out of here");
 }
 struct vm_area_struct *vma_malloc(struct mm_struct *mm) {
 

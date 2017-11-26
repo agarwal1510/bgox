@@ -68,17 +68,17 @@ void test_function() {
 	while(1);
 }
 
-task_struct *elf_run_bin(Elf64_Ehdr *elfhdr, file *fileptr){
-
+task_struct *elf_run_bin(uint64_t addr, file *fileptr){
+	Elf64_Ehdr *elfhdr = (Elf64_Ehdr *)addr;
 	struct page *process_page = (struct page *)kmalloc(1);
 
 	task_struct *pcb = (task_struct *)kmalloc(sizeof(task_struct));
 
 	//	ready_queue[num_processes++] = pcb;
 
-	//	pcb->mm = (mm_struct *)((char *)(pcb + 1)); //WHY ?
-	//	pcb->mm->count = 0;
-	//	pcb->mm->mmap = NULL;
+		pcb->mm = (mm_struct *)((char *)(pcb + 1)); //WHY ?
+		pcb->mm->count = 0;
+		pcb->mm->mmap = NULL;
 
 	//pcb->pid = PID++;
 
@@ -145,11 +145,9 @@ task_struct *elf_run_bin(Elf64_Ehdr *elfhdr, file *fileptr){
 	//	 pcb->kstack[STACK_SIZE - 4] = 0x1b ;  
 
 
-	Elf64_Phdr *phdr = (Elf64_Phdr *)(elfhdr + elfhdr->e_phoff);
+	Elf64_Phdr *phdr = (Elf64_Phdr *)((uint8_t *)elfhdr + elfhdr->e_phoff);
 	Elf64_Phdr *eph = phdr + elfhdr->e_phnum;
-	kprintf("PHR: %p %p %d", phdr, eph, elfhdr->e_phnum);
 	for(; phdr < eph; phdr++){
-		kprintf("\nPH type: %d", phdr->p_type);
 		if (phdr->p_type == ELF_PROG_LOAD) {
 
 			if (phdr->p_filesz > phdr->p_memsz)
@@ -160,6 +158,7 @@ task_struct *elf_run_bin(Elf64_Ehdr *elfhdr, file *fileptr){
 			//load_user_cr3(pcb->cr3);
 
 			region_alloc(pcb, phdr->p_vaddr, phdr->p_memsz);
+			kprintf("dedede");
 			memcpy((char*) phdr->p_vaddr, (void *) elfhdr + phdr->p_offset, phdr->p_filesz);
 
 			if (phdr->p_filesz < phdr->p_memsz)
@@ -176,9 +175,9 @@ task_struct *elf_run_bin(Elf64_Ehdr *elfhdr, file *fileptr){
 			vm->vm_pgoff = phdr->p_offset;  
 		}
 	}             	
-
-	//pcb->entry = elfhdr->e_entry;
-	pcb->entry = (uint64_t) &test_function;
+	kprintf("put of loop");
+	pcb->entry = elfhdr->e_entry;
+//	pcb->entry = (uint64_t) &test_function;
 	
 	pcb->kstack[507] = (uint64_t)pcb->entry; 
 
@@ -192,6 +191,6 @@ task_struct *elf_parse(uint64_t addr, file *fileptr){
 		kprintf("ELF file supported by machine\n");
 	}
 	kprintf("Now load the Program headers into a new page and start executing\n");
-	return elf_run_bin(elfhdr, fileptr);
+	return elf_run_bin(addr, fileptr);
 }
 
