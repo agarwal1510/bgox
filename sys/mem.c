@@ -113,8 +113,10 @@ void region_alloc(task_struct *pcb, uint64_t va, uint64_t size) {
 	uint64_t start = get_starting_page(va);
 	uint64_t end = get_ending_page(va+size);
 	uint64_t v;
+	kprintf("RM: %p %p %p %d", start, end, va, size);
 	for (v = start; v < end; v += PAGE_SIZE) {
 		uint64_t *addr = kmalloc(1);
+		kprintf("Add: %p", addr);
 		init_map_virt_phys_addr((uint64_t)v, PADDR(addr), 1, (uint64_t *)(pcb->pml4), 1);
 	}
 }

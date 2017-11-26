@@ -151,7 +151,6 @@ isr128:
         popq %rcx
         popq %rbx
         popq %rax
-	sti
 	iretq
 
 pushall:

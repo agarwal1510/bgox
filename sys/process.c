@@ -48,7 +48,7 @@ void schedule() {
 }
 
 void switch_to(task_struct *next, task_struct *me) {
-	kprintf("Nextrsp: %p\n", next->rsp);
+	//kprintf("Nextrsp: %p\n", next->rsp);
 
 /*	__asm__ __volatile__( "pushq %rax");
 	__asm__ __volatile__( "pushq %rbx");

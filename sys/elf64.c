@@ -63,6 +63,11 @@ int elf_check_supported(Elf64_Ehdr *hdr) {
 	return true;
 }
 
+void test_function() {
+	kprintf("Test");
+	while(1);
+}
+
 task_struct *elf_run_bin(Elf64_Ehdr *elfhdr, file *fileptr){
 
 	struct page *process_page = (struct page *)kmalloc(1);
@@ -92,7 +97,9 @@ task_struct *elf_run_bin(Elf64_Ehdr *elfhdr, file *fileptr){
 	pml4a[PAGES_PER_PML4 - 1] = (uint64_t)(ker_pml4_t[511]);
 	pcb->pml4 = (uint64_t)pml4a;
 	pcb->cr3 = (uint64_t *)PADDR(pml4a);
-	//	pcb->ustack=kmalloc_user((pml4e_t *)pcb->pml4e,STACK_SIZE);
+	pcb->ustack = kmalloc(1);
+	init_map_virt_phys_addr((uint64_t)pcb->ustack, PADDR(pcb->ustack), 1, pml4a, 1);
+	//pcb->ustack = kmalloc_user((pml4e_t *)pcb->pml4e,STACK_SIZE);
 	__asm__ volatile ( "movq %0, %%cr3;"
 			:: "r" (pcb->cr3));
 
@@ -105,10 +112,10 @@ task_struct *elf_run_bin(Elf64_Ehdr *elfhdr, file *fileptr){
 	pcb->kstack[498] = 9; pcb->kstack[497] = 10; pcb->kstack[496] = 11; pcb->kstack[495] = 12; 
 	pcb->kstack[494] = 13; pcb->kstack[493] = 14; pcb->kstack[492] = 15; 
 
-	pcb->kstack[491] = (uint64_t)(&isr128+34); 
+	pcb->kstack[491] = (uint64_t)(&isr128+29); 
 
 	//pcb->rsp = (&pcb->kstack[493]);
-	pcb->rsp = &(pcb->kstack[490]);
+	pcb->rsp = &(pcb->kstack[491]);
 
 	pcb->kstack[511] = 0x23 ;                               
 	pcb->kstack[510]=(uint64_t)(&pcb->ustack[511]);
@@ -140,8 +147,9 @@ task_struct *elf_run_bin(Elf64_Ehdr *elfhdr, file *fileptr){
 
 	Elf64_Phdr *phdr = (Elf64_Phdr *)(elfhdr + elfhdr->e_phoff);
 	Elf64_Phdr *eph = phdr + elfhdr->e_phnum;
-
+	kprintf("PHR: %p %p %d", phdr, eph, elfhdr->e_phnum);
 	for(; phdr < eph; phdr++){
+		kprintf("\nPH type: %d", phdr->p_type);
 		if (phdr->p_type == ELF_PROG_LOAD) {
 
 			if (phdr->p_filesz > phdr->p_memsz)
@@ -169,8 +177,9 @@ task_struct *elf_run_bin(Elf64_Ehdr *elfhdr, file *fileptr){
 		}
 	}             	
 
-	pcb->entry = elfhdr->e_entry;
-
+	//pcb->entry = elfhdr->e_entry;
+	pcb->entry = (uint64_t) &test_function;
+	
 	pcb->kstack[507] = (uint64_t)pcb->entry; 
 
 	__asm__ volatile("movq %0, %%cr3":: "b"(ker_cr3));
