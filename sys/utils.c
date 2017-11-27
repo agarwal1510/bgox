@@ -42,3 +42,17 @@ uint64_t get_starting_page(uint64_t addr) {
 uint64_t get_ending_page(uint64_t addr) {
 	return get_starting_page(addr + (uint64_t)0x1000 - 1);
 }
+
+void memcpy(void *dest, void* src, int size ){
+		char *source = (char *)src;
+		char * dst = (char *)dest;
+		for(int i = 0; i < size; i ++){
+				dst[i] = source[i];
+		}
+}
+
+void memset (void *address, int value, int size) {
+         unsigned char *p = address;
+         for (int i = 0; i< size; i++)
+             *p++ = (unsigned char)value;
+}

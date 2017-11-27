@@ -14,8 +14,11 @@ extern void isr1(void);
 extern void isr128(void);
 extern void isr14(void);
 extern void isr13(void);
-extern void timer_init(void);
+
+void timer_init();
+
 extern unsigned char kbdus[128];
+
 int SHIFT_ON = 0;
 int CTRL_ON = 0;
 /*struct gate_str{
@@ -76,7 +79,7 @@ void general_protection_fault_handler(void) {
 void irq_timer_handler(void){
 	outb(0x20, 0x20);
 	outb(0xa0, 0x20);
-	if (ticks % 18 == 0){
+	if (ticks % 100 == 0){
 		int new_sec = ticks/100;
 		if (new_sec != sec){
 			sec = new_sec;
@@ -99,10 +102,11 @@ void syscall_handler(void) {
 			:
 			:"rax","rsi","rcx"
 		      );  
-
-	kprintf("Interrupt received %s", buf);
-	while(1){}
 	
+	if (syscall_num == 1){ // Write
+		kprintf("Interrupt received %s", buf);
+	}
+/*	
 	if (syscall_num == 2) { //Fork
 	
 	} else if (syscall_num == 3) { //Read
@@ -110,12 +114,13 @@ void syscall_handler(void) {
 	} else if (syscall_num == 4) { //Write
 		kprintf("%s", buf);
 	}
+*/
 }
 
 void irq_kb_handler(void){
 	outb(0x20, 0x20);
 	outb(0xa0, 0x20);
-	//while(1){}
+	
 	char status = inb(KB_STATUS);
 	if (status & 0x01){
 		//		outb(KB_STATUS, 0x20);
@@ -235,7 +240,7 @@ void pic_init(void){ // SETUP Master and Slave PICS
 	outb(0x21, 0xff);
 	outb(0xA1, 0xff);
 }
-void setup_gate(int32_t num, uint64_t handler_addr){
+void setup_gate(int32_t num, uint64_t handler_addr, unsigned dpl){
 	IDT[num].offset_low = (handler_addr & 0xFFFF);
 	IDT[num].offset_mid = ((handler_addr >> 16) & 0xFFFF);
 	IDT[num].offset_high = ((handler_addr >> 32) & 0xFFFFFFFF);
@@ -245,25 +250,21 @@ void setup_gate(int32_t num, uint64_t handler_addr){
 	IDT[num].ist = 0x0;
 	IDT[num].reserved0 = 0;
 	IDT[num].p = 1;
-	IDT[num].dpl = 3;
+	IDT[num].dpl = dpl;
 
-	//    idt_entries[num].ist = ist;
-	//		    idt_entries[num].type = type;
-	//	    idt_entries[num].zero = 0;
-	//				    idt_entries[num].p = 1;
 }
 void idt_init(void)
 {
-	setup_gate(13, (uint64_t)isr13);
-	setup_gate(14, (uint64_t)isr14);
-	setup_gate(32, (uint64_t)isr0);
-	setup_gate(33, (uint64_t)isr1);
-	setup_gate(128, (uint64_t)isr128);
+	setup_gate(13, (uint64_t)isr13, 0);
+	setup_gate(14, (uint64_t)isr14, 0);
+	setup_gate(32, (uint64_t)isr0, 0);
+	setup_gate(33, (uint64_t)isr1, 0);
+	setup_gate(128, (uint64_t)isr128, 3);
 	_x86_64_asm_lidt(&idtr);
 }
 
 void mask_init(void){
-	outb(0x21 , 0xFF); //11111100
+	outb(0x21 , 0xFC); //11111100
 }
 
 void kmain(void){
@@ -271,5 +272,16 @@ void kmain(void){
 	pic_init();
 	idt_init();
 	mask_init();
-	//	timer_init();
+	timer_init();
+}
+void timer_init(){
+ 
+	uint32_t divisor = 1193180;
+   outb(0x43, 0x36);
+
+   uint8_t l = (uint8_t)(divisor & 0xFF);
+   uint8_t h = (uint8_t)( (divisor>>8) & 0xFF );
+
+   outb(0x40, l);
+   outb(0x40, h);
 }

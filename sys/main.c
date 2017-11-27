@@ -20,22 +20,6 @@ extern char kernmem, physbase;
 DEFN_SYSCALL1(kprintf, 0, const char*);
 //void thread1(){
 
-
-//}
-/*
-void thread_handler(){
-//	__asm__ volatile("int $0x21");
-	
-//	kprintf("Handler Thread called\n");
-	
-	while(1){}
-//	return;
-}*/
-void myfunc(){
-	while(1);
-//__asm__ volatile("int $0x80");
-//	syscall_kprintf("Nigga be in user mode");
-}
 void start(uint32_t *modulep, void *physbase, void *physfree)
 {
 		struct smap_t {
@@ -123,7 +107,8 @@ void start(uint32_t *modulep, void *physbase, void *physfree)
    */
   // while(1){}
   //  switch_user_thread();
-  while(1);
+ kprintf("All Tasks done scheduling\n");
+ while(1);
 }
 void boot(void)
 {

@@ -63,11 +63,6 @@ int elf_check_supported(Elf64_Ehdr *hdr) {
 	return true;
 }
 
-void test_function() {
-	kprintf("Test");
-	while(1);
-}
-
 task_struct *elf_run_bin(uint64_t addr, file *fileptr){
 	Elf64_Ehdr *elfhdr = (Elf64_Ehdr *)addr;
 	struct page *process_page = (struct page *)kmalloc(1);

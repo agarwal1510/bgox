@@ -3,8 +3,7 @@
 #include <sys/kprintf.h>
 #include <sys/ptops.h>
 #include <sys/paging.h>
-#include <sys/memutils.h>
-#include <sys/mathutils.h>
+#include <sys/utils.h>
 #include <sys/process.h>
 
 struct page *free_list;
@@ -113,13 +112,10 @@ void region_alloc(task_struct *pcb, uint64_t va, uint64_t size) {
 	uint64_t start = get_starting_page(va);
 	uint64_t end = get_ending_page(va+size);
 	uint64_t v;
-	kprintf("RM: %p %p %p %d", start, end, va, size);
 	for (v = start; v < end; v += PAGE_SIZE) {
 		uint64_t *addr = kmalloc(1);
-		kprintf("Add: %p", addr);
 		init_map_virt_phys_addr((uint64_t)v, PADDR(addr), 1, (uint64_t *)(pcb->pml4), 1);
 	}
-	kprintf("Out of here");
 }
 struct vm_area_struct *vma_malloc(struct mm_struct *mm) {
 
