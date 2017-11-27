@@ -7,7 +7,10 @@
 #include <sys/defs.h>
 #include <sys/portio.h>
 #include <stdlib.h>
+#include <sys/strings.h>
+#include <sys/utils.h>
 #include "kb_map.h"
+
 extern void load_idt(unsigned long *idt_ptr);
 extern void isr0(void);
 extern void isr1(void);
@@ -18,6 +21,10 @@ extern void isr13(void);
 void timer_init();
 
 extern unsigned char kbdus[128];
+
+static char char_buf[1024];
+static volatile int buf_idx = 0;
+static volatile int new_line = 0;
 
 int SHIFT_ON = 0;
 int CTRL_ON = 0;
@@ -92,19 +99,32 @@ void irq_timer_handler(void){
 void syscall_handler(void) {
 
 	uint64_t syscall_num = 0;
-	uint64_t buf, third, fourth;
+	uint64_t buf, third, fourth, fifth;
 	//Save register values
-	__asm volatile("movq %%rax, %0;"
+	__asm__ volatile("movq %%rax, %0;"
 			"movq %%rbx, %1;"
 			"movq %%rcx, %2;"
 			"movq %%rdx, %3;"
-			: "=g"(syscall_num),"=g"(buf), "=g"(third), "=g"(fourth)
+			"movq %%rdx, %4;"
+			: "=g"(syscall_num),"=g"(buf), "=g"(third), "=g"(fourth), "=g"(fifth)
 			:
-			:"rax","rsi","rcx"
+			:"rax", "rbx", "rdx", "rsi","rcx"
 		      );  
 	
 	if (syscall_num == 1){ // Write
-		kprintf("Interrupt received %s", buf);
+		kprintf("%s", buf);
+	}
+	
+	else if (syscall_num == 2){
+				__asm__("sti");
+				char *buf_cpy = (char *)third;
+				int line = 0, idx = 0;
+				while(line == 0 && idx < fourth){
+				//poll
+					line = new_line;
+					idx = buf_idx;
+				}
+				memcpy(buf_cpy, char_buf, str_len(char_buf));
 	}
 /*	
 	if (syscall_num == 2) { //Fork
@@ -146,6 +166,11 @@ void irq_kb_handler(void){
 		else if (key == 0x9d){
 			CTRL_ON = 0;
 			SHIFT_ON = 0;
+			return;
+		}
+		if (key == 0x1c){
+			new_line = 1;
+			char_buf[buf_idx++] = '\n';
 			return;
 		}
 		if (key < 0x52){ // Keys over SSH
@@ -223,6 +248,8 @@ void irq_kb_handler(void){
 			}
 			else
 				kprintf_at("%c", 148, 24, kbdus[key]);
+				
+			char_buf[buf_idx++] = kbdus[key];
 		}
 	}
 }

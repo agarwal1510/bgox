@@ -347,7 +347,7 @@ int main(int argc, char *argv[], char *envp[]) {
 				char command[COMM_LEN];
 				int line = 0, i=0;
 				int file = open(fileName, O_RDONLY); 
-				while (read(file, &command[i], 1) == 1) {
+				while (read(file, (char *)&command[i], 1) == 1) {
 		//		str_cpy(command, "ls -la");
 		//		while (command != NULL) {
 						if (command[i] == '\n' || command[i] == 0x0) {
@@ -386,7 +386,7 @@ int main(int argc, char *argv[], char *envp[]) {
 						if (ret < 0)
 								puts("sbush: Error writing to STDOUT");
 						int i = 0;
-						while (read(0, &command[i], 1) == 1) {
+						while (read(0, (char *)&command[i], 1) == 1) {
 								if (command[i] == '\n' || command[i] == 0x0) {
 										command[i] = 0;
 										i = 0;

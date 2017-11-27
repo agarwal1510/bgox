@@ -179,7 +179,7 @@ isr14:
 	iretq
 
 isr128:
-	cli
+#	cli
 	pushq %rax
         pushq %rbx
         pushq %rcx

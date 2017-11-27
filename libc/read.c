@@ -1,6 +1,11 @@
-#include <unistd.h>
+#include <stdio.h>
 #include <sys/syscall.h>
+#include <sys/defs.h>
 
-#define __NR_read 3
+DEFN_SYSCALL3(read, 2, int, char *, uint16_t);
 
-_syscall3(ssize_t, read, int, fd, void *, buf, size_t, count);
+int read(int fd, char *s, uint16_t size)
+{
+	syscall_read(0, s, size);
+	return 0;
+}

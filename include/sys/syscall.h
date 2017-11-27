@@ -17,6 +17,8 @@ void syscall_init();
 
 #define DECL_SYSCALL0(fn) int syscall_##fn();
 #define DECL_SYSCALL1(fn,p1) int syscall_##fn(p1);
+#define DECL_SYSCALL2(fn,p1,p2) int syscall_##fn(p1,p2);
+#define DECL_SYSCALL3(fn,p1,p2,p3) int syscall_##fn(p1,p2,p3);
 
 #define DEFN_SYSCALL0(fn, num) \
 int syscall_##fn() \
@@ -34,8 +36,25 @@ int syscall_##fn(P1 p1) \
 	return a; \
 }
 
+#define DEFN_SYSCALL2(fn, num, P1, P2) \
+int syscall_##fn(P1 p1, P2 p2) \
+{ \
+ int a; \
+ __asm__ volatile("int $0x80" : "=a" (a) : "0" (num), "b" ((long)p1), "c" ((long)p2)); \
+		return a; \
+}
+
+#define DEFN_SYSCALL3(fn, num, P1, P2, P3) \
+		int syscall_##fn(P1 p1, P2 p2, P3 p3) \
+{ \
+		int a; \
+		__asm__ volatile("int $0x80" : "=a" (a) : "0" (num), "b" ((long)p1), "c" ((long)p2), "d"((long)p3)); \
+		return a; \
+}
+
 
 DECL_SYSCALL1(kprintf, const char*)
+DECL_SYSCALL3(read, int, char *, uint16_t)
 //DECL_SYSCALL1(write_hex, const char*)
 
 //////////////////////////////////////////
