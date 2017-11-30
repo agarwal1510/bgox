@@ -7,7 +7,7 @@
 #include <sys/tarfs.h>
 #include <sys/strings.h>
 #include <sys/paging.h>
-#include <sys/threads.h>
+//#include <sys/threads.h>
 extern void isr128(void);
 
 int elf_check_file(Elf64_Ehdr *elfhdr){
@@ -93,6 +93,7 @@ task_struct *elf_run_bin(uint64_t addr, file *fileptr){
 	pcb->pml4 = (uint64_t)pml4a;
 	pcb->cr3 = (uint64_t *)PADDR(pml4a);
 	pcb->ustack = kmalloc(1);
+	pcb->pid = ++PID;
 	init_map_virt_phys_addr((uint64_t)pcb->ustack, PADDR(pcb->ustack), 1, pml4a, 1);
 	//pcb->ustack = kmalloc_user((pml4e_t *)pcb->pml4e,STACK_SIZE);
 	__asm__ volatile ( "movq %0, %%cr3;"

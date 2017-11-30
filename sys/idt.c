@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <sys/strings.h>
 #include <sys/utils.h>
+#include <sys/process.h>
 #include "kb_map.h"
 
 extern void load_idt(unsigned long *idt_ptr);
@@ -125,6 +126,10 @@ void syscall_handler(void) {
 					idx = buf_idx;
 				}
 				memcpy(buf_cpy, char_buf, str_len(char_buf));
+	} else if (syscall_num == 4) {
+		__asm__ ("sti;");
+		uint64_t pid = fork();
+		kprintf("PID: %d", pid);
 	}
 /*	
 	if (syscall_num == 2) { //Fork

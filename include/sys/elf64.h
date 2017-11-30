@@ -3,7 +3,7 @@
 #include <sys/defs.h>
 #include <sys/tarfs.h>
 #include <sys/process.h>
-#include <sys/threads.h>
+//#include <sys/threads.h>
 
 #define EI_NIDENT 16
 

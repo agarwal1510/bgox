@@ -1,4 +1,5 @@
 #include<stdio.h>
+#include <unistd.h>
 
 int main(){
 	print("Teri Maa ki chut");
@@ -9,6 +10,8 @@ int main(){
 	char s[11];
 	read(0, s, 10);
 	print(s);
+	fork();
+	//print("pid: %d",pid);
 	while(1);
 	return 0;
 }

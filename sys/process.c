@@ -1,19 +1,23 @@
-#include <sys/threads.h>
+#include <sys/process.h>
 #include <sys/kprintf.h>
 #include <sys/mem.h>
 #include <sys/gdt.h>
+#include <sys/strings.h>
+#include <sys/paging.h>
 
-
+extern void isr128(void);
 void switch_to(task_struct *next, task_struct *me);
 
 ready_task *ready_queue = NULL;
 ready_task *head = NULL;
 ready_task *previous = NULL;
 
-
+task_struct *get_running_task() {
+	return head->process;
+}
 
 void add_to_task_list(task_struct *process) {
-
+	
 	if (ready_queue == NULL){
 		ready_queue = (ready_task *)kmalloc(sizeof(ready_task));
 		ready_queue->process = process;
@@ -21,7 +25,7 @@ void add_to_task_list(task_struct *process) {
 		head = ready_queue;
 		return;
 	}
-
+	ready_task *temp = ready_queue;
 	while(ready_queue->next != NULL){
 		ready_queue = ready_queue->next;
 	}
@@ -30,7 +34,7 @@ void add_to_task_list(task_struct *process) {
 	new_task->process = process;
 	new_task->next = NULL;
 	ready_queue->next  = new_task;
-	ready_queue = head;
+	ready_queue = temp;
 }
 
 void schedule() {
@@ -41,7 +45,7 @@ void schedule() {
 		previous = head;
 		head = ready_queue;			
 	}
-	//kprintf("next: %p me: %p", head->thread, previous->thread);
+	kprintf("\nnext: %d me: %d", head->process->pid, previous->process->pid);
 	//		if (make == 1)
 	switch_to(head->process, previous->process);
 
@@ -92,6 +96,86 @@ void switch_to(task_struct *next, task_struct *me) {
 	__asm__ __volatile__( "popq %rax");
 */	
 //	__asm__ __volatile__("iretq");
+}
+
+uint64_t fork() {
+	task_struct *parent = get_running_task();
+	task_struct *child = (task_struct *) kmalloc(sizeof(task_struct));
+	add_to_task_list(child);
+
+	child->mm = (mm_struct *)((char *)(child+1));
+	child->mm->mmap = NULL;
+	child->pid = ++PID;
+	child->ppid = parent->pid;
+	//memcpy(child->tname, parent->tname, str_len(parent->tname));
+	
+	struct page *pt_page = (struct page*) kmalloc(1);
+	uint64_t *pml4a = (uint64_t *)(pt_page);
+	for (uint64_t i = 0; i < PAGES_PER_PML4; i++) {
+		pml4a[i] = 0;
+	}
+
+	pml4a[PAGES_PER_PML4 - 1] = (uint64_t)(ker_pml4_t[511]);
+	child->pml4 = (uint64_t)pml4a;
+	child->cr3 = (uint64_t *)PADDR(pml4a);
+	init_map_virt_phys_addr(0x0, 0x0, 24000, pml4a, 1);
+
+	uint64_t *tmp_stack = kmalloc(1);
+	for (uint64_t j = 0; j < STACK_SIZE; j++) {
+		tmp_stack[j] = parent->ustack[j];
+	}
+	init_map_virt_phys_addr((uint64_t)child->ustack, PADDR(child->ustack), 1, pml4a, 1);
+
+	__asm__ volatile ("movq %0, %%cr3;"::"r"(child->cr3));
+	kprintf("Child cr3: %p\n", child->cr3);
+	child->ustack = parent->ustack;
+
+
+	child->kstack[511] = 0x23;
+	child->kstack[510] = parent->kstack[508];
+	child->kstack[509] = 0x246;
+	child->kstack[508] = 0x1b;
+	child->kstack[507] = parent->kstack[505]; //entry point
+	child->kstack[506] = 0;
+	child->kstack[505] = parent->kstack[503];
+	child->kstack[504] = parent->kstack[502];
+	child->kstack[503] = parent->kstack[501];
+	child->kstack[502] = parent->kstack[500];
+	child->kstack[501] = parent->kstack[499];
+	child->kstack[500] = parent->kstack[498];
+	child->kstack[499] = parent->kstack[497];
+	child->kstack[498] = parent->kstack[496];
+	child->kstack[497] = parent->kstack[495];
+	child->kstack[496] = parent->kstack[494];
+	child->kstack[495] = parent->kstack[493];
+	child->kstack[494] = parent->kstack[492];
+	child->kstack[493] = parent->kstack[491];
+	child->kstack[492] = parent->kstack[490];
+	
+	child->kstack[491] = (uint64_t)(&isr128+29);
+	child->kstack[490] = 16;
+	
+	child->rsp = &(child->kstack[490]);
+	vm_area_struct *p_vma = parent->mm->mmap;
+	vm_area_struct *child_vma;
+	while (p_vma != NULL) {
+		child_vma = vma_malloc(child->mm);
+		child_vma->vm_start = p_vma->vm_start;
+		child_vma->vm_end = p_vma->vm_end;
+		child_vma->vm_mmsz = p_vma->vm_mmsz;
+		child_vma->vm_next = NULL;
+		child_vma->vm_file = p_vma->vm_file;
+		child_vma->vm_flags = p_vma->vm_flags;
+		child_vma->vm_pgoff = p_vma->vm_pgoff;
+		
+		region_alloc(child, p_vma->vm_start, p_vma->vm_mmsz);
+
+		p_vma = p_vma->vm_next;
+	}
+
+	__asm__ volatile ("movq %0, %%cr3;"::"b"(parent->cr3));
+	return child->pid;
+
 }
 
 /*

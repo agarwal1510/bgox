@@ -16,6 +16,7 @@
 uint64_t initial_stack[STACK_SIZE]__attribute__((aligned(16)));
 uint32_t* loader_stack;
 extern char kernmem, physbase;
+int PID = 0;
 //struct pcb *bootProcess;
 DEFN_SYSCALL1(kprintf, 0, const char*);
 //void thread1(){
@@ -46,11 +47,10 @@ void start(uint32_t *modulep, void *physbase, void *physfree)
   kprintf("Page Tables Setup complete\n");
   kprintf("physfree %p\n", (uint64_t)physfree);
   kprintf("tarfs in [%p:%p]\n", &_binary_tarfs_start, &_binary_tarfs_end);
-
   task_struct *pcb_boot = (task_struct *)kmalloc(sizeof(task_struct));  //kernel 
   pcb_boot->pml4 =(uint64_t)ker_pml4_t;  // kernel's page table   
   pcb_boot->cr3 = ker_cr3; // kernel's page table   
-  pcb_boot->pid = 0;  // I'm kernel init process  so pid 0  
+  pcb_boot->pid = PID;  // I'm kernel init process  so pid 0  
   //  pcb_boot->kstack = (uint64_t *)initial_stack; //my stack is already created by prof :)  
 //  __asm__ volatile ("movq %%rsp, %0" : "=m"(pcb_boot->rsp));
   kprintf("\nEntry: %p\n", pcb_boot->rsp);
