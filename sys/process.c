@@ -98,7 +98,7 @@ void switch_to(task_struct *next, task_struct *me) {
 //	__asm__ __volatile__("iretq");
 }
 
-uint64_t fork() {
+uint64_t sys_fork() {
 	task_struct *parent = get_running_task();
 	task_struct *child = (task_struct *) kmalloc(sizeof(task_struct));
 	add_to_task_list(child);
@@ -154,7 +154,9 @@ uint64_t fork() {
 	child->kstack[494] = parent->kstack[492];
 	child->kstack[493] = parent->kstack[491];
 	child->kstack[492] = parent->kstack[490];
-
+	parent->kstack[506] = 0; //Test statements to populate rax of parent
+	parent->kstack[505] = 0;// Test
+	parent->kstack[504] = 0;// Test
 	child->kstack[491] = (uint64_t)(&isr128+29);
 	child->kstack[490] = 16;
 	

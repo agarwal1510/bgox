@@ -131,7 +131,7 @@ void syscall_handler(void) {
 	} else if (syscall_num == 4) {
 //		__asm__ ("sti");
 	//	pusha();	
-		uint64_t pid = fork();
+		uint64_t pid = sys_fork();
 //		popa();
 		kprintf("PID: %d", pid);
 //		while(1);

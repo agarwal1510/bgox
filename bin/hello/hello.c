@@ -1,5 +1,6 @@
 #include<stdio.h>
 #include <unistd.h>
+#include <sys/process.h>
 char* itoa(int num, char* str, int base)
 {
     int i = 0;
@@ -56,6 +57,7 @@ int main(){
 		print(pids);
 //		print(&pid);
 	}
+	schedule();
 	while(1);
 	return 0;
 }
