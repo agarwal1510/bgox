@@ -18,6 +18,8 @@ extern void isr1(void);
 extern void isr128(void);
 extern void isr14(void);
 extern void isr13(void);
+extern void pusha(void);
+extern void popa(void);
 
 void timer_init();
 
@@ -127,9 +129,12 @@ void syscall_handler(void) {
 				}
 				memcpy(buf_cpy, char_buf, str_len(char_buf));
 	} else if (syscall_num == 4) {
-		__asm__ ("sti;");
+//		__asm__ ("sti");
+	//	pusha();	
 		uint64_t pid = fork();
+//		popa();
 		kprintf("PID: %d", pid);
+//		while(1);
 	}
 /*	
 	if (syscall_num == 2) { //Fork

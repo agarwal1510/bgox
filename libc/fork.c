@@ -1,7 +1,5 @@
 #include <sys/syscall.h>
-#include <unistd.h>
-
-#define __NR_fork 4
+//#include <unistd.h>
 
 //_syscall0(pid_t, fork);
 DEFN_SYSCALL0(fork, 4);
