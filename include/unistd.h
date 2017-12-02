@@ -29,5 +29,6 @@ off_t lseek(int fd, off_t offset, int whence);
 
 // OPTIONAL: implement for ``signals and pipes (+10 pts)''
 int pipe(int *pipefd);
+void yield();
 int dup2(int oldfd, int newfd);
 #endif

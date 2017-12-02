@@ -77,7 +77,9 @@ void switch_to(task_struct *next, task_struct *me) {
 	              :: "r" (next->cr3));
 	
 	__asm__ __volatile__ ("movq %0, %%rsp;"::"r"(next->rsp));
-
+//	if (next->pid == 2)
+//		while(1);
+//	kprintf("switch");
 /*
 	__asm__ __volatile__( "popq %r15");
 	__asm__ __volatile__( "popq %r14");

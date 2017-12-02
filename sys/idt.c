@@ -136,6 +136,11 @@ void syscall_handler(void) {
 		kprintf("PID: %d", pid);
 //		while(1);
 	}
+	else if (syscall_num == 6){
+		schedule();
+		kprintf("schedule return");
+		while(1);
+	}
 /*	
 	if (syscall_num == 2) { //Fork
 	

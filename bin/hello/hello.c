@@ -57,7 +57,7 @@ int main(){
 		print(pids);
 //		print(&pid);
 	}
-	schedule();
+	yield();
 	while(1);
 	return 0;
 }
