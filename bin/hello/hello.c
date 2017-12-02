@@ -10,8 +10,9 @@ int main(){
 	char s[11];
 	read(0, s, 10);
 	print(s);
-	fork();
-	//print("pid: %d",pid);
+	pid_t pid;
+	if ((pid = fork()) != -1) 
+		print("fork called");
 	while(1);
 	return 0;
 }
