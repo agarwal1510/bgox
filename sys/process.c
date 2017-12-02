@@ -100,6 +100,12 @@ void switch_to(task_struct *next, task_struct *me) {
 //	__asm__ __volatile__("iretq");
 }
 
+void test_function() {
+	kprintf("in test function");
+	while(1);
+
+}
+
 uint64_t sys_fork() {
 	task_struct *parent = get_running_task();
 	task_struct *child = (task_struct *) kmalloc(sizeof(task_struct));
@@ -129,18 +135,20 @@ uint64_t sys_fork() {
 //	}
 
 //	init_map_virt_phys_addr(0x0, 0x0, 32000, (uint64_t *)child->pml4, 1);
+	uint64_t curr_rsp;
+	__asm__ volatile ("movq %%rsp, %0;":"=a"(curr_rsp));
+	kprintf("RSP: %p", curr_rsp);
 	__asm__ volatile ("movq %0, %%cr3;"::"r"(child->cr3));
 	kprintf("cr3: %p", child->cr3);
 //	init_map_virt_phys_addr((uint64_t)child->ustack, PADDR(child->ustack), 1, pml4a, 1);
 //	__asm__ volatile ("movq %0, %%cr3;"::"b"(parent->cr3));
 	child->ustack = parent->ustack;
 
-
 	child->kstack[511] = 0x23;
-	child->kstack[510] = parent->kstack[508];
+	child->kstack[510] = (uint64_t)(&child->ustack[511]);
 	child->kstack[509] = 0x246;
 	child->kstack[508] = 0x1b;
-	child->kstack[507] = parent->kstack[505]; //entry point
+	child->kstack[507] = ;    //(uint64_t) &test_function; //entry point-505
 	child->kstack[506] = 0;
 	child->kstack[505] = parent->kstack[503];
 	child->kstack[504] = parent->kstack[502];
@@ -156,13 +164,13 @@ uint64_t sys_fork() {
 	child->kstack[494] = parent->kstack[492];
 	child->kstack[493] = parent->kstack[491];
 	child->kstack[492] = parent->kstack[490];
-	parent->kstack[506] = 0; //Test statements to populate rax of parent
-	parent->kstack[505] = 0;// Test
-	parent->kstack[504] = 0;// Test
+//	parent->kstack[506] = 0; //Test statements to populate rax of parent
+//	parent->kstack[505] = 0;// Test
+//	parent->kstack[504] = 0;// Test
 	child->kstack[491] = (uint64_t)(&isr128+29);
 	child->kstack[490] = 16;
 	
-	child->rsp = &(child->kstack[490]);
+	child->rsp = &(child->kstack[491]);
 //	kmccrintf("Child cr3: %p\n", child->cr3);
 //	init_map_virt_phys_addr(0x0, 0x0, 32000, pml4a, 1);
 	

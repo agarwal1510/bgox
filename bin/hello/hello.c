@@ -53,11 +53,13 @@ int main(){
 	print(s);
 	pid_t pid;
 	if ((pid = fork()) != -1) {
+		print("Inside");
 		itoa(pid, pids, 10);
 		print(pids);
 //		print(&pid);
 	}
 	yield();
+	print("below yield");
 	while(1);
 	return 0;
 }
