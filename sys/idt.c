@@ -11,6 +11,7 @@
 #include <sys/utils.h>
 #include <sys/process.h>
 #include "kb_map.h"
+#include <sys/gdt.h>
 
 extern void load_idt(unsigned long *idt_ptr);
 extern void isr0(void);
@@ -129,17 +130,15 @@ void syscall_handler(void) {
 				}
 				memcpy(buf_cpy, char_buf, str_len(char_buf));
 	} else if (syscall_num == 4) {
-//		__asm__ ("sti");
-	//	pusha();	
+		__asm__ ("cli");
 		uint64_t pid = sys_fork();
-//		popa();
 		kprintf("PID: %d", pid);
-//		while(1);
+		//__asm__ volatile ("movq %0, %%rax;"::"m"(0));
 	}
 	else if (syscall_num == 6){
 		schedule();
 		kprintf("schedule return");
-		while(1);
+		//while(1);
 	}
 /*	
 	if (syscall_num == 2) { //Fork
@@ -306,7 +305,7 @@ void idt_init(void)
 }
 
 void mask_init(void){
-	outb(0x21 , 0xFC); //11111100
+	outb(0x21 , 0xFF); //11111100
 }
 
 void kmain(void){
