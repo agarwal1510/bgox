@@ -45,7 +45,11 @@ void schedule() {
 		previous = head;
 		head = ready_queue;			
 	}
-	set_tss_rsp(&head->process->kstack[511]);
+	if (head->process->pid > 0){ //Not Kernel
+		set_tss_rsp(&head->process->kstack[511]);
+//		kprintf("\npid > 0\n");
+	}
+	kprintf("Saving rsp: %p",&head->process->kstack[511]);
 	kprintf("\nnext: %d me: %d", head->process->pid, previous->process->pid);
 	//		if (make == 1)
 	switch_to(head->process, previous->process);
@@ -72,8 +76,7 @@ void switch_to(task_struct *next, task_struct *me) {
 	__asm__ __volatile__( "pushq %r15");
 
 */
-	__asm__ volatile ("movq %%rsp, %0" : "=m"(me->rsp));
-	
+	__asm__ volatile ("movq %%rsp, %0" : "=r"(me->rsp));
 	     __asm__ volatile ( "movq %0, %%cr3;"
 	              :: "r" (next->cr3));
 	
@@ -132,9 +135,11 @@ uint64_t sys_fork() {
 
 //	uint64_t curr_rsp = 0;
 	uint64_t *temp_kstack = kmalloc(1);
+	child->ustack = kmalloc(1);
 //	kprintf("%p", child->ustack);
 	for (uint64_t j = 0; j < 512; j++) {
 		temp_kstack[j] = parent->kstack[j];
+		child->ustack[j] = parent->ustack[j];
 //		kprintf("%p ", parent->ustack[j]);
 	}
 
@@ -143,18 +148,15 @@ uint64_t sys_fork() {
 	kprintf("cr3: %p", child->cr3);
 //	init_map_virt_phys_addr((uint64_t)child->ustack, PADDR(child->ustack), 1, pml4a, 1);
 //	__asm__ volatile ("movq %0, %%cr3;"::"b"(parent->cr3));
-	child->ustack = parent->ustack;
 //	uint64_t curr_rsp;
 //	__asm__ volatile ("movq %%rsp, %0;":"=m"(curr_rsp));
 
 	child->kstack[511] = 0x23;
-	child->kstack[510] = (uint64_t)(temp_kstack[509]);
-	//child->kstack[510] = (uint64_t)(parent->kstack[508]);
+	child->kstack[510] = (uint64_t)(&child->ustack[511]);
 	child->kstack[509] = 0x200286;
 	child->kstack[508] = 0x1b;
-	child->kstack[507] = (uint64_t)(parent->ustack[505]);    //(uint64_t) &test_function; //entry point-505
+	child->kstack[507] = (uint64_t)(child->ustack[505]);    //(uint64_t) &test_function; //entry point-505
 
-//	child->kstack[507] = (uint64_t)&curr_rsp;    //(uint64_t) &test_function; //entry point-505
 	child->kstack[506] = 0;
 	child->kstack[505] = temp_kstack[504];
 	child->kstack[504] = temp_kstack[503];
@@ -162,7 +164,6 @@ uint64_t sys_fork() {
 	child->kstack[502] = temp_kstack[501];
 	child->kstack[501] = temp_kstack[500];
 	child->kstack[500] = temp_kstack[499];
-//	child->kstack[500] = 9;
 	child->kstack[499] = temp_kstack[498];
 	child->kstack[498] = temp_kstack[497];
 	child->kstack[497] = temp_kstack[496];

@@ -51,9 +51,13 @@ void start(uint32_t *modulep, void *physbase, void *physfree)
   pcb_boot->pml4 =(uint64_t)ker_pml4_t;  // kernel's page table   
   pcb_boot->cr3 = ker_cr3; // kernel's page table   
   pcb_boot->pid = PID;  // I'm kernel init process  so pid 0  
+//  pcb_boot->kstack[511] = initial_stack[511];
+ // for(int i = 0; i < 512; i++){
+  
+//  }
   //  pcb_boot->kstack = (uint64_t *)initial_stack; //my stack is already created by prof :)  
 //  __asm__ volatile ("movq %%rsp, %0" : "=m"(pcb_boot->rsp));
-  kprintf("\nEntry: %p\n", pcb_boot->rsp);
+//  kprintf("\nEntry: %p\n", pcb_boot->rsp);
   add_to_task_list(pcb_boot);
   //  apicMain();
   //  find_ahci();
@@ -84,7 +88,7 @@ void start(uint32_t *modulep, void *physbase, void *physfree)
   //kprintf("%d", pa->block_size);
 
   //syscall_init();
-//  set_tss_rsp(initial_stack);
+  set_tss_rsp(initial_stack);
 
   schedule();
 
