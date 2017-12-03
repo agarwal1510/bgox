@@ -48,15 +48,22 @@ int main(){
 //	for(int i = 0; i < 2; i++){
 //		print("Tfsdfsdfsdfs Maa ki chut");	
 //	}
-	char s[11], pids[10];
+	char pids[10];
 //	read(0, s, 10);
-	print(s);
-	pid_t pid;
-	if ((pid = fork()) != -1) {
+//	print(s);
+	pid_t pid = 22;
+/*	if ((pid = fork()) != -1) {
+		print("Inside");
 		itoa(pid, pids, 10);
 		print(pids);
 //		print(&pid);
-	}
+	} */
+	pid = fork();
+	yield();
+	itoa(pid, pids, 10);
+	print(pids);
+	print("below fork");
+	print("below yield");
 	yield();
 	while(1);
 	return 0;

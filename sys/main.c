@@ -84,7 +84,7 @@ void start(uint32_t *modulep, void *physbase, void *physfree)
   //kprintf("%d", pa->block_size);
 
   //syscall_init();
-  set_tss_rsp(initial_stack);
+//  set_tss_rsp(initial_stack);
 
   schedule();
 
