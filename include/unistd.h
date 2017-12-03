@@ -13,6 +13,7 @@ char *getcwd(char *buf, size_t size);
 
 pid_t fork();
 int execve(const char *file, char **const argv, char **const envp);
+int execvp(char *file);
 pid_t wait(int *status);
 extern char **__environ;
 #ifdef __USE_GNU

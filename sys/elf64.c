@@ -71,13 +71,12 @@ task_struct *elf_run_bin(uint64_t addr, file *fileptr){
 
 	//	ready_queue[num_processes++] = pcb;
 
-		pcb->mm = (mm_struct *)((char *)(pcb + 1)); //WHY ?
+		pcb->mm = (mm_struct *)((char *)(pcb + 1));
 		pcb->mm->count = 0;
 		pcb->mm->mmap = NULL;
+		pcb->pid = PID++;
 
-	//pcb->pid = PID++;
-
-	//	memcpy(pcb->tname, fileptr->name, str_len(fileptr->name));
+	memcpy(pcb->tname, fileptr->name, str_len(fileptr->name));
 
 	uint64_t *pml4a=(uint64_t *)(process_page);//
 
@@ -86,7 +85,7 @@ task_struct *elf_run_bin(uint64_t addr, file *fileptr){
 		pml4a[i] = 0;
 		pcb->kstack[i] = 0;
 	}
-	kprintf("%p %p", ker_pml4_t, ker_cr3);
+//	kprintf("%p %p", ker_pml4_t, ker_cr3);
 
 	init_map_virt_phys_addr(0x0, 0x0, 24000, pml4a, 1);
 
@@ -101,7 +100,7 @@ task_struct *elf_run_bin(uint64_t addr, file *fileptr){
 			:: "r" (pcb->cr3));
 
 
-	kprintf("pcb->cr3=%p",pcb->cr3);
+//	kprintf("pcb->cr3=%p",pcb->cr3);
 
 
 	pcb->kstack[506] = 1; pcb->kstack[505] = 2;  pcb->kstack[504] = 3;  pcb->kstack[503] = 4;
@@ -150,12 +149,9 @@ task_struct *elf_run_bin(uint64_t addr, file *fileptr){
 			if (phdr->p_filesz > phdr->p_memsz)
 				kprintf("Wrong size in elf binary\n");
 
-			kprintf("\n teesttt\n"); 
-
-			//load_user_cr3(pcb->cr3);
 
 			region_alloc(pcb, phdr->p_vaddr, phdr->p_memsz);
-			kprintf("dedede");
+//			kprintf("dedede");
 			memcpy((char*) phdr->p_vaddr, (void *) elfhdr + phdr->p_offset, phdr->p_filesz);
 
 			if (phdr->p_filesz < phdr->p_memsz)
@@ -172,7 +168,6 @@ task_struct *elf_run_bin(uint64_t addr, file *fileptr){
 			vm->vm_pgoff = phdr->p_offset;  
 		}
 	}             	
-	kprintf("put of loop");
 	pcb->entry = elfhdr->e_entry;
 //	pcb->entry = (uint64_t) &test_function;
 	
@@ -187,7 +182,6 @@ task_struct *elf_parse(uint64_t addr, file *fileptr){
 	if (elf_check_supported(elfhdr) == true){
 		kprintf("ELF file supported by machine\n");
 	}
-	kprintf("Now load the Program headers into a new page and start executing\n");
 	return elf_run_bin(addr, fileptr);
 }
 

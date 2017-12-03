@@ -59,12 +59,19 @@ int main(){
 //		print(&pid);
 	} */
 	pid = fork();
-	itoa(pid, pids, 10);
-	print(pids);
-	print("below fork");
-	print("above yield");
-	yield();
-	print("below yield");
+	if (pid == 0){
+		print("Child here pid 0\n");
+		execvp("bin/ls");
+	}
+	else{
+		itoa(pid, pids, 10);
+		print(pids);
+		print("Parent Here. Yielding now\n");
+		yield();
+		print("below yield");
+	}
+//	yield();
+//	print("below yield2");
 	while(1);
 	return 0;
 }
