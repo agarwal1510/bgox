@@ -82,9 +82,10 @@ task_struct *elf_run_bin(uint64_t addr, file *fileptr){
 	uint64_t *pml4a=(uint64_t *)(process_page);//
 
 
-	for(uint64_t i=0; i < PAGES_PER_PML4; i++) 
+	for(uint64_t i=0; i < PAGES_PER_PML4; i++){
 		pml4a[i] = 0;
-
+		pcb->kstack[i] = 0;
+	}
 	kprintf("%p %p", ker_pml4_t, ker_cr3);
 
 	init_map_virt_phys_addr(0x0, 0x0, 24000, pml4a, 1);
@@ -117,7 +118,7 @@ task_struct *elf_run_bin(uint64_t addr, file *fileptr){
 	pcb->kstack[510]=(uint64_t)(&pcb->ustack[511]);
 
 	//   print("stack=%x",pcb->kstack[510]);
-	pcb->kstack[509] = 0x246;                                            
+	pcb->kstack[509] = 0x200286;                                           
 	pcb->kstack[508] = 0x1b ;
 
 	// LOAD ICODE HERE

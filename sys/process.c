@@ -135,7 +135,7 @@ uint64_t sys_fork() {
 //	kprintf("%p", child->ustack);
 	for (uint64_t j = 0; j < 512; j++) {
 		temp_kstack[j] = parent->kstack[j];
-		kprintf("%p ", parent->kstack[j]);
+//		kprintf("%p ", parent->ustack[j]);
 	}
 
 //	init_map_virt_phys_addr(0x0, 0x0, 32000, (uint64_t *)child->pml4, 1);
@@ -144,12 +144,16 @@ uint64_t sys_fork() {
 //	init_map_virt_phys_addr((uint64_t)child->ustack, PADDR(child->ustack), 1, pml4a, 1);
 //	__asm__ volatile ("movq %0, %%cr3;"::"b"(parent->cr3));
 	child->ustack = parent->ustack;
+//	uint64_t curr_rsp;
+//	__asm__ volatile ("movq %%rsp, %0;":"=m"(curr_rsp));
 
 	child->kstack[511] = 0x23;
 	child->kstack[510] = (uint64_t)(temp_kstack[509]);
 	//child->kstack[510] = (uint64_t)(parent->kstack[508]);
 	child->kstack[509] = 0x200286;
 	child->kstack[508] = 0x1b;
+	child->kstack[507] = (uint64_t)(parent->ustack[505]);    //(uint64_t) &test_function; //entry point-505
+
 //	child->kstack[507] = (uint64_t)&curr_rsp;    //(uint64_t) &test_function; //entry point-505
 	child->kstack[506] = 0;
 	child->kstack[505] = temp_kstack[504];
@@ -157,8 +161,8 @@ uint64_t sys_fork() {
 	child->kstack[503] = temp_kstack[502];
 	child->kstack[502] = temp_kstack[501];
 	child->kstack[501] = temp_kstack[500];
-//	child->kstack[500] = temp_kstack[499];
-	child->kstack[500] = 9;
+	child->kstack[500] = temp_kstack[499];
+//	child->kstack[500] = 9;
 	child->kstack[499] = temp_kstack[498];
 	child->kstack[498] = temp_kstack[497];
 	child->kstack[497] = temp_kstack[496];
@@ -167,12 +171,9 @@ uint64_t sys_fork() {
 	child->kstack[494] = temp_kstack[493];
 	child->kstack[493] = temp_kstack[492];
 	child->kstack[492] = temp_kstack[491];
-//	parent->kstack[506] = 0; //Test statements to populate rax of parent
-//	parent->kstack[505] = 0;// Test
-//	parent->kstack[504] = 0;// Test
 	child->kstack[491] = (uint64_t)(&isr128+29);
-	child->kstack[490] = 16;
 	
+	child->rsp = &(child->kstack[491]);
 //	child->rsp = &(child->kstack[491]);
 //	kmccrintf("Child cr3: %p\n", child->cr3);
 //	init_map_virt_phys_addr(0x0, 0x0, 32000, pml4a, 1);
@@ -206,9 +207,6 @@ uint64_t sys_fork() {
 //	if (get_running_task() == parent) {
 		kprintf("parent : %p", temp_kstack[506]);	
 		//child->kstack[507] = curr_rsp;
-		child->kstack[507] = temp_kstack[506];    //(uint64_t) &test_function; //entry point-505
-		child->rsp = &(child->kstack[491]);
-		__asm__ volatile ("sti;");
 		return child->pid;
 //	} else {
 //		kprintf("child");

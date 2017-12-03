@@ -59,12 +59,11 @@ int main(){
 //		print(&pid);
 	} */
 	pid = fork();
-	yield();
 	itoa(pid, pids, 10);
 	print(pids);
 	print("below fork");
-	print("below yield");
 	yield();
+	print("below yield");
 	while(1);
 	return 0;
 }

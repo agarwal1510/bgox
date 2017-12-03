@@ -130,7 +130,7 @@ void syscall_handler(void) {
 				}
 				memcpy(buf_cpy, char_buf, str_len(char_buf));
 	} else if (syscall_num == 4) {
-		__asm__ ("cli");
+//		__asm__ ("cli");
 		uint64_t pid = sys_fork();
 		kprintf("PID: %d", pid);
 		//__asm__ volatile ("movq %0, %%rax;"::"m"(0));
@@ -138,6 +138,7 @@ void syscall_handler(void) {
 	else if (syscall_num == 6){
 		schedule();
 		kprintf("schedule return");
+//		while(1);
 		//while(1);
 	}
 /*	

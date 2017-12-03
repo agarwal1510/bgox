@@ -107,6 +107,7 @@ void start(uint32_t *modulep, void *physbase, void *physfree)
    */
   // while(1){}
   //  switch_user_thread();
+ schedule();
  kprintf("All Tasks done scheduling\n");
  while(1);
 }
