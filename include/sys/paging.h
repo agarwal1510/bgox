@@ -19,11 +19,14 @@
 #define RW_KERNEL_FLAGS 7UL
 #define RW_USER_FLAGS 7UL
 #define ENTRIES_PER_PTE 512
+#define IS_PAGE_WRITABLE(addr) ((uint64_t)addr & 2UL)
+#define IS_PAGE_COW(addr) ((uint64_t)addr & 0x4000000000000000UL)
 
 struct page {
 	struct page *next;
 	int used;
 	int block_size;
+	int ref_count;
 };
 
 typedef uint64_t pde_entry;
@@ -111,4 +114,5 @@ void init_paging(uint64_t kernmem, uint64_t physbase, uint64_t num_pages);
 void init_map_virt_phys_addr(uint64_t vaddr, uint64_t paddr, uint64_t no_of_pages, uint64_t *pml4_table, int access);
 //void init_map_virt_phys_addr(uint64_t vaddr, uint64_t physaddr, uint64_t num_pages, int access);
 void load_cr3_user();
+void handle_page_fault(uint64_t addr, uint64_t err_code);
 #endif

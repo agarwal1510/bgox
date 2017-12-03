@@ -10,12 +10,33 @@ struct page *free_list;
 
 void memset(void *address, int value, int size);
 
-struct page *get_page_at_address(uint64_t *address) {
-	uint64_t page_num = (uint64_t)PADDR(address)/(uint64_t)PAGE_SIZE; 
+struct page *get_page_at_address(uint64_t address) {
+	uint64_t addr;
+	if (address > KERNEL_VADDR) {	
+		addr = get_starting_page((uint64_t)PADDR(address));
+	} else {	
+		addr = get_starting_page((uint64_t)address);
+	}
+	uint64_t page_num = addr/(uint64_t)PAGE_SIZE; 
 	//kprintf("Corr num: %d %p %p", page_num, free_list, address);
 	struct page *corr = (struct page*)free_list + page_num*sizeof(struct page); 
 	//kprintf("Corr: %p %p", corr, free_list);
 	return corr;
+}
+
+void dec_ref_count(uint64_t addr) {
+	struct page *p = get_page_at_address(addr);
+	p->ref_count = p->ref_count - 1;
+}
+
+void inc_ref_count(uint64_t addr) {
+	struct page *p = get_page_at_address(addr);
+	p->ref_count = p->ref_count - 1;
+}
+
+int get_page_ref_count(uint64_t addr) {
+	struct page *p = get_page_at_address(addr);
+	return p->ref_count;
 }
 
 int get_num_pages_allocated(uint64_t *ptr) {
@@ -32,6 +53,7 @@ void calculate_free_list(uint64_t num_pages, uint64_t physfree) {
 	while (used_pages != 0) {
 		free_list->used = 1;
 		free_list->block_size = used_pages;
+		free_list->ref_count = 1;
 		free_list->next = free_list+sizeof(struct page);
 		free_list = free_list->next;
 		used_pages--;
@@ -42,6 +64,7 @@ void calculate_free_list(uint64_t num_pages, uint64_t physfree) {
 	while (free_pages != 0) {
 		free_list->used = 0;
 		free_list->block_size = free_pages;
+		free_list->ref_count = 0;
 		free_list->next = free_list+sizeof(struct page);
 		free_list = free_list->next;
 		free_pages--;
@@ -54,6 +77,7 @@ void calculate_free_list(uint64_t num_pages, uint64_t physfree) {
 	while(used_flspace != 0){
 		free_ptr->used = 1;
 		free_ptr->block_size = used_flspace;
+		free_list->ref_count = 1;
 		free_ptr = free_ptr->next;
 		used_flspace--;
 	}
@@ -76,12 +100,14 @@ uint64_t *kmalloc(uint64_t size){
 		if (temp->used == 0 && temp->block_size >= pages) {
 			temp->used = 1;
 			temp->block_size = pages;
+			temp->ref_count = 1;
 			uint64_t *ret = (uint64_t *)((count)*PAGE_SIZE);
 			memset(ret, 0, pages*PAGE_SIZE);
 			temp = temp->next;
 			while (--pages != 0) {
 				temp->used = 1;
 				temp->block_size = pages;
+				temp->ref_count = 1;
 				temp = temp->next;
 			}
 //			uint64_t base = KERNEL_VADDR;
@@ -96,13 +122,14 @@ uint64_t *kmalloc(uint64_t size){
 }
 
 void free(uint64_t *ptr){
-	struct page *address_page = get_page_at_address(ptr);
+	struct page *address_page = get_page_at_address((uint64_t)ptr);
 	int num_pages = address_page->block_size;
 	//kprintf("Pages Allocated: %p %d", address_page, num_pages);	
 	memset(ptr, 0, num_pages*PAGE_SIZE);
 	while(num_pages != 0) {
 		address_page->used = 0;
 		address_page->block_size = num_pages;
+		address_page->ref_count = 0;
 		address_page = address_page->next;
 		num_pages--;
 	}	

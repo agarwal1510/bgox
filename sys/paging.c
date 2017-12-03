@@ -192,3 +192,42 @@ void init_paging(uint64_t kernmem, uint64_t physbase, uint64_t num_pages)
 	// Setting available free memory for kmalloc() to zero
 	//init_kmalloc();
 }
+
+uint64_t fetch_pte_entry(uint64_t vaddr) {
+	uint64_t p_entry;
+
+	p_entry = vaddr << 16 >> 28 << 3;
+	kprintf("PEntry: %p %p", p_entry, vaddr);
+	p_entry = p_entry | 0xFFFFFF0000000000UL;
+	return p_entry;
+}
+
+void handle_page_fault(uint64_t addr, uint64_t err_code) {
+	int seg_fault = 0;
+	if (addr >= KERNEL_VADDR) {
+		kprintf("Fault above kernel adddress");
+	} else if (err_code & 0x1) {
+		uint64_t pte_e = fetch_pte_entry(addr);
+		uint64_t paddr = pte_e & 0x000FFFFFFFFFF000UL;
+		kprintf("PE: %p %p", pte_e, paddr);	
+		
+		if (!IS_PAGE_WRITABLE(pte_e)) {
+			if (get_page_ref_count(pte_e) > 0) {
+				
+			}
+		} else {
+			seg_fault = 1;
+		}
+
+
+	} else {
+	
+	}
+
+	if (seg_fault == 1) {
+		kprintf("\nSegmentation Fault\n");
+	}
+}
+
+
+

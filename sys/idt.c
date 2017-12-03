@@ -10,8 +10,10 @@
 #include <sys/strings.h>
 #include <sys/utils.h>
 #include <sys/process.h>
+#include <sys/paging.h>
 #include "kb_map.h"
 #include <sys/gdt.h>
+#include <sys/syscall.h>
 
 extern void load_idt(unsigned long *idt_ptr);
 extern void isr0(void);
@@ -71,10 +73,11 @@ struct idtr_t idtr = {((sizeof(struct gate_str))*MAX_IDT), (uint64_t)&IDT};
 void _x86_64_asm_lidt(struct idtr_t *idtr);
 
 
-void page_fault_handler(void) {
+void page_fault_handler(uint64_t err_code, uint64_t err_rip) {
 	uint64_t pf_addr;
 	__asm__ volatile ("movq %%cr2, %0":"=r"(pf_addr));
-	kprintf("Page Fault address: %p\n", pf_addr);
+	kprintf("Page Fault address: %p %p %d\n", pf_addr, err_rip, err_code);
+	handle_page_fault(pf_addr, err_code);
 	//__asm__ volatile ("hlt;");
 		while(1);
 }

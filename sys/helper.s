@@ -159,6 +159,8 @@ isr14:
         pushq %r13
         pushq %r14
         pushq %r15
+	movq 120(%rsp), %rdi
+	movq 128(%rsp), %rsi
 	call page_fault_handler
 	popq %r15
         popq %r14
@@ -175,6 +177,7 @@ isr14:
         popq %rcx
         popq %rbx
         popq %rax
+	addq $0x8, %rsp
 	sti
 	iretq
 

@@ -82,10 +82,10 @@ void start(uint32_t *modulep, void *physbase, void *physfree)
   //	kprintf("buffer read: %s", buf);
   //}
 
-
-  //uint64_t add = (uint64_t) 0xffffffff8eeeeeee;
-  //struct page *pa = (struct page *)add;
-  //kprintf("%d", pa->block_size);
+  kprintf("Padd: %p", PADDR(0x50000));
+  uint64_t add = (uint64_t) 0xeee40000;
+  struct page *pa = (struct page *)add;
+  kprintf("%d", pa->block_size);
 
   //syscall_init();
   set_tss_rsp(initial_stack);

@@ -17,4 +17,8 @@ void free(uint64_t *ptr);
 void memset(void *address, int value, int size);
 struct vm_area_struct *vma_malloc(struct mm_struct *mm);
 void region_alloc(task_struct *pcb, uint64_t va, uint64_t size);
+void dec_ref_count(uint64_t addr);
+void inc_ref_count(uint64_t addr);
+struct page *get_page_at_address(uint64_t addr);
+int get_page_ref_count(uint64_t addr);
 #endif
