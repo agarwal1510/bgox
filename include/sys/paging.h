@@ -27,6 +27,9 @@ struct page {
 	int used;
 	int block_size;
 	int ref_count;
+//	int ref_count;
+//	int rd_only;
+//	int cow;
 };
 
 typedef uint64_t pde_entry;

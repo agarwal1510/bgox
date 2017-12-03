@@ -143,7 +143,7 @@ uint64_t sys_fork() {
 //		kprintf("%p ", parent->ustack[j]);
 	}
 
-//	init_map_virt_phys_addr(0x0, 0x0, 32000, (uint64_t *)child->pml4, 1);
+//init_map_virt_phys_addr(0x0, 0x0, 32000, (uint64_t *)child->pml4, 1);
 	__asm__ volatile ("movq %0, %%cr3;"::"r"(child->cr3));
 	kprintf("cr3: %p", child->cr3);
 //	init_map_virt_phys_addr((uint64_t)child->ustack, PADDR(child->ustack), 1, pml4a, 1);

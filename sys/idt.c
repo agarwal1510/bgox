@@ -11,9 +11,11 @@
 #include <sys/utils.h>
 #include <sys/process.h>
 #include <sys/paging.h>
-#include "kb_map.h"
 #include <sys/gdt.h>
 #include <sys/syscall.h>
+#include <sys/tarfs.h>
+#include <sys/elf64.h>
+#include "kb_map.h"
 
 extern void load_idt(unsigned long *idt_ptr);
 extern void isr0(void);
@@ -133,16 +135,22 @@ void syscall_handler(void) {
 				}
 				memcpy(buf_cpy, char_buf, str_len(char_buf));
 	} else if (syscall_num == 4) {
-//		__asm__ ("cli");
-		uint64_t pid = sys_fork();
-		kprintf("PID: %d", pid);
-		//__asm__ volatile ("movq %0, %%rax;"::"m"(0));
+		sys_fork();
 	}
 	else if (syscall_num == 6){
 		schedule();
-		kprintf("schedule return");
-//		while(1);
-		//while(1);
+	}
+	else if (syscall_num == 8){
+		kprintf("exec called for %p\n", buf);
+		file* fd = open((char *)buf);
+		if (fd == NULL)
+			kprintf("exec error: Command not found");
+		else{
+//			task_struct *pcb_exec = elf_parse(fd->addr+512,(file *)fd->addr);
+			kprintf("name %s", fd->name);
+//			kprintf("name: %s", pcb_exec->tname);
+//			while(1);
+		}
 	}
 /*	
 	if (syscall_num == 2) { //Fork
