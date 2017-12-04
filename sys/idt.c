@@ -80,19 +80,23 @@ void page_fault_handler(uint64_t err_code, uint64_t err_rip) {
 	uint64_t pf_addr, curr_cr3;
 	__asm__ volatile ("movq %%cr2, %0":"=r"(pf_addr));
 	__asm__ volatile ("movq %%cr3, %0":"=r"(curr_cr3));
-	kprintf("handler cr3: %p", curr_cr3);
+	kprintf("handler");
 	kprintf("Page Fault address: %p %p %d\n", pf_addr, err_rip, err_code);
+	walk_page_table(pf_addr);
+//	while(1);
 	if (err_code >= 4){
-		struct page *pp = (struct page *)kmalloc(1);
-		kprintf("page addr: %p", pp);
-		memcpy((void*)pp, (void *)get_starting_page(pf_addr), 4096);
-		init_map_virt_phys_addr((uint64_t)pp, (uint64_t)PADDR(pp), 1, (uint64_t *)VADDR(curr_cr3), 1);
-		init_map_virt_phys_addr(pf_addr, (uint64_t)PADDR(pp), 1, (uint64_t *)VADDR(curr_cr3), 1);
+//		struct page *pp = (struct page *)kmalloc(1);
+//		kprintf("page addr: %p", pp);
+//		memcpy((void*)pp, (void *)get_starting_page(pf_addr), 512);
+//		init_map_virt_phys_addr(pf_addr, (uint64_t)pp, 1, (uint64_t *)VADDR(curr_cr3), 1);
 		
-		kprintf("starpage: %p", get_starting_page(pf_addr));
+		init_map_virt_phys_addr(pf_addr, (uint64_t)PADDR(pf_addr), 1, (uint64_t *)VADDR(curr_cr3), 2);
+		while(1);
 		walk_page_table(pf_addr);
-	__asm__ volatile ("movq %0, %%cr3"::"r"(curr_cr3));
+//:		walkpage_table((uint64_t)pp);
 //		while(1);
+		__asm__ volatile ("movq %0, %%cr3"::"r"(curr_cr3));
+		while(1);
 //	handle_page_fault(pf_addr, err_code);
 	}
 	//__asm__ volatile ("hlt;");

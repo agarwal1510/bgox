@@ -2,17 +2,18 @@
 #include <sys/stdarg.h>
 #include <sys/defs.h>
 #include <sys/strings.h>
-
+#include <sys/paging.h>
 #define X_DEFAULT 0
 #define Y_DEFAULT 0
 int X = X_DEFAULT;
 int Y = Y_DEFAULT;
+uint64_t vd_addr = VADDR(0xb8000);
 void str_cpy(char *to_str, char *frm_str);
 void scroll_up(){
 			for(int i = 1; i < 24; i++){
-				char *next = (char*)0xb8000 + i*160;
+				char *next = (char*)vd_addr + i*160;
 					for(int j = 0; j < 160; j++){
-						char *top = (char*)0xb8000 + (i-1)*160;
+						char *top = (char*)vd_addr + (i-1)*160;
 						*(top + j) = *(next + j);
 						str_cpy((next+j),"");
 					}
@@ -32,10 +33,10 @@ void print_seq(const char * seq, int x, int y){
 			overwrite_cood = 1;
 		}
 		const char *temp1 = seq;
+	//	if (flag == 1)
+	//		while(1);
 
-
-		char* temp2 = (char*)0xb8000 + y*160 + x;
-
+		char* temp2 = (char*)vd_addr + y*160 + x;
 		for(;*temp1; temp1 += 1) {
 			if (*temp1 == '\n'){
 		   		y++;
@@ -44,11 +45,11 @@ void print_seq(const char * seq, int x, int y){
 					scroll_up();
 					y = 23;
 				}
-				temp2 = (char*)0xb8000 + y*160 + x;
+				temp2 = (char*)vd_addr + y*160 + x;
 			}
 			else if (*temp1 == '\r'){
 		   		y = 0;
-				temp2 = (char*)0xb8000 + y*160 + x;
+				temp2 = (char*)vd_addr + y*160 + x;
 			}
 			else{
 				x +=2;
@@ -60,7 +61,7 @@ void print_seq(const char * seq, int x, int y){
 						y = 23;
 					}
 				}
-				temp2 = (char*)0xb8000 + y*160 + x;
+				temp2 = (char*)vd_addr + y*160 + x;
 				*temp2 = *temp1;
 			}
 		}
@@ -117,7 +118,7 @@ void kprintf_boott(const char *seq, int sec){
 	itoa(sec, boots, 10);
 	str_concat(seq, boots, time_str);
 	const char *temp1 = time_str;
-	char* temp2 = (char*)0xb8000 + y*160 + x;	
+	char* temp2 = (char*)vd_addr + y*160 + x;	
 	for(;*temp1; temp1 += 1) {
 				temp2 += 2;
 				x +=2;
@@ -183,7 +184,8 @@ void kprintf_at(const char *fmt, ...)
 					const char* const_str = str;
 					print_seq(const_str, x, y);
 				}
-				else{print_seq(fmt_const, x, y);}
+				else{
+				print_seq(fmt_const, x, y);}
 		}
 		va_end(al);
 }

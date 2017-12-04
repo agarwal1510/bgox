@@ -20,6 +20,7 @@ struct page *get_page_at_address(uint64_t address) {
 	uint64_t page_num = addr/(uint64_t)PAGE_SIZE; 
 	//kprintf("Corr num: %d %p %p", page_num, free_list, address);
 	struct page *corr = (struct page*)free_list + page_num*sizeof(struct page); 
+	//TODO FREELIST HERE
 	//kprintf("Corr: %p %p", corr, free_list);
 	return corr;
 }
@@ -85,7 +86,8 @@ void calculate_free_list(uint64_t num_pages, uint64_t physfree) {
 	free_list = (struct page*)physfree;
 }
 
-uint64_t *kmalloc(uint64_t size){
+uint64_t *kmalloc_init(uint64_t size){
+	
 	int pages;
 	uint64_t count = 0;
 	if (size % PAGE_SIZE > 0) {
@@ -110,9 +112,13 @@ uint64_t *kmalloc(uint64_t size){
 				temp->ref_count = 1;
 				temp = temp->next;
 			}
-//			uint64_t base = KERNEL_VADDR;
-//			kprintf("\n%p", ret);
+//			if (flag == 1){
+//			
+//				kprintf("\n%p", ret);
+//				while(1);
+//			}
 
+//			uint64_t base = KERNEL_VADDR;
 			return (uint64_t *)VADDR(ret);
 		}
 		temp = temp->next;
@@ -162,4 +168,54 @@ struct vm_area_struct *vma_malloc(struct mm_struct *mm) {
                 mm->count += 1;
                 return vma;
         }
+}
+
+
+
+///////////////// MEMORY IN VADDR SPACE /////////////
+
+uint64_t *kmalloc(uint64_t size){
+//	int flag = 0;
+//	if(size == -1){
+//		flag = 1;
+//		size = 1;
+//	}
+//	if (flag == 1){
+//		kprintf("%d", size);
+//	}
+	int pages;
+	uint64_t count = 0;
+	if (size % PAGE_SIZE > 0) {
+		pages = (size/PAGE_SIZE)+1; //TODO Fix pages when asked size = 4096KB
+	} else {
+		pages = size/PAGE_SIZE;
+	}
+	//kprintf("Pages: %d", pages);
+	struct page *temp = (struct page *)VADDR(free_list);
+	//kprintf("Temp addr: %p", (uint64_t)temp);
+	while(temp != NULL) {
+		if (temp->used == 0 && temp->block_size >= pages) {
+			temp->used = 1;
+			temp->block_size = pages;
+			temp->ref_count = 1;
+			uint64_t *ret = (uint64_t *)((count)*PAGE_SIZE);
+			memset((uint64_t*)VADDR(ret), 0, pages*PAGE_SIZE);
+			temp = temp->next;
+			while (--pages != 0) {
+				temp->used = 1;
+				temp->block_size = pages;
+				temp->ref_count = 1;
+				temp = (struct page*)VADDR(temp->next);
+			}
+//				kprintf("\n%p", ret);
+//				while(1);
+//			}
+
+//			uint64_t base = KERNEL_VADDR;
+			return (uint64_t *)VADDR(ret);
+		}
+		temp = (struct page *)VADDR(temp->next);
+		count++;
+	}
+	return NULL;
 }

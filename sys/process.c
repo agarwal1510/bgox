@@ -77,7 +77,7 @@ void switch_to(task_struct *next, task_struct *me) {
 
 */
 	__asm__ volatile ("movq %%rsp, %0" : "=r"(me->rsp));
-	     __asm__ volatile ( "movq %0, %%cr3;"
+	__asm__ volatile ( "movq %0, %%cr3;"
 	              :: "r" (next->cr3));
 	
 	__asm__ __volatile__ ("movq %0, %%rsp;"::"r"(next->rsp));

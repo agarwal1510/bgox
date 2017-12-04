@@ -16,7 +16,7 @@
 #define VADDR(PADD) (KERNEL_VADDR + (uint64_t)PADD)
 #define PADDR(VADD) ((uint64_t)VADD - KERNEL_VADDR)
 #define IS_PRESENT_PAGE(addr) ((uint64_t)addr & 1)
-#define RW_KERNEL_FLAGS 7UL
+#define RW_KERNEL_FLAGS 3UL
 #define RW_USER_FLAGS 7UL
 #define ENTRIES_PER_PTE 512
 #define IS_PAGE_WRITABLE(addr) ((uint64_t)addr & 2UL)

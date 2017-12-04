@@ -23,32 +23,46 @@ uint64_t get_highest_virtaddr() {
 
 static uint64_t* alloc_pte(uint64_t *pde_table, int pde_off, int access)
 {
-	uint64_t *pte_table = (uint64_t *)PADDR(kmalloc(1));
-	if (access == 1)
+	uint64_t *pte_table;
+	if (access == 1){
+		pte_table = (uint64_t *)PADDR(kmalloc(1));
 		pde_table[pde_off] = (uint64_t)(pte_table) | RW_USER_FLAGS;   
-	else
+	}
+	else{
+		pte_table = (uint64_t *)PADDR(kmalloc_init(1));
 		pde_table[pde_off] = (uint64_t)(pte_table) | RW_KERNEL_FLAGS;   
+	}
 	return (uint64_t*)VADDR(pte_table);
 } 
 
 static uint64_t* alloc_pde(uint64_t *pdpe_table, int pdpe_off, int access)
 {
-	uint64_t* pde_table = (uint64_t *)PADDR(kmalloc(1));
-	if (access == 1)
+//		if (access == 2)
+//			while(1);
+	uint64_t *pde_table;
+	if (access == 1){
+		pde_table = (uint64_t *)PADDR(kmalloc(1));
 		pdpe_table[pdpe_off] = (uint64_t)(pde_table) | RW_USER_FLAGS;   
-	else
+	}
+	else{
+		pde_table = (uint64_t *)PADDR(kmalloc_init(1));
 		pdpe_table[pdpe_off] = (uint64_t)(pde_table) | RW_KERNEL_FLAGS;   
+	}
 	return (uint64_t*)VADDR(pde_table);
 }
 
 static uint64_t* alloc_pdpe(uint64_t *pml4_table, int pml4_off, int access)
 {
 	//	kprintf("PML4 off: %d %p", pml4_off, pml4_table);
-	uint64_t* pdpe_table = (uint64_t *)PADDR(kmalloc(1));
-	if (access == 1)
+	uint64_t *pdpe_table;
+	if (access == 1){
+		pdpe_table = (uint64_t *)PADDR(kmalloc(1));
 		pml4_table[pml4_off] = (uint64_t)(pdpe_table) | RW_USER_FLAGS;   
-	else
+	}
+	else{
+		pdpe_table = (uint64_t *)PADDR(kmalloc_init(1));
 		pml4_table[pml4_off] = (uint64_t)(pdpe_table) | RW_KERNEL_FLAGS;   
+	}
 	return (uint64_t*)VADDR(pdpe_table);
 }
 
@@ -69,18 +83,19 @@ uint64_t walk_page_table(uint64_t vaddr) {
 	if (IS_PRESENT_PAGE(phys_addr)) {
 
 		phys_addr = phys_addr >> 12 << 12;
-		pdpe_table =(uint64_t*)phys_addr;
+		pdpe_table =(uint64_t*)VADDR(phys_addr);
+//		kprintf("\nInside pml4: %p", pdpe_table);
 		phys_addr = (uint64_t) *(pdpe_table + pdpe_off);
 //		kprintf("\nInside pml4: %p %p %d", phys_addr, pdpe_table, pdpe_off);
 		if (IS_PRESENT_PAGE(phys_addr)) {
 			phys_addr = phys_addr >> 12 << 12;
-			pde_table =(uint64_t*) phys_addr;
+			pde_table =(uint64_t*) VADDR(phys_addr);
 
 			phys_addr  = (uint64_t) *(pde_table + pde_off);
 //			kprintf("\nInside pdp: %p %p %d", phys_addr, pde_table, pde_off);
 			if (IS_PRESENT_PAGE(phys_addr)) {
 				phys_addr = phys_addr >> 12 << 12;
-				pte_table =(uint64_t*) phys_addr;
+				pte_table =(uint64_t*) VADDR(phys_addr);
 				ptee = (uint64_t) *(pte_table + pte_off);
 //				kprintf("\nInside pdt: %p %p %d", phys_addr, pte_table, pte_off);
 				kprintf("\nPtee: %p",ptee >> 12 << 12);
@@ -109,11 +124,11 @@ void init_map_virt_phys_addr(uint64_t vaddr, uint64_t paddr, uint64_t no_of_page
 	pde_off  = (vaddr >> 21) & 0x1FF;
 	pdpe_off = (vaddr >> 30) & 0x1FF;
 	pml4_off = (vaddr >> 39) & 0x1FF;
-
 	//     kprintf(" $$ NEW MAPPING $$ OFF => %p %d %d %d %d ", vaddr, pml4_off, pdpe_off, pde_off, pte_off);
 
 	phys_addr = (uint64_t) *(pml4_table + pml4_off);
-	//	    kprintf("\nPML4: %p %p %p",phys_addr, ker_pml4_t, pml4_off);
+	
+	kprintf("\nPML4: %p %p %p",phys_addr, ker_pml4_t, pml4_off);
 	if (IS_PRESENT_PAGE(phys_addr)) {
 		phys_addr = phys_addr >> 12 << 12; 
 		pdpe_table =(uint64_t*)phys_addr; 
@@ -134,6 +149,10 @@ void init_map_virt_phys_addr(uint64_t vaddr, uint64_t paddr, uint64_t no_of_page
 				pte_table = alloc_pte(pde_table, pde_off, access);
 			}
 		} else {
+//			if(access == 2){
+//				pde_table = alloc_pde(pdpe_table, pdpe_off, 2);
+//				while(1);
+//			}
 			pde_table = alloc_pde(pdpe_table, pdpe_off, access);
 			pte_table = alloc_pte(pde_table, pde_off, access);
 		}
@@ -207,7 +226,7 @@ void LOAD_CR3(uint64_t addr) {
 void init_paging(uint64_t kernmem, uint64_t physbase, uint64_t num_pages)
 {
 	// Allocate free memory for PML4 table 
-	ker_cr3 = (uint64_t *)PADDR(kmalloc(1));
+	ker_cr3 = (uint64_t *)PADDR(kmalloc_init(1));
 
 	ker_pml4_t = (uint64_t *) VADDR(ker_cr3);
 	kprintf("\tKernel PML4t:%p", ker_pml4_t);
@@ -221,8 +240,7 @@ void init_paging(uint64_t kernmem, uint64_t physbase, uint64_t num_pages)
 
 	init_map_virt_phys_addr(0x0, 0x0, num_pages, ker_pml4_t, 0); //Allowed user access
 
-	init_map_virt_phys_addr(kernmem, physbase, num_pages - physbase/PAGE_SIZE, ker_pml4_t, 0); //Only kernel pages
-
+	init_map_virt_phys_addr(kernmem, physbase, num_pages - physbase/PAGE_SIZE+1, ker_pml4_t, 0); //Only kernel pages
 	// Use existing Video address mapping: Virtual memory 0xFFFFFFFF800B8000 to Physical memory 0xB8000
 
 	init_map_virt_phys_addr(0xFFFFFFFF800B8000, 0xB8000, 1, ker_pml4_t,0);
@@ -230,6 +248,7 @@ void init_paging(uint64_t kernmem, uint64_t physbase, uint64_t num_pages)
 
 	LOAD_CR3((uint64_t)ker_cr3);
 	kprintf("CR3 value: %p %p", (uint64_t)ker_cr3, (uint64_t)kernmem);
+//	walk_page_table((uint64_t)0xFFFFFFFF802a4248);
 	// Set CR3 register to address of PML4 table
 
 	// Set value of top virtual address

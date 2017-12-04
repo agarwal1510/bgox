@@ -13,6 +13,7 @@
 
 void calculate_free_list(uint64_t num_pages, uint64_t physfree);
 uint64_t *kmalloc(uint64_t size);
+uint64_t *kmalloc_init(uint64_t size);
 void free(uint64_t *ptr);
 void memset(void *address, int value, int size);
 struct vm_area_struct *vma_malloc(struct mm_struct *mm);

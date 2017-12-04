@@ -82,25 +82,32 @@ task_struct *elf_run_bin(uint64_t addr, file *fileptr){
 
 
 	for(uint64_t i=0; i < PAGES_PER_PML4; i++){
-		pml4a[i] = ker_pml4_t[i];
+//		pml4a[i] = ker_pml4_t[i];
 		pcb->kstack[i] = 0;
+		pml4a[i] = 0;
 	}
 //	kprintf("%p %p", ker_pml4_t, ker_cr3);
 
-	init_map_virt_phys_addr(0x0, 0x0, 24000, pml4a, 1);
+//	init_map_virt_phys_addr(0x0, 0x0, 24000, pml4a, 1);
 
-//	pml4a[PAGES_PER_PML4 - 1] = (uint64_t)(ker_pml4_t[511]);
+	pml4a[PAGES_PER_PML4 - 1] = (uint64_t)(ker_pml4_t[511]);
+//	init_map_virt_phys_addr(0xFFFFFFFF800B8000, 0xB8000, 1, pml4a,0);
+//	walk_page_table(0xFFFFFFFF800B8000);
 	pcb->pml4 = (uint64_t)pml4a;
 	pcb->cr3 = (uint64_t *)PADDR(pml4a);
+	
+	__asm__ volatile ( "movq %0, %%cr3;"
+			:: "r" (pcb->cr3));
+	
 	pcb->ustack = kmalloc(1);
+	for(uint64_t i=0; i < PAGES_PER_PML4; i++){
+		pcb->ustack[i] = 0;
+	}
 //	pcb->pid = ++PID;
 //	init_map_virt_phys_addr((uint64_t)pcb->ustack, PADDR(pcb->ustack), 1, pml4a, 1);
 	//pcb->ustack = kmalloc_user((pml4e_t *)pcb->pml4e,STACK_SIZE);
-	__asm__ volatile ( "movq %0, %%cr3;"
-			:: "r" (pcb->cr3));
-
-
 //	kprintf("pcb->cr3=%p",pcb->cr3);
+//	while(1);
 
 
 	pcb->kstack[506] = 1; pcb->kstack[505] = 2;  pcb->kstack[504] = 3;  pcb->kstack[503] = 4;
@@ -119,7 +126,6 @@ task_struct *elf_run_bin(uint64_t addr, file *fileptr){
 	//   print("stack=%x",pcb->kstack[510]);
 	pcb->kstack[509] = 0x200286;                                           
 	pcb->kstack[508] = 0x1b ;
-
 	// LOAD ICODE HERE
 
 
@@ -148,8 +154,7 @@ task_struct *elf_run_bin(uint64_t addr, file *fileptr){
 
 			if (phdr->p_filesz > phdr->p_memsz)
 				kprintf("Wrong size in elf binary\n");
-
-
+		//	while(1);
 			region_alloc(pcb, phdr->p_vaddr, phdr->p_memsz);
 //			kprintf("dedede");
 			memcpy((char*) phdr->p_vaddr, (void *) elfhdr + phdr->p_offset, phdr->p_filesz);
@@ -173,7 +178,7 @@ task_struct *elf_run_bin(uint64_t addr, file *fileptr){
 	
 	pcb->kstack[507] = (uint64_t)pcb->entry; 
 
-	__asm__ volatile("movq %0, %%cr3":: "b"(ker_cr3));
+	__asm__ volatile("movq %0, %%cr3":: "r"(ker_cr3));
 	return pcb;
 }
 
