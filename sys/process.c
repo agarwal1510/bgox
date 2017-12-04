@@ -197,9 +197,12 @@ uint64_t sys_fork() {
 		child_vma->vm_flags = p_vma->vm_flags;
 		child_vma->vm_pgoff = p_vma->vm_pgoff;
 		kprintf("vma: %p %p", p_vma->vm_start, p_vma->vm_mmsz);
-		__asm__ volatile ("movq %0, %%cr3;"::"b"(parent->cr3));
+//		__asm__ volatile ("movq %0, %%cr3;"::"b"(parent->cr3));
 		region_alloc(child, p_vma->vm_start, p_vma->vm_mmsz);
-		__asm__ volatile ("movq %0, %%cr3;"::"b"(child->cr3));
+//		__asm__ volatile ("movq %0, %%cr3;"::"b"(child->cr3));
+		for (uint64_t j = 0; j < p_vma->vm_mmsz; j++) {
+			*((uint64_t *)(p_vma->vm_start + j)) = *((uint64_t *)((uint64_t)p_vma->vm_file + p_vma->vm_pgoff + j));
+		}
 
 		p_vma = p_vma->vm_next;
 	}
