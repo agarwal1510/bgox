@@ -50,7 +50,7 @@ void start(uint32_t *modulep, void *physbase, void *physfree)
   task_struct *pcb_boot = (task_struct *)kmalloc(sizeof(task_struct));  //kernel 
   pcb_boot->pml4 =(uint64_t)ker_pml4_t;  // kernel's page table   
   pcb_boot->cr3 = ker_cr3; // kernel's page table   
-  pcb_boot->pid = PID;  // I'm kernel init process  so pid 0  
+  pcb_boot->pid = PID++;  // I'm kernel init process  so pid 0  
 //  pcb_boot->kstack[511] = initial_stack[511];
  // for(int i = 0; i < 512; i++){
   
@@ -113,7 +113,7 @@ void start(uint32_t *modulep, void *physbase, void *physfree)
    */
   // while(1){}
   //  switch_user_thread();
- schedule();
+// schedule();
  kprintf("All Tasks done scheduling\n");
  while(1);
 }

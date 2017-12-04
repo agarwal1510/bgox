@@ -57,7 +57,7 @@ uint64_t walk_page_table(uint64_t vaddr) {
 	uint64_t *pdpe_table = NULL, *pde_table = NULL, *pte_table = NULL;
 	__asm__ volatile ("movq %%cr3, %0":"=r" (pml4b));
 	pml4b = VADDR(pml4b);
-//	kprintf("PML4b: %p %p", pml4b, vaddr);
+	kprintf("PML4b: %p %p", pml4b, vaddr);
 	uint64_t phys_addr, pde_off, pdpe_off, pml4_off , pte_off;
 	pte_off  = (vaddr >> 12) & 0x1FF;
 	pde_off  = (vaddr >> 21) & 0x1FF;
@@ -83,7 +83,7 @@ uint64_t walk_page_table(uint64_t vaddr) {
 				pte_table =(uint64_t*) phys_addr;
 				ptee = (uint64_t) *(pte_table + pte_off);
 //				kprintf("\nInside pdt: %p %p %d", phys_addr, pte_table, pte_off);
-//				kprintf("\nPtee: %p",ptee >> 12 << 12);
+				kprintf("\nPtee: %p",ptee >> 12 << 12);
 				return ptee >> 12 << 12;
 			} else {
 				return -1;
@@ -219,7 +219,7 @@ void init_paging(uint64_t kernmem, uint64_t physbase, uint64_t num_pages)
 	// to physical address range [0x200000, 0x406000]
 	// 2 MB for Kernal + 6 Pages for PML4, PDPE, PDE, PTE(3) tables
 
-	init_map_virt_phys_addr(0x0, 0x0, num_pages, ker_pml4_t, 1); //Allowed user access
+	init_map_virt_phys_addr(0x0, 0x0, num_pages, ker_pml4_t, 0); //Allowed user access
 
 	init_map_virt_phys_addr(kernmem, physbase, num_pages - physbase/PAGE_SIZE, ker_pml4_t, 0); //Only kernel pages
 

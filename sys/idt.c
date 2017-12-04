@@ -15,6 +15,7 @@
 #include <sys/syscall.h>
 #include <sys/tarfs.h>
 #include <sys/elf64.h>
+#include <sys/mem.h>
 #include "kb_map.h"
 
 extern void load_idt(unsigned long *idt_ptr);
@@ -76,12 +77,26 @@ void _x86_64_asm_lidt(struct idtr_t *idtr);
 
 
 void page_fault_handler(uint64_t err_code, uint64_t err_rip) {
-	uint64_t pf_addr;
+	uint64_t pf_addr, curr_cr3;
 	__asm__ volatile ("movq %%cr2, %0":"=r"(pf_addr));
+	__asm__ volatile ("movq %%cr3, %0":"=r"(curr_cr3));
+	kprintf("handler cr3: %p", curr_cr3);
 	kprintf("Page Fault address: %p %p %d\n", pf_addr, err_rip, err_code);
-	handle_page_fault(pf_addr, err_code);
+	if (err_code >= 4){
+		struct page *pp = (struct page *)kmalloc(1);
+		kprintf("page addr: %p", pp);
+		memcpy((void*)pp, (void *)get_starting_page(pf_addr), 4096);
+		init_map_virt_phys_addr((uint64_t)pp, (uint64_t)PADDR(pp), 1, (uint64_t *)VADDR(curr_cr3), 1);
+		init_map_virt_phys_addr(pf_addr, (uint64_t)PADDR(pp), 1, (uint64_t *)VADDR(curr_cr3), 1);
+		
+		kprintf("starpage: %p", get_starting_page(pf_addr));
+		walk_page_table(pf_addr);
+	__asm__ volatile ("movq %0, %%cr3"::"r"(curr_cr3));
+//		while(1);
+//	handle_page_fault(pf_addr, err_code);
+	}
 	//__asm__ volatile ("hlt;");
-		while(1);
+//		while(1);
 }
 
 void general_protection_fault_handler(void) {

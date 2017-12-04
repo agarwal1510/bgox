@@ -82,19 +82,19 @@ task_struct *elf_run_bin(uint64_t addr, file *fileptr){
 
 
 	for(uint64_t i=0; i < PAGES_PER_PML4; i++){
-		pml4a[i] = 0;
+		pml4a[i] = ker_pml4_t[i];
 		pcb->kstack[i] = 0;
 	}
 //	kprintf("%p %p", ker_pml4_t, ker_cr3);
 
 	init_map_virt_phys_addr(0x0, 0x0, 24000, pml4a, 1);
 
-	pml4a[PAGES_PER_PML4 - 1] = (uint64_t)(ker_pml4_t[511]);
+//	pml4a[PAGES_PER_PML4 - 1] = (uint64_t)(ker_pml4_t[511]);
 	pcb->pml4 = (uint64_t)pml4a;
 	pcb->cr3 = (uint64_t *)PADDR(pml4a);
 	pcb->ustack = kmalloc(1);
-	pcb->pid = ++PID;
-	init_map_virt_phys_addr((uint64_t)pcb->ustack, PADDR(pcb->ustack), 1, pml4a, 1);
+//	pcb->pid = ++PID;
+//	init_map_virt_phys_addr((uint64_t)pcb->ustack, PADDR(pcb->ustack), 1, pml4a, 1);
 	//pcb->ustack = kmalloc_user((pml4e_t *)pcb->pml4e,STACK_SIZE);
 	__asm__ volatile ( "movq %0, %%cr3;"
 			:: "r" (pcb->cr3));
