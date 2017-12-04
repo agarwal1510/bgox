@@ -94,14 +94,13 @@ task_struct *elf_run_bin(uint64_t addr, file *fileptr){
 	pml4a[PAGES_PER_PML4 - 1] = (uint64_t)(ker_pml4_t[511]);
 	
 	pcb->ustack = (uint64_t*)kmalloc_stack(1, pml4a);
-	
 	kprintf("stack: %p", pcb->ustack);
 
 //	init_map_virt_phys_addr(0xFFFFFFFF800B8000, 0xB8000, 1, pml4a,0);
 //	walk_page_table(0xFFFFFFFF800B8000);
 	pcb->pml4 = (uint64_t)pml4a;
 	pcb->cr3 = (uint64_t *)PADDR(pml4a);
-	kprintf("pcb->ustack %p %p", pcb->ustack, PADDR(pcb->ustack));
+//	kprintf("pcb->ustack %p %p", pcb->ustack, PADDR(pcb->ustack));
 //	init_map_virt_phys_addr((uint64_t)pcb->ustack, PADDR(pcb->ustack), 2, (uint64_t *)pcb->pml4, 1);
 //	init_map_virt_phys_addr((uint64_t)pcb->ustack, PADDR(pcb->ustack), 2, ker_pml4_t, 1);
 	
@@ -111,11 +110,9 @@ task_struct *elf_run_bin(uint64_t addr, file *fileptr){
 	if (walk_page_table((uint64_t)pcb->ustack) == -1){
 		kprintf("couldn't walk");
 	}
-//	while(1);
 	for(uint64_t i=0; i < PAGES_PER_PML4; i++){
 		pcb->ustack[i] = 0;
 	}
-	
 //	pcb->pid = ++PID;
 	//pcb->ustack = kmalloc_user((pml4e_t *)pcb->pml4e,STACK_SIZE);
 //	kprintf("pcb->cr3=%p",pcb->cr3);
@@ -164,11 +161,11 @@ task_struct *elf_run_bin(uint64_t addr, file *fileptr){
 	for(; phdr < eph; phdr++){
 		if (phdr->p_type == ELF_PROG_LOAD) {
 
+			kprintf("***parent vma called***\n");
 			if (phdr->p_filesz > phdr->p_memsz)
 				kprintf("Wrong size in elf binary\n");
 		//	while(1);
 			region_alloc(pcb, phdr->p_vaddr, phdr->p_memsz);
-//			kprintf("dedede");
 			memcpy((char*) phdr->p_vaddr, (void *) elfhdr + phdr->p_offset, phdr->p_filesz);
 
 			if (phdr->p_filesz < phdr->p_memsz)

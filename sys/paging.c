@@ -98,7 +98,7 @@ uint64_t walk_page_table(uint64_t vaddr) {
 				pte_table =(uint64_t*) VADDR(phys_addr);
 				ptee = (uint64_t) *(pte_table + pte_off);
 //				kprintf("\nInside pdt: %p %p %d", phys_addr, pte_table, pte_off);
-				kprintf("\nPtee: %p",ptee >> 12 << 12);
+				kprintf("\nPtee: %p",ptee);
 				return ptee >> 12 << 12;
 			} else {
 				return -1;
@@ -128,21 +128,30 @@ void init_map_virt_phys_addr(uint64_t vaddr, uint64_t paddr, uint64_t no_of_page
 
 	phys_addr = (uint64_t) *(pml4_table + pml4_off);
 	
-	kprintf("\nPML4: %p %p %p",phys_addr, ker_pml4_t, pml4_off);
+//	kprintf("\nPML4: %p %p %p",phys_addr, ker_pml4_t, pml4_off);
 	if (IS_PRESENT_PAGE(phys_addr)) {
 		phys_addr = phys_addr >> 12 << 12; 
-		pdpe_table =(uint64_t*)phys_addr; 
-		phys_addr = (uint64_t) *(pdpe_table + pdpe_off);
+		if (access == 1) {
+			pdpe_table =(uint64_t*)VADDR(phys_addr); 
+			phys_addr = (uint64_t) *(pdpe_table + pdpe_off);	
+		} else {
+			pdpe_table =(uint64_t*)phys_addr; 
+			phys_addr = (uint64_t) *(pdpe_table + pdpe_off);
+		}
 		//		kprintf("\nInside pml4: %p %p %d", phys_addr, pdpe_table, pdpe_off);
 		if (IS_PRESENT_PAGE(phys_addr)) {
 			phys_addr = phys_addr >> 12 << 12;
-			pde_table =(uint64_t*) phys_addr; 
-
+			if (access == 1) {
+			pde_table =(uint64_t*) VADDR(phys_addr); 
 			phys_addr  = (uint64_t) *(pde_table + pde_off);
-			//			kprintf("\nInside pdp: %p %p %d", phys_addr, pde_table, pde_off);
+			
+			} else {
+			pde_table =(uint64_t*) phys_addr; 
+			phys_addr  = (uint64_t) *(pde_table + pde_off);
+			}//			kprintf("\nInside pdp: %p %p %d", phys_addr, pde_table, pde_off);
 			if (IS_PRESENT_PAGE(phys_addr)) {
 				phys_addr = phys_addr >> 12 << 12;
-				pte_table =(uint64_t*) phys_addr;
+				pte_table =(uint64_t*) VADDR(phys_addr);
 				//		uint64_t ptee = (uint64_t) *(pte_table + pte_off);
 				//		kprintf("\nInside pde: %p %p %p", phys_addr, pte_table, ptee);
 			} else {
@@ -167,7 +176,7 @@ void init_map_virt_phys_addr(uint64_t vaddr, uint64_t paddr, uint64_t no_of_page
 	if (no_of_pages + pte_off <= ENTRIES_PER_PTE) {
 		for (i = pte_off; i < (pte_off + no_of_pages); i++) {
 			if (access == 1)
-				pte_table[i] = phys_addr | RW_USER_FLAGS; 
+				pte_table[i] = phys_addr >> 12 << 12 | RW_USER_FLAGS; 
 			else
 				pte_table[i] = phys_addr | RW_KERNEL_FLAGS; 
 			//kprintf("Phys: %p", phys_addr);

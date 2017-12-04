@@ -114,38 +114,44 @@ uint64_t sys_fork() {
 	kprintf("Fork called: %p", get_tss_rsp());
 	task_struct *parent = get_running_task();
 	task_struct *child = (task_struct *) kmalloc(sizeof(task_struct));
+	kprintf("%p %d %p", child, parent->pid, parent);
 	add_to_task_list(child);
 
 	child->mm = (mm_struct *)((char *)(child+1));
 	child->mm->mmap = NULL;
-	child->pid = ++PID;
+	child->pid = PID++;
 	child->ppid = parent->pid;
 	//memcpy(child->tname, parent->tname, str_len(parent->tname));
 	
 	struct page *pt_page = (struct page*) kmalloc(1);
 	uint64_t *pml4a = (uint64_t *)(pt_page);
 	for (uint64_t i = 0; i < PAGES_PER_PML4; i++) {
-		pml4a[i] = ((uint64_t *)parent->pml4)[i];
+		pml4a[i] = 0;
 	}
 
 	pml4a[PAGES_PER_PML4 - 1] = (uint64_t)(ker_pml4_t[511]);
-	child->pml4 = (uint64_t)pml4a;
-	child->cr3 = (uint64_t *)PADDR(pml4a);
 //	init_map_virt_phys_addr(0x0, 0x0, 24000, pml4a, 1);
 
 //	uint64_t curr_rsp = 0;
 	uint64_t *temp_kstack = kmalloc(1);
-	child->ustack = kmalloc(1);
+	uint64_t *temp_ustack = kmalloc(1);
+	child->ustack = kmalloc_stack(1, pml4a);
+	child->pml4 = (uint64_t)pml4a;
+	child->cr3 = (uint64_t *)PADDR(pml4a);
 //	kprintf("%p", child->ustack);
 	for (uint64_t j = 0; j < 512; j++) {
 		temp_kstack[j] = parent->kstack[j];
-		child->ustack[j] = parent->ustack[j];
-//		kprintf("%p ", parent->ustack[j]);
+		temp_ustack[j] = parent->ustack[j];
+//		kprintf("%p", parent->ustack[j]);
 	}
 
 //init_map_virt_phys_addr(0x0, 0x0, 32000, (uint64_t *)child->pml4, 1);
 	__asm__ volatile ("movq %0, %%cr3;"::"r"(child->cr3));
 	kprintf("cr3: %p", child->cr3);
+	for (uint64_t j = 0; j < 512; j++) {
+		child->ustack[j] = temp_ustack[j];
+	}
+//		kprintf("%p", parent->ustack[j]);
 //	init_map_virt_phys_addr((uint64_t)child->ustack, PADDR(child->ustack), 1, pml4a, 1);
 //	__asm__ volatile ("movq %0, %%cr3;"::"b"(parent->cr3));
 //	uint64_t curr_rsp;
@@ -190,13 +196,16 @@ uint64_t sys_fork() {
 		child_vma->vm_file = p_vma->vm_file;
 		child_vma->vm_flags = p_vma->vm_flags;
 		child_vma->vm_pgoff = p_vma->vm_pgoff;
-		
-//		region_alloc(child, p_vma->vm_start, p_vma->vm_mmsz);
+		kprintf("vma: %p %p", p_vma->vm_start, p_vma->vm_mmsz);
+		__asm__ volatile ("movq %0, %%cr3;"::"b"(parent->cr3));
+		region_alloc(child, p_vma->vm_start, p_vma->vm_mmsz);
+		__asm__ volatile ("movq %0, %%cr3;"::"b"(child->cr3));
 
 		p_vma = p_vma->vm_next;
 	}
-
+	
 	__asm__ volatile ("movq %0, %%cr3;"::"b"(parent->cr3));
+
 
 //	while(1);
 //	__asm__ volatile ("call 1f\n"

@@ -1,7 +1,7 @@
 #include<stdio.h>
 #include <unistd.h>
 #include <sys/process.h>
-/*char* itoa(int num, char* str, int base)
+char* itoa(int num, char* str, int base)
 {
     int i = 0;
     bool isNegative = false;
@@ -40,36 +40,36 @@
  
     return str;
 }
-*/
+
 int main(){
-	while(1);
-	print("Running hello now");
+//	print("Running hello now");
+//	while(1);
 //	char buf[1024] = {0};
 //	for(int i = 0; i < 2; i++){
 //		print("Tfsdfsdfsdfs Maa ki chut");	
 //	}
-//	char pids[10];
+	char pids[10];
 //	read(0, s, 10);
 //	print(s);
-//	pid_t pid = 22;
+	pid_t pid = 22;
 /*	if ((pid = fork()) != -1) {
 		print("Inside");
 		itoa(pid, pids, 10);
 		print(pids);
 //		print(&pid);
 	} */
-//	pid = fork();
-//	if (pid == 0){
-//		print("Child here pid 0\n");
+	pid = fork();
+	if (pid == 0){
+		print("Child here pid 0\n");
 //		execvp("bin/ls");
-//	}
-//	else{
-//		itoa(pid, pids, 10);
-//		print(pids);
-//		print("Parent Here. Yielding now\n");
-//		yield();
-//		print("below yield");
-//	}
+	}
+	else{
+		itoa(pid, pids, 10);
+		print(pids);
+		print("Parent Here. Yielding now\n");
+		yield();
+		print("below yield");
+	}
 //	yield();
 //	print("below yield2");
 	while(1);

@@ -193,7 +193,7 @@ uint64_t *kmalloc(uint64_t size){
 			temp->ref_count = 1;
 			uint64_t *ret = (uint64_t *)((count)*PAGE_SIZE);
 			memset((uint64_t*)VADDR(ret), 0, pages*PAGE_SIZE);
-			temp = temp->next;
+			temp = (struct page*)VADDR(temp->next);
 			while (--pages != 0) {
 				temp->used = 1;
 				temp->block_size = pages;
@@ -229,16 +229,16 @@ uint64_t *kmalloc_stack(uint64_t size, uint64_t * pml4e){
 			temp->ref_count = 1;
 			uint64_t *ret = (uint64_t *)((count)*PAGE_SIZE);
 			memset((uint64_t*)VADDR(ret), 0, pages*PAGE_SIZE);
-			temp = temp->next;
+			temp = (struct page *)VADDR(temp->next);
 			while (--pages != 0) {
 				temp->used = 1;
 				temp->block_size = pages;
 				temp->ref_count = 1;
 				temp = (struct page*)VADDR(temp->next);
 			}
-			kprintf("before init");
-			init_map_virt_phys_addr((uint64_t)((uint64_t)bumpPtr+(uint64_t)temp->next), (uint64_t)temp->next, 1, pml4e, 1);
-			return (uint64_t *)((uint64_t)bumpPtr+(uint64_t)temp->next);
+			kprintf("before init %p %p", bumpPtr, ret);
+			init_map_virt_phys_addr((uint64_t)((uint64_t)bumpPtr+(uint64_t)ret), (uint64_t)ret, 1, pml4e, 1);
+			return (uint64_t *)((uint64_t)bumpPtr+(uint64_t)ret);
 		}
 		temp = (struct page *)VADDR(temp->next);
 		count++;

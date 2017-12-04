@@ -83,20 +83,20 @@ void page_fault_handler(uint64_t err_code, uint64_t err_rip) {
 	kprintf("handler");
 	kprintf("Page Fault address: %p %p %d\n", pf_addr, err_rip, err_code);
 	walk_page_table(pf_addr);
-//	while(1);
+	while(1);
 	if (err_code >= 4){
 //		struct page *pp = (struct page *)kmalloc(1);
 //		kprintf("page addr: %p", pp);
 //		memcpy((void*)pp, (void *)get_starting_page(pf_addr), 512);
 //		init_map_virt_phys_addr(pf_addr, (uint64_t)pp, 1, (uint64_t *)VADDR(curr_cr3), 1);
 		
-		init_map_virt_phys_addr(pf_addr, (uint64_t)PADDR(pf_addr), 1, (uint64_t *)VADDR(curr_cr3), 2);
-		while(1);
+		init_map_virt_phys_addr(pf_addr, (uint64_t)PADDR(pf_addr), 1, (uint64_t *)VADDR(curr_cr3), 1);
+		//while(1);
 		walk_page_table(pf_addr);
 //:		walkpage_table((uint64_t)pp);
-//		while(1);
-		__asm__ volatile ("movq %0, %%cr3"::"r"(curr_cr3));
 		while(1);
+		__asm__ volatile ("movq %0, %%cr3"::"r"(curr_cr3));
+//		while(1);
 //	handle_page_fault(pf_addr, err_code);
 	}
 	//__asm__ volatile ("hlt;");
