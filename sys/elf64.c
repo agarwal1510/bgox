@@ -64,6 +64,10 @@ int elf_check_supported(Elf64_Ehdr *hdr) {
 }
 
 task_struct *elf_run_bin(uint64_t addr, file *fileptr){
+	
+	task_struct *parent = get_running_task();
+	kprintf("**elf running task %d**", parent->pid);
+	
 	Elf64_Ehdr *elfhdr = (Elf64_Ehdr *)addr;
 	struct page *process_page = (struct page *)kmalloc(1);
 
@@ -186,8 +190,8 @@ task_struct *elf_run_bin(uint64_t addr, file *fileptr){
 //	pcb->entry = (uint64_t) &test_function;
 	
 	pcb->kstack[507] = (uint64_t)pcb->entry; 
-	kprintf("%p", pcb->ustack[509]);
-	__asm__ volatile("movq %0, %%cr3":: "r"(ker_cr3));
+//	kprintf("%p", pcb->ustack[509]);
+	__asm__ volatile("movq %0, %%cr3":: "r"(parent->cr3));
 	return pcb;
 }
 

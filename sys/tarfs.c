@@ -81,10 +81,7 @@ uint64_t read_dir(uint64_t addr)
 
 
 file *open(char *filename) {
-		kprintf("open called for %s", filename);
 		file* fd = (file *) kmalloc(1);
-		kprintf("open called for %p", fd);
-		kprintf("open called for %s", filename);
 		tarfs_e entry;
 		for(int i = 0; i < tarf_idx; i++){
 				entry = tarfs_list[i];

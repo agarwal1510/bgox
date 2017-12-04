@@ -16,6 +16,11 @@ task_struct *get_running_task() {
 	return head->process;
 }
 
+void delete_from_task_list(task_struct *process){
+	previous->next = previous->next->next;
+	while((uint64_t)head != (uint64_t)process)
+		head = head->next;
+}
 void add_to_task_list(task_struct *process) {
 	
 	if (ready_queue == NULL){

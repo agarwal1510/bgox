@@ -77,7 +77,7 @@ void start(uint32_t *modulep, void *physbase, void *physfree)
   task_struct *pcb_hello = elf_parse(fd->addr+512,(file *)fd->addr);
 //  kprintf("\nEntry: %p\n", pcb_hello->rsp);
   add_to_task_list(pcb_hello);
-
+//	while(1);
   //if (read(fd, buf, 15) > 0){
   //	kprintf("buffer read: %s", buf);
   //}
