@@ -76,13 +76,14 @@ task_struct *elf_run_bin(uint64_t addr, file *fileptr){
 		pcb->mm->mmap = NULL;
 		pcb->pid = PID++;
 
+	
+	
 	memcpy(pcb->tname, fileptr->name, str_len(fileptr->name));
 
 	uint64_t *pml4a=(uint64_t *)(process_page);//
 
 
 	for(uint64_t i=0; i < PAGES_PER_PML4; i++){
-//		pml4a[i] = ker_pml4_t[i];
 		pcb->kstack[i] = 0;
 		pml4a[i] = 0;
 	}
@@ -91,20 +92,31 @@ task_struct *elf_run_bin(uint64_t addr, file *fileptr){
 //	init_map_virt_phys_addr(0x0, 0x0, 24000, pml4a, 1);
 
 	pml4a[PAGES_PER_PML4 - 1] = (uint64_t)(ker_pml4_t[511]);
+	
+	pcb->ustack = (uint64_t*)kmalloc_stack(1, pml4a);
+	
+	kprintf("stack: %p", pcb->ustack);
+
 //	init_map_virt_phys_addr(0xFFFFFFFF800B8000, 0xB8000, 1, pml4a,0);
 //	walk_page_table(0xFFFFFFFF800B8000);
 	pcb->pml4 = (uint64_t)pml4a;
 	pcb->cr3 = (uint64_t *)PADDR(pml4a);
+	kprintf("pcb->ustack %p %p", pcb->ustack, PADDR(pcb->ustack));
+//	init_map_virt_phys_addr((uint64_t)pcb->ustack, PADDR(pcb->ustack), 2, (uint64_t *)pcb->pml4, 1);
+//	init_map_virt_phys_addr((uint64_t)pcb->ustack, PADDR(pcb->ustack), 2, ker_pml4_t, 1);
 	
-	__asm__ volatile ( "movq %0, %%cr3;"
+	__asm__ volatile ("movq %0, %%cr3;"
 			:: "r" (pcb->cr3));
 	
-	pcb->ustack = kmalloc(1);
+	if (walk_page_table((uint64_t)pcb->ustack) == -1){
+		kprintf("couldn't walk");
+	}
+//	while(1);
 	for(uint64_t i=0; i < PAGES_PER_PML4; i++){
 		pcb->ustack[i] = 0;
 	}
+	
 //	pcb->pid = ++PID;
-//	init_map_virt_phys_addr((uint64_t)pcb->ustack, PADDR(pcb->ustack), 1, pml4a, 1);
 	//pcb->ustack = kmalloc_user((pml4e_t *)pcb->pml4e,STACK_SIZE);
 //	kprintf("pcb->cr3=%p",pcb->cr3);
 //	while(1);
@@ -177,7 +189,7 @@ task_struct *elf_run_bin(uint64_t addr, file *fileptr){
 //	pcb->entry = (uint64_t) &test_function;
 	
 	pcb->kstack[507] = (uint64_t)pcb->entry; 
-
+	kprintf("%p", pcb->ustack[509]);
 	__asm__ volatile("movq %0, %%cr3":: "r"(ker_cr3));
 	return pcb;
 }

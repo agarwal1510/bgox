@@ -175,14 +175,7 @@ struct vm_area_struct *vma_malloc(struct mm_struct *mm) {
 ///////////////// MEMORY IN VADDR SPACE /////////////
 
 uint64_t *kmalloc(uint64_t size){
-//	int flag = 0;
-//	if(size == -1){
-//		flag = 1;
-//		size = 1;
-//	}
-//	if (flag == 1){
-//		kprintf("%d", size);
-//	}
+
 	int pages;
 	uint64_t count = 0;
 	if (size % PAGE_SIZE > 0) {
@@ -207,12 +200,45 @@ uint64_t *kmalloc(uint64_t size){
 				temp->ref_count = 1;
 				temp = (struct page*)VADDR(temp->next);
 			}
-//				kprintf("\n%p", ret);
-//				while(1);
-//			}
 
-//			uint64_t base = KERNEL_VADDR;
 			return (uint64_t *)VADDR(ret);
+		}
+		temp = (struct page *)VADDR(temp->next);
+		count++;
+	}
+	return NULL;
+}
+
+uint64_t *kmalloc_stack(uint64_t size, uint64_t * pml4e){
+
+	static uint64_t bumpPtr=(uint64_t )(0xFFFFF0F080700000);     
+	int pages;
+	uint64_t count = 0;
+	if (size % PAGE_SIZE > 0) {
+		pages = (size/PAGE_SIZE)+1; //TODO Fix pages when asked size = 4096KB
+	} else {
+		pages = size/PAGE_SIZE;
+	}
+	//kprintf("Pages: %d", pages);
+	struct page *temp = (struct page *)VADDR(free_list);
+	//kprintf("Temp addr: %p", (uint64_t)temp);
+	while(temp != NULL) {
+		if (temp->used == 0 && temp->block_size >= pages) {
+			temp->used = 1;
+			temp->block_size = pages;
+			temp->ref_count = 1;
+			uint64_t *ret = (uint64_t *)((count)*PAGE_SIZE);
+			memset((uint64_t*)VADDR(ret), 0, pages*PAGE_SIZE);
+			temp = temp->next;
+			while (--pages != 0) {
+				temp->used = 1;
+				temp->block_size = pages;
+				temp->ref_count = 1;
+				temp = (struct page*)VADDR(temp->next);
+			}
+			kprintf("before init");
+			init_map_virt_phys_addr((uint64_t)((uint64_t)bumpPtr+(uint64_t)temp->next), (uint64_t)temp->next, 1, pml4e, 1);
+			return (uint64_t *)((uint64_t)bumpPtr+(uint64_t)temp->next);
 		}
 		temp = (struct page *)VADDR(temp->next);
 		count++;
