@@ -61,7 +61,7 @@ int main(){
 	pid = fork();
 	if (pid == 0){
 		print("Child here pid 0\n");
-		execvp("bin/ls");
+//		execvp("bin/ls");
 	}
 	else{
 		itoa(pid, pids, 10);

@@ -157,7 +157,7 @@ void syscall_handler(void) {
 		sys_fork();
 	}
 	else if (syscall_num == 6){
-		schedule();
+		schedule(0);
 	}
 	else if (syscall_num == 8){
 		kprintf("exec called for %p\n", buf);
@@ -169,9 +169,13 @@ void syscall_handler(void) {
 			task_struct *pcb_exec = elf_parse(fd->addr+512,(file *)fd->addr);
 			pcb_exec->pid = parent->pid;
 			pcb_exec->ppid = parent->ppid;
+//			&parent = pcb_exec;
+			kprintf("%d", parent->pid);
+//			memset(parent, 0, sizeoif(parent));
+			delete_head_from_task_list();
 			add_to_task_list(pcb_exec);
-			kprintf("name %s", pcb_exec->tname);
-//			schedule();
+			kprintf("name %s", parent->tname);
+			schedule(0);
 //			kprintf("name: %s", pcb_exec->tname);
 	//		while(1);
 		}
