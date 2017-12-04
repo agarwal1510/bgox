@@ -118,4 +118,5 @@ void init_map_virt_phys_addr(uint64_t vaddr, uint64_t paddr, uint64_t no_of_page
 //void init_map_virt_phys_addr(uint64_t vaddr, uint64_t physaddr, uint64_t num_pages, int access);
 void load_cr3_user();
 void handle_page_fault(uint64_t addr, uint64_t err_code);
+uint64_t walk_page_table(uint64_t vaddr);
 #endif

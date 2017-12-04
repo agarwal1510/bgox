@@ -82,10 +82,12 @@ void start(uint32_t *modulep, void *physbase, void *physfree)
   //	kprintf("buffer read: %s", buf);
   //}
 
-  kprintf("Padd: %p", PADDR(0x50000));
-  uint64_t add = (uint64_t) 0xeee40000;
-  struct page *pa = (struct page *)add;
-  kprintf("%d", pa->block_size);
+  //kprintf("Padd: %p", PADDR(0x50000));
+  //uint64_t add = (uint64_t) 0xeee40000;
+  //struct page *pa = (struct page *)add;
+  //kprintf("%d", pa->block_size);
+
+    kprintf("PTEE: %p %p\n", walk_page_table(0xffffffff80200000), walk_page_table(0x400000));
 
   //syscall_init();
   set_tss_rsp(initial_stack);
