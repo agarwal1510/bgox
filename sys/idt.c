@@ -103,10 +103,10 @@ void page_fault_handler(uint64_t err_code, uint64_t err_rip) {
 //		while(1);
 }
 
-void general_protection_fault_handler(void) {
+void general_protection_fault_handler(uint64_t err_code, uint64_t err_rip) {
 	uint64_t pf_addr;
 	__asm__ volatile ("movq %%cr2, %0":"=r"(pf_addr));
-	kprintf("GPF Handler: %p\n", pf_addr);
+	kprintf("GPF Handler: %p %d %p\n", pf_addr, err_code, err_rip);
 	__asm__ volatile ("hlt;");
 	while(1);
 }
@@ -179,6 +179,9 @@ void syscall_handler(void) {
 //			kprintf("name: %s", pcb_exec->tname);
 	//		while(1);
 		}
+	} else if (syscall_num == 10) {
+		//while(1);
+		sys_exit(buf);
 	}
 /*	
 	if (syscall_num == 2) { //Fork

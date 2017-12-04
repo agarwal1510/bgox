@@ -256,6 +256,21 @@ uint64_t sys_fork() {
 
 }
 
+void sys_exit(uint64_t status) {
+
+//	schedule();
+	//set_tss_rsp(&ready_queue->process->kstack[511]);
+	__asm__ volatile ("movq %0, %%cr3;"::"r"(ready_queue->process->cr3));
+	__asm__ volatile ("movq %0, %%rsp;"::"r"(ready_queue->process->rsp));
+
+//	task_struct *current = get_running_task();
+		
+//	__asm__ volatile ("popq %rbx;");
+//	__asm__ volatile ("popq %rax;");
+//	__asm__ volatile ("jmp *%rax;");
+
+}
+
 /*
 void switch_thread(){	
 
