@@ -1,5 +1,6 @@
 #include<stdio.h>
 #include <unistd.h>
+#include <stdlib.h>
 #include <sys/process.h>
 char* itoa(int num, char* str, int base)
 {
@@ -41,7 +42,7 @@ char* itoa(int num, char* str, int base)
     return str;
 }
 
-int main(){
+int main(int argc, char *argv[], char *envp[]){
 //	print("Running hello now");
 //	while(1);
 //	char buf[1024] = {0};
@@ -61,7 +62,7 @@ int main(){
 	pid = fork();
 	if (pid == 0){
 		print("Child here pid 0\n");
-		execvp("bin/ls");
+//		execvp("bin/ls");
 	}
 	else{
 		itoa(pid, pids, 10);
@@ -70,8 +71,10 @@ int main(){
 		yield();
 		print("below yield");
 	}
+	exit(1);
 	yield();
 	print("below yield2");
+	exit(1);
 	while(1);
 	return 0;
 }

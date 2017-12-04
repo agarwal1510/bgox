@@ -52,4 +52,6 @@ void schedule();
 void add_to_task_list(task_struct *process);
 task_struct *get_running_task();
 uint64_t sys_fork();
+void sys_exit(uint64_t status);
+
 #endif

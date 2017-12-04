@@ -121,6 +121,8 @@ isr13:
         pushq %r13
         pushq %r14
         pushq %r15
+	movq 120(%rsp), %rdi
+	movq 128(%rsp), %rsi
         call general_protection_fault_handler
         popq %r15
         popq %r14
@@ -137,6 +139,7 @@ isr13:
         popq %rcx
         popq %rbx
         popq %rax
+	addq $0x8, %rsp
         sti
         iretq
 
