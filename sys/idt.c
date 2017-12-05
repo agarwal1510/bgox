@@ -120,6 +120,7 @@ void irq_timer_handler(void){
 			sec = new_sec;
 			kprintf_boott(">Time Since Boot: ", sec);
 		}
+		dec_sleep_count();
 	}
 	ticks++;
 }
@@ -142,7 +143,7 @@ void syscall_handler(void) {
 		kprintf("%s", buf);
 	}
 	else if (syscall_num == 2){
-				__asm__("sti");
+//				__asm__("sti");
 				char *buf_cpy = (char *)third;
 				int line = 0, idx = 0;
 				while(line == 0 && idx < fourth){
@@ -187,6 +188,12 @@ void syscall_handler(void) {
 		//while(1);
 		kprintf("Exit called");
 		sys_exit(buf);
+	} else if (syscall_num == 12) {
+		kprintf("waitId: %d", buf);
+		sys_waitpid(buf);
+	} else if (syscall_num == 14) {
+		kprintf("sleep time: %d", buf);
+		sys_sleep(buf);
 	}
 	else if (syscall_num == 12){
 		list_dir();

@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <sys/wait.h>
+//#include <sys/wait.h>
 //#include <sys/types.h>
 #include <unistd.h>
 #include <string.h>
@@ -28,7 +28,7 @@ int comm_parser(char **comm, char *argv[COMM_LEN]){
 
 int exec_vp(char *path, char *args[], int BACKGROUND){
 	char paths[ENV_LEN][COMM_LEN];
-	int pid, status;
+	int pid;
 	int ctr = split_delim(ENV_PATH, ':', paths);
 	str_cpy(paths[ctr], args[0]);
 	ctr++;
@@ -50,7 +50,7 @@ int exec_vp(char *path, char *args[], int BACKGROUND){
 			if (pid != 0){
 					if (BACKGROUND > 0){
 						//	signal(SIGCHLD, SIG_IGN);
-							if (waitpid(pid, &status, WNOHANG) == -1){
+							if (waitpid(pid) == -1){
 									continue;
 							}
 							else{
@@ -59,7 +59,7 @@ int exec_vp(char *path, char *args[], int BACKGROUND){
 							}
 					}
 					else{
-							if (waitpid(pid, &status, 0) == -1){
+							if (waitpid(pid) == -1){
 									continue;
 							}
 							else{

@@ -69,12 +69,12 @@ int main(int argc, char *argv[], char *envp[]){
 //		print(&pid);
 	} */
 	pid = fork();
-//	print("hello");
+	print("hello");
 	if (pid == 0){
 		print("Child here pid 0\n");
-		print(PS1);
 //		print(command);
 		while(1);
+//	sleep(100);
 //		execvp("bin/ls");
 	}
 	else{
@@ -82,10 +82,12 @@ int main(int argc, char *argv[], char *envp[]){
 //		print(pids);
 //		print(command);
 		print("Parent Here. Yielding now\n");
+//		waitpid(0);
 		yield();
-		while(1);
+//		while(1);
 		print("below yield");
 	}
+//	waitpid(0);
 	exit(1);
 	return 0;
 }

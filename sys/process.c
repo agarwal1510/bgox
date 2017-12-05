@@ -13,23 +13,77 @@ ready_task *queue_head = NULL;
 ready_task *running_task = NULL;
 ready_task *previous = NULL;
 
+ready_task *sleeping_queue = NULL;
+
 task_struct *get_running_task() {
 	return running_task->process;
+}
+
+void dec_sleep_count() {
+	ready_task *temp = sleeping_queue;
+	while (temp != NULL) {
+		temp->process->sleep_time -= 1;
+		if (temp->process->sleep_time == 0) {
+			add_to_task_list(temp->process);
+			remove_from_sleeping_queue(temp->process);
+		}
+		temp = temp->next;
+	}
+}
+
+void remove_from_sleeping_queue(task_struct *del) {
+	ready_task *prev;
+	ready_task *temp = sleeping_queue;
+	if (temp != NULL && temp->process == del) {
+		sleeping_queue = temp->next;
+		return;
+	}
+	while (temp != NULL && temp->process != del) {
+		prev = temp;
+		temp = temp->next;
+	}
+	if (temp == NULL) return;
+	prev->next = temp->next;
+}
+
+void add_to_sleeping_queue(task_struct *process) {
+	
+	if (sleeping_queue == NULL){
+		sleeping_queue= (ready_task *)kmalloc(sizeof(ready_task));
+		sleeping_queue->process = process;
+		sleeping_queue->next = NULL;
+		//sleeping_curr = sleeping_queue;
+		//task_count = 1;
+		return;
+	}
+	ready_task *temp = sleeping_queue;
+	while(sleeping_queue->next != NULL){
+		sleeping_queue = sleeping_queue->next;
+	}
+
+	ready_task *new_task = (ready_task *)kmalloc(sizeof(ready_task));
+	new_task->process = process;
+	new_task->next = NULL;
+	sleeping_queue->next  = new_task;
+	//sleeping_curr = sleeping_queue;
+	sleeping_queue = temp;
+//	task_count += 1;
 }
 
 void delete_curr_from_task_list(){
 	if (running_task->next){
 		previous->next = running_task->next;
-		running_task->next = NULL;
-		running_task = previous->next;
+		//running_task->next = NULL;
+		running_task = NULL;
 	}
 	else{
 		kprintf("No next encounterd");
 		previous->next = NULL;
-		running_task = queue_head;
+		running_task = NULL;
 	}
-
+	task_count -= 1;
 }
+
 void add_to_task_list(task_struct *process) {
 	
 	if (queue_head == NULL){
@@ -37,6 +91,7 @@ void add_to_task_list(task_struct *process) {
 		queue_head->process = process;
 		queue_head->next = NULL;
 		running_task = queue_head;
+		task_count = 1;
 		return;
 	}
 	ready_task *temp = queue_head;
@@ -49,19 +104,59 @@ void add_to_task_list(task_struct *process) {
 	new_task->next = NULL;
 	queue_head->next  = new_task;
 	queue_head = temp;
+	task_count += 1;
+}
+
+int is_task_present(uint64_t pid) {
+	ready_task *temp = queue_head;
+	while (temp != NULL) {
+		if (temp->process->pid == pid) {
+			return 1;
+		}
+		temp = temp->next;
+	}
+	temp = sleeping_queue;
+	while (temp != NULL) {
+		if (temp->process->pid == pid) {
+			return 1;
+		}
+		temp = temp->next;
+	}
+	return 0;
 }
 
 void schedule(int first_switch) {
 	
-//	kprintf("head->id: %d %p", running_task->process->pid, PID);
-	
-	if (running_task->next != NULL) {
+	//kprintf("head->id: %d %p", running_task->process->pid, PID);
+	if (running_task == NULL) {
+		if (previous->next == NULL) {
+			running_task = queue_head;
+		} else {
+			running_task = previous->next;
+		}
+	} else if (running_task->next != NULL) {
 		previous = running_task;
 		running_task = running_task->next;
 	} else {
 		previous = running_task;
 		running_task = queue_head;			
 	}
+
+	if (running_task->process->is_waiting > 0) {
+		if (is_task_present(running_task->process->is_waiting)) {
+		//waiting and is present
+		if (running_task->next != NULL) {
+                	previous = running_task;
+                	running_task = running_task->next;
+         	} else {
+                	previous = running_task;
+                	running_task = queue_head;
+         	}
+		} else {
+			running_task->process->is_waiting = 0;
+		}
+	}
+
 //	if (head->process->pid > 0){ //Not Kernel
 //	if (first_switch == 0)
 //	kprintf("head->id: %d", running_task->process->pid);
@@ -80,7 +175,7 @@ void schedule(int first_switch) {
 //		kprintf("\npid > 0\n");
 //	}
 //	kprintf("Saving rsp: %p",&running_task->process->kstack[511]);
-//	kprintf("\nnext: %d me: %d", running_task->process->pid, previous->process->pid);
+	kprintf("\nnext: %d me: %d", running_task->process->pid, previous->process->pid);
 	//		if (make == 1)
 	switch_to(running_task->process, previous->process, first_switch);
 
@@ -173,6 +268,8 @@ uint64_t sys_fork() {
 	child->ustack = kmalloc_stack(1, pml4a);
 //	child->ustack = kmalloc_stack(1, pml4a);
 	child->cr3 = (uint64_t *)PADDR(pml4a);
+	child->is_waiting = 0;
+	child->sleep_time = 0;
 //	kprintf("%p", child->ustack);
 	for (uint64_t j = 0; j < 512; j++) {
 		temp_kstack[j] = parent->kstack[j];
@@ -231,6 +328,7 @@ uint64_t sys_fork() {
 	vm_area_struct *p_vma = parent->mm->mmap;
 	vm_area_struct *child_vma;
 	while (p_vma != NULL) {
+		kprintf("inside vma");
 		child_vma = vma_malloc(child->mm);
 		child_vma->vm_start = p_vma->vm_start;
 		child_vma->vm_end = p_vma->vm_end;
@@ -249,7 +347,7 @@ uint64_t sys_fork() {
 
 		p_vma = p_vma->vm_next;
 	}
-	
+	kprintf("qwerty");	
 	__asm__ volatile ("movq %0, %%cr3;"::"r"(parent->cr3));
 
 
@@ -273,105 +371,65 @@ uint64_t sys_fork() {
 }
 
 void sys_exit(uint64_t status) {
-
 //	schedule();
 	//set_tss_rsp(&ready_queue->process->kstack[511]);
-	
-
 //	task_struct *current = get_running_task();
 //	kprintf("%p", running_task->process->pid);
 	delete_curr_from_task_list();
-	PID--;
-	running_task = queue_head;
-	switch_to(running_task->process, previous->process, 1);
-//	__asm__ volatile ("movq %0, %%cr3;"::"r"(queue_head->process->cr3));
-//	__asm__ volatile ("movq %0, %%rsp;"::"r"(queue_head->process->rsp));
+	//PID--;
+//	running_task = queue_head;
 	
-
-//	__asm__ volatile ("iretq");
-//	__asm__ volatile ("popq %rbx;");
-//	__asm__ volatile ("popq %rax;");
-//	__asm__ volatile ("jmp *%rax;");
+//	kprintf("\nnextd: %d med: %d", running_task->process->pid, previous->process->pid);
+	schedule(1);
+//	switch_to(running_task->process, previous->process, 1);
 
 }
 
-/*
-void switch_thread(){	
-
-	process1 = (struct tcb *) kmalloc(sizeof(struct tcb));
-	void *funcptr = &thread1;
-
-	for(int i = 0; i < STACK_SIZE; i ++){
-		process1->kstack[i] = 0;
+uint64_t sys_waitpid(uint64_t pid) {
+	task_struct *current = get_running_task();
+	task_struct *child;
+	uint64_t ppid = current->pid;
+	//int pid_found = 0;
+	ready_task *temp = queue_head;
+	kprintf("PPid: %d", ppid);
+	if (pid < 0 || pid == 0) {
+		while (temp->next != NULL) {
+			if (temp->process->ppid == ppid) {
+				kprintf("child found");
+				child = temp->process;
+					current->is_waiting = child->pid;
+					schedule(0);
+					//previous = running_task;
+					//running_task = queue_head;
+					//switch_to(running_task->process, previous->process, 1);
+					return 0;
+			}
+			temp = temp->next;
+		}
+	} else {
+		while (temp->next != NULL) {
+			if (temp->process->pid == pid) {
+				child = temp->process;
+					current->is_waiting = child->pid;
+					//previous = running_task;
+					//running_task = queue_head;
+					//switch_to(running_task->process, previous->process, 1);
+					schedule(0);
+					return 0;
+			}
+			temp = temp->next;
+		}
 	}
-
-	process1->kstack[STACK_SIZE - 1] = (uint64_t)funcptr;
-	process1->rip = (uint64_t)funcptr;
-	process1->rsp = (uint64_t)(&(process1->kstack[STACK_SIZE - 1]));
-
-	process2 = (struct tcb *) kmalloc(sizeof(struct tcb));
-	void *funcptr2 = &thread2;
-
-	for(int i = 0; i < STACK_SIZE; i ++){
-		process2->kstack[i] = 0;
-	}
-	kprintf("Stack bound: %p\n", (uint64_t)&process2->kstack[STACK_SIZE-1]);
-	process2->kstack[STACK_SIZE - 1] = (uint64_t)funcptr2;
-	process2->rip = (uint64_t)funcptr2;
-	process2->rsp = (uint64_t)(&(process2->kstack[STACK_SIZE - 16]));
-
-	add_to_ktask_list(process1);
-	add_to_ktask_list(process2);
-	//	schedule();
-	//	__asm__ volatile ("movq %0, %%rsp;"::"m"(process1->rsp));
-	thread1();
+	current->is_waiting = 0;
+	return 0;
 }
 
-void switch_user_thread(){	
+void sys_sleep(int time) {
+	task_struct *current = get_running_task();
+	current->sleep_time = time;
+	__asm__ volatile ("movq %%rsp, %0" : "=r"(current->rsp));
+	add_to_sleeping_queue(current);
+	delete_curr_from_task_list();
+	schedule(1);
+}
 
-	u_process1 = (struct tcb *) kmalloc(sizeof(struct tcb));
-	void *funcptr = &thread1;
-
-	for(int i = 0; i < STACK_SIZE; i ++){
-		u_process1->kstack[i] = 0;
-	}
-
-	u_process1->kstack[STACK_SIZE - 1] = 0x23;
-	u_process1->kstack[STACK_SIZE - 2] = (uint64_t)(&(u_process1->kstack[STACK_SIZE - 1]));
-	u_process1->kstack[STACK_SIZE - 3] = 0x200286; //rflags  
-	u_process1->kstack[STACK_SIZE - 4] = 0x1b; //cs
-	u_process1->kstack[STACK_SIZE - 5] = (uint64_t)funcptr;  //rip entry point scroll down to see the value 
-	
-	for(int i = 0; i < 15; i++){
-		u_process1->kstack[STACK_SIZE - 6 - i] = i;	
-	}
-//	u_process1->rip = (uint64_t)funcptr;
-	u_process1->rsp = (uint64_t)(&(u_process1->kstack[STACK_SIZE - 2]));
-
-
-
-	u_process2 = (struct tcb *) kmalloc(sizeof(struct tcb));
-	void *funcptr2 = &thread2;
-
-	for(int i = 0; i < STACK_SIZE; i ++){
-		u_process2->kstack[i] = 0;
-	}
-
-	u_process2->kstack[STACK_SIZE - 1] = 0x23;
-	u_process2->kstack[STACK_SIZE - 2] = (uint64_t)(&(u_process2->kstack[STACK_SIZE - 1]));
-	u_process2->kstack[STACK_SIZE - 3] = 0x200286; //rflags  
-	u_process2->kstack[STACK_SIZE - 4] = 0x1b; //cs
-	u_process2->kstack[STACK_SIZE - 5] = (uint64_t)funcptr2;  //rip entry point scroll down to see the value 
-	
-	for(int i = 0; i < 15; i++){
-		u_process2->kstack[STACK_SIZE - 6 - i] = i;	
-	}
-	u_process2->rip = (uint64_t)funcptr2;
-	u_process2->rsp = (uint64_t)(&(u_process2->kstack[STACK_SIZE - 20]));
-
-	add_to_ktask_list(u_process1);
-	add_to_ktask_list(u_process2);
-		schedule();
-	//	__asm__ volatile ("movq %0, %%rsp;"::"m"(process1->rsp));
-//	thread1();
-}*/

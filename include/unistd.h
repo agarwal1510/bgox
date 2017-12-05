@@ -15,11 +15,12 @@ pid_t fork();
 int execve(const char *file, char **const argv, char **const envp);
 int execvp(char *file);
 pid_t wait(int *status);
+pid_t waitpid(int pid);
 extern char **__environ;
 #ifdef __USE_GNU
 extern char **environ;
 #endif
-unsigned int sleep(unsigned int seconds);
+void sleep(unsigned int seconds);
 
 pid_t getpid(void);
 pid_t getppid(void);
