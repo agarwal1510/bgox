@@ -59,5 +59,7 @@ uint64_t sys_fork();
 void sys_exit(uint64_t status);
 void sys_sleep(int time);
 uint64_t sys_waitpid(uint64_t 	pid);
+void dec_sleep_count();
+void remove_from_sleeping_queue(task_struct *process);
 
 #endif

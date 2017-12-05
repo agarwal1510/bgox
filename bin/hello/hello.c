@@ -83,8 +83,8 @@ int main(int argc, char *argv[], char *envp[]){
 //		while(1);
 		print("below yield");
 	}
-	waitpid(0);
-	//sleep(100);
+//	waitpid(0);
+	sleep(100);
 	exit(1);
 	return 0;
 }

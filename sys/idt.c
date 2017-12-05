@@ -120,6 +120,7 @@ void irq_timer_handler(void){
 			sec = new_sec;
 			kprintf_boott(">Time Since Boot: ", sec);
 		}
+		dec_sleep_count();
 	}
 	ticks++;
 }
