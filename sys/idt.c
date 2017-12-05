@@ -135,11 +135,10 @@ void syscall_handler(void) {
 			"movq %%rdx, %3;"
 			: "=g"(syscall_num),"=g"(buf), "=g"(third), "=g"(fourth)
 			:
-			:"rax", "rsi","rcx"
+			:"rax", "rsi","rcx", "rdx"
 		      );  
 	
 	if (syscall_num == 1){ // Write
-//		while(1);
 		kprintf("%s", buf);
 	}
 	else if (syscall_num == 2){
