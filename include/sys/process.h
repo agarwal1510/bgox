@@ -6,7 +6,7 @@
 #define MAX_PROCESSES 1024
 #define STACK_SIZE 4096
 extern int PID;
-
+extern uint64_t initial_stack[STACK_SIZE]__attribute__((aligned(16)));
 
 typedef struct vm_area_struct {
         struct mm_struct *vm_mm;
@@ -48,8 +48,9 @@ typedef struct ready_task {
 
 //task_struct *ready_queue;
 //uint64_t num_processes = 0;
-void schedule();
+void schedule(int first_switch);
 void add_to_task_list(task_struct *process);
+void delete_curr_from_task_list();
 task_struct *get_running_task();
 uint64_t sys_fork();
 void sys_exit(uint64_t status);

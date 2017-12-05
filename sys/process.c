@@ -6,62 +6,86 @@
 #include <sys/paging.h>
 
 extern void isr128(void);
-void switch_to(task_struct *next, task_struct *me);
+void switch_to(task_struct *next, task_struct *me, int first_switch);
 
-ready_task *ready_queue = NULL;
-ready_task *head = NULL;
+ready_task *queue_head = NULL;
+ready_task *running_task = NULL;
 ready_task *previous = NULL;
 
 task_struct *get_running_task() {
-	return head->process;
+	return running_task->process;
 }
 
-void delete_from_task_list(task_struct *process){
-	previous->next = previous->next->next;
-	while((uint64_t)head != (uint64_t)process)
-		head = head->next;
+void delete_curr_from_task_list(){
+	if (running_task->next){
+		previous->next = running_task->next;
+		running_task->next = NULL;
+		running_task = previous->next;
+	}
+	else{
+		kprintf("No next encounterd");
+		previous->next = NULL;
+		running_task = queue_head;
+	}
+
 }
 void add_to_task_list(task_struct *process) {
 	
-	if (ready_queue == NULL){
-		ready_queue = (ready_task *)kmalloc(sizeof(ready_task));
-		ready_queue->process = process;
-		ready_queue->next = NULL;
-		head = ready_queue;
+	if (queue_head == NULL){
+		queue_head = (ready_task *)kmalloc(sizeof(ready_task));
+		queue_head->process = process;
+		queue_head->next = NULL;
+		running_task = queue_head;
 		return;
 	}
-	ready_task *temp = ready_queue;
-	while(ready_queue->next != NULL){
-		ready_queue = ready_queue->next;
+	ready_task *temp = queue_head;
+	while(queue_head->next != NULL){
+		queue_head = queue_head->next;
 	}
 
 	ready_task *new_task = (ready_task *)kmalloc(sizeof(ready_task));
 	new_task->process = process;
 	new_task->next = NULL;
-	ready_queue->next  = new_task;
-	ready_queue = temp;
+	queue_head->next  = new_task;
+	queue_head = temp;
 }
 
-void schedule() {
-	if (head->next != NULL) {
-		previous = head;
-		head = head->next;
+void schedule(int first_switch) {
+	
+	kprintf("head->id: %d %p", running_task->process->pid, PID);
+	
+	if (running_task->next != NULL) {
+		previous = running_task;
+		running_task = running_task->next;
 	} else {
-		previous = head;
-		head = ready_queue;			
+		previous = running_task;
+		running_task = queue_head;			
 	}
-	if (head->process->pid > 0){ //Not Kernel
-		set_tss_rsp(&head->process->kstack[511]);
+//	if (head->process->pid > 0){ //Not Kernel
+//	if (first_switch == 0)
+	kprintf("head->id: %d", running_task->process->pid);
+	set_tss_rsp(&running_task->process->kstack[511]);
+	
+//	for(int i = 0; i < 512; i++){
+//		kprintf("%p ", head->process->kstack[i]);
+//	}
+//		kprintf("rsp: %p %p", head->process->rsp, *head->process->rsp);
+//	}
+//		kprintf("what tss to set now");
+//		set_tss_rsp(&initial_stack[511]);
+//	}
+	//else
+//		set_tss_rsp(initial_stack);
 //		kprintf("\npid > 0\n");
-	}
-	kprintf("Saving rsp: %p",&head->process->kstack[511]);
-	kprintf("\nnext: %d me: %d", head->process->pid, previous->process->pid);
+//	}
+	kprintf("Saving rsp: %p",&running_task->process->kstack[511]);
+	kprintf("\nnext: %d me: %d", running_task->process->pid, previous->process->pid);
 	//		if (make == 1)
-	switch_to(head->process, previous->process);
+	switch_to(running_task->process, previous->process, first_switch);
 
 }
 
-void switch_to(task_struct *next, task_struct *me) {
+void switch_to(task_struct *next, task_struct *me, int first_switch) {
 	//kprintf("Nextrsp: %p\n", next->rsp);
 
 /*	__asm__ __volatile__( "pushq %rax");
@@ -81,13 +105,16 @@ void switch_to(task_struct *next, task_struct *me) {
 	__asm__ __volatile__( "pushq %r15");
 
 */
-	__asm__ volatile ("movq %%rsp, %0" : "=r"(me->rsp));
+	if (first_switch == 0){
+		__asm__ volatile ("movq %%rsp, %0" : "=r"(me->rsp));
+	}
+
 	__asm__ volatile ( "movq %0, %%cr3;"
 	              :: "r" (next->cr3));
 	
 	__asm__ __volatile__ ("movq %0, %%rsp;"::"r"(next->rsp));
 //	if (next->pid == 2)
-//		while(1);
+	//	while(1);
 //	kprintf("switch");
 /*
 	__asm__ __volatile__( "popq %r15");
@@ -120,7 +147,6 @@ uint64_t sys_fork() {
 	task_struct *parent = get_running_task();
 	task_struct *child = (task_struct *) kmalloc(sizeof(task_struct));
 	kprintf("%p %d %p", child, parent->pid, parent);
-	add_to_task_list(child);
 
 	child->mm = (mm_struct *)((char *)(child+1));
 	child->mm->mmap = NULL;
@@ -156,6 +182,7 @@ uint64_t sys_fork() {
 	for (uint64_t j = 0; j < 512; j++) {
 		child->ustack[j] = temp_ustack[j];
 	}
+	add_to_task_list(child);
 //		kprintf("%p", parent->ustack[j]);
 //	init_map_virt_phys_addr((uint64_t)child->ustack, PADDR(child->ustack), 1, pml4a, 1);
 //	__asm__ volatile ("movq %0, %%cr3;"::"b"(parent->cr3));
@@ -212,7 +239,7 @@ uint64_t sys_fork() {
 		p_vma = p_vma->vm_next;
 	}
 	
-	__asm__ volatile ("movq %0, %%cr3;"::"b"(parent->cr3));
+	__asm__ volatile ("movq %0, %%cr3;"::"r"(parent->cr3));
 
 
 //	while(1);
@@ -238,11 +265,19 @@ void sys_exit(uint64_t status) {
 
 //	schedule();
 	//set_tss_rsp(&ready_queue->process->kstack[511]);
-	__asm__ volatile ("movq %0, %%cr3;"::"r"(ready_queue->process->cr3));
-	__asm__ volatile ("movq %0, %%rsp;"::"r"(ready_queue->process->rsp));
+	
 
 //	task_struct *current = get_running_task();
-		
+//	kprintf("%p", running_task->process->pid);
+	delete_curr_from_task_list();
+	PID--;
+	running_task = queue_head;
+	switch_to(running_task->process, previous->process, 1);
+//	__asm__ volatile ("movq %0, %%cr3;"::"r"(queue_head->process->cr3));
+//	__asm__ volatile ("movq %0, %%rsp;"::"r"(queue_head->process->rsp));
+	
+
+//	__asm__ volatile ("iretq");
 //	__asm__ volatile ("popq %rbx;");
 //	__asm__ volatile ("popq %rax;");
 //	__asm__ volatile ("jmp *%rax;");

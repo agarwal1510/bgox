@@ -157,7 +157,7 @@ void syscall_handler(void) {
 		sys_fork();
 	}
 	else if (syscall_num == 6){
-		schedule();
+		schedule(0);
 	}
 	else if (syscall_num == 8){
 		kprintf("exec called for %p\n", buf);
@@ -166,17 +166,23 @@ void syscall_handler(void) {
 			kprintf("exec error: Command not found");
 		else{
 			task_struct *parent = get_running_task();
+			PID--; // Since pcb_exec increases PID by one on assignment
 			task_struct *pcb_exec = elf_parse(fd->addr+512,(file *)fd->addr);
 			pcb_exec->pid = parent->pid;
 			pcb_exec->ppid = parent->ppid;
+//			&parent = pcb_exec;
+			kprintf("%d", parent->pid);
+//			memset(parent, 0, sizeoif(parent));
+			delete_curr_from_task_list();
 			add_to_task_list(pcb_exec);
-			kprintf("name %s", pcb_exec->tname);
-//			schedule();
+			kprintf("name %s", parent->tname);
+			schedule(1);
 //			kprintf("name: %s", pcb_exec->tname);
 	//		while(1);
 		}
 	} else if (syscall_num == 10) {
 		//while(1);
+		kprintf("Exit called");
 		sys_exit(buf);
 	}
 /*	

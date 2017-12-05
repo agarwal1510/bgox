@@ -62,7 +62,7 @@ int main(int argc, char *argv[], char *envp[]){
 	pid = fork();
 	if (pid == 0){
 		print("Child here pid 0\n");
-//		execvp("bin/ls");
+		execvp("bin/ls");
 	}
 	else{
 		itoa(pid, pids, 10);
@@ -72,9 +72,5 @@ int main(int argc, char *argv[], char *envp[]){
 		print("below yield");
 	}
 	exit(1);
-	yield();
-	print("below yield2");
-	exit(1);
-	while(1);
 	return 0;
 }
