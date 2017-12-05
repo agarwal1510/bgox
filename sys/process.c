@@ -274,7 +274,7 @@ uint64_t sys_fork() {
 	for (uint64_t j = 0; j < 512; j++) {
 		temp_kstack[j] = parent->kstack[j];
 		temp_ustack[j] = parent->ustack[j];
-//		kprintf("%p", parent->ustack[j]);
+//		kprintf("%p ", parent->kstack[j]);
 	}
 //	uint64_t ptee = walk_page_table((uint64_t)parent->ustack);
 //	kprintf("***DOOM: %p %p***", parent->ustack, ptee);
@@ -289,7 +289,8 @@ uint64_t sys_fork() {
 	kprintf("cr3: %p", child->cr3);
 	for (uint64_t j = 0; j < 512; j++) {
 		child->ustack[j] = temp_ustack[j];
-		kprintf("%p ", child->ustack[j]);
+		kprintf("%p ", parent->kstack[j]);
+//		kprintf("%p ", child->ustack[j]);
 	}
 	
 	
@@ -300,7 +301,7 @@ uint64_t sys_fork() {
 	child->kstack[510] = (uint64_t)(&child->ustack[511]);
 	child->kstack[509] = 0x200286;
 	child->kstack[508] = 0x1b;
-	child->kstack[507] = (uint64_t)(child->ustack[493]);    //(uint64_t) &test_function; //entry point-505
+	child->kstack[507] = (uint64_t)(parent->kstack[506]);    //(uint64_t) &test_function; //entry point-505
 
 	child->kstack[506] = 0;
 	child->kstack[505] = temp_kstack[504];
@@ -323,7 +324,7 @@ uint64_t sys_fork() {
 //	child->rsp = &(child->kstack[491]);
 //	kmccrintf("Child cr3: %p\n", child->cr3);
 //	init_map_virt_phys_addr(0x0, 0x0, 32000, pml4a, 1);
-	
+//	kprintf("errwwe");
 	vm_area_struct *p_vma = parent->mm->mmap;
 	vm_area_struct *child_vma;
 	while (p_vma != NULL) {

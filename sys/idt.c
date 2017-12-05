@@ -212,6 +212,12 @@ void syscall_handler(void) {
 					close(fd);
 			}
 	}
+	else if (syscall_num == 16){
+		kprintf("%s\n", buf); //Echo
+	}
+	else if (syscall_num == 18){
+		kprintf("This is a process"); //ps
+	}
 /*	
 	if (syscall_num == 2) { //Fork
 	
