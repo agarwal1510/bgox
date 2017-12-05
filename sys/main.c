@@ -13,14 +13,24 @@
 #include <sys/syscall.h>
 #include <sys/elf64.h>
 
-uint64_t initial_stack[STACK_SIZE]__attribute__((aligned(16)));
+extern void isr128(void);
 uint32_t* loader_stack;
 extern char kernmem, physbase;
+
+#define INITIAL_STACK_SIZE 4096
+
+uint64_t initial_stack[STACK_SIZE]__attribute__((aligned(16)));
+
 int PID = 0;
 //struct pcb *bootProcess;
 DEFN_SYSCALL1(kprintf, 0, const char*);
 //void thread1(){
-
+void idle_proc(){
+    kprintf("Idle process called");
+	while(1){
+		schedule(0);
+	};
+}
 void start(uint32_t *modulep, void *physbase, void *physfree)
 {
 		struct smap_t {
@@ -44,20 +54,28 @@ void start(uint32_t *modulep, void *physbase, void *physfree)
   kprintf("Num pages: %d", num_pages);
   calculate_free_list(num_pages, (uint64_t)physfree);
   init_paging(KERNEL_VADDR + (uint64_t)physbase, (uint64_t)physbase, num_pages);
+
+
+  __asm__ __volatile__("movq %0, %%rbp" : :"r"(&initial_stack[0]));
+  __asm__ __volatile__("movq %0, %%rsp" : :"r"(&initial_stack[INITIAL_STACK_SIZE]));
+
   kprintf("Page Tables Setup complete\n");
   kprintf("physfree %p\n", (uint64_t)physfree);
   kprintf("tarfs in [%p:%p]\n", &_binary_tarfs_start, &_binary_tarfs_end);
   task_struct *pcb_boot = (task_struct *)kmalloc(sizeof(task_struct));  //kernel 
   pcb_boot->pml4 =(uint64_t)ker_pml4_t;  // kernel's page table   
   pcb_boot->cr3 = ker_cr3; // kernel's page table   
-  pcb_boot->pid = PID++;  // I'm kernel init process  so pid 0  
-//  pcb_boot->kstack[511] = initial_stack[511];
- // for(int i = 0; i < 512; i++){
+  pcb_boot->pid = PID++;  // I'm kernel init process  so pid 0 
   
-//  }
-  //  pcb_boot->kstack = (uint64_t *)initial_stack; //my stack is already created by prof :)  
-//  __asm__ volatile ("movq %%rsp, %0" : "=m"(pcb_boot->rsp));
-//  kprintf("\nEntry: %p\n", pcb_boot->rsp);
+  pcb_boot->kstack[511] = 0x10;
+  pcb_boot->kstack[508] = 0x08;
+  pcb_boot->kstack[510] = (uint64_t)&(pcb_boot->kstack[511]);
+  pcb_boot->kstack[509] = 0x200202UL;
+  pcb_boot->kstack[507] = (uint64_t)&idle_proc;
+  pcb_boot->kstack[491] = (uint64_t)(&isr128+29);
+  pcb_boot->rsp = &(pcb_boot->kstack[491]);
+
+
   add_to_task_list(pcb_boot);
   //  apicMain();
   //  find_ahci();
@@ -90,9 +108,9 @@ void start(uint32_t *modulep, void *physbase, void *physfree)
   //  kprintf("PTEE: %p %p\n", walk_page_table(0xffffffff80200000), walk_page_table(0x400000));
 
   //syscall_init();
-  set_tss_rsp(initial_stack);
+//  set_tss_rsp(pcb_boot->kstack);
 
-  schedule();
+  schedule(1);
 
   //TODO disable interrupts before this and renable after pushf using EFLAGS;
   /*  __asm__ __volatile__("mov $0x23, %ax\n"
@@ -113,7 +131,7 @@ void start(uint32_t *modulep, void *physbase, void *physfree)
    */
   // while(1){}
   //  switch_user_thread();
-// schedule();
+ schedule(0);
  kprintf("All Tasks done scheduling\n");
  while(1);
 }

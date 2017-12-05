@@ -85,7 +85,6 @@ file *open(char *filename) {
 		tarfs_e entry;
 		for(int i = 0; i < tarf_idx; i++){
 				entry = tarfs_list[i];
-				kprintf("%s %s\n", filename, entry.name);
 				if (str_cmp(filename, entry.name) == 1 && entry.type == TYPE_FILE) {
 						fd->addr = entry.addr;
 			//			kprintf("size: %d, entry.size", entry.size);

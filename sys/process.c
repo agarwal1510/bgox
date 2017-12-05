@@ -50,6 +50,8 @@ void add_to_task_list(task_struct *process) {
 }
 
 void schedule(int first_switch) {
+	kprintf("head->id: %d", head->process->pid);
+	kprintf("head->id: %d", head->process->pid);
 	if (head->next != NULL) {
 		previous = head;
 		head = head->next;
@@ -59,6 +61,7 @@ void schedule(int first_switch) {
 	}
 //	if (head->process->pid > 0){ //Not Kernel
 //	if (first_switch == 0)
+	kprintf("head->id: %d", head->process->pid);
 	set_tss_rsp(&head->process->kstack[511]);
 	
 //	for(int i = 0; i < 512; i++){
@@ -260,11 +263,13 @@ void sys_exit(uint64_t status) {
 
 //	schedule();
 	//set_tss_rsp(&ready_queue->process->kstack[511]);
+	
 	__asm__ volatile ("movq %0, %%cr3;"::"r"(ready_queue->process->cr3));
 	__asm__ volatile ("movq %0, %%rsp;"::"r"(ready_queue->process->rsp));
 
 //	task_struct *current = get_running_task();
-		
+	delete_head_from_task_list();
+	head = ready_queue;
 //	__asm__ volatile ("popq %rbx;");
 //	__asm__ volatile ("popq %rax;");
 //	__asm__ volatile ("jmp *%rax;");
