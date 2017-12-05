@@ -1,10 +1,10 @@
-#include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
-
+#include <sys/syscall.h>
+DEFN_SYSCALL0(list_dir, 12);
 int main(int argc, char *argv[], char *envp[]){
 
-	print("LS called\n");
+	syscall_list_dir();
+	while(1);
 	exit(1);
-return 0;
 }

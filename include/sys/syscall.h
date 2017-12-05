@@ -53,7 +53,9 @@ int syscall_##fn(P1 p1, P2 p2) \
 }
 
 
+DECL_SYSCALL0(list_dir)
 DECL_SYSCALL1(kprintf, const char*)
+DECL_SYSCALL1(cat, const char *)
 DECL_SYSCALL3(read, int, char *, uint16_t)
 //DECL_SYSCALL1(write_hex, const char*)
 

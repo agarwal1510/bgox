@@ -44,6 +44,7 @@ typedef struct file_entry {
 } file;
 
 void init_tarfs();
+void list_dir();
 uint64_t opendir(char *dir);
 uint64_t read_dir(uint64_t dir);
 

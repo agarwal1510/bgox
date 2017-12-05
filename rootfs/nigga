@@ -1,1 +1,26 @@
 this is nigga file
+#include <stdio.h>
+#include <stdlib.h>
+#include <sys/wait.h>
+#include <unistd.h>
+#include <string.h>
+#define WNOHANG 1
+#define WUNTRACED 2
+#define COMM_LEN  100
+#define BIN_LEN  10
+#define ARG_LEN  20
+#define ENV_LEN 1000
+#define PATH_LEN 1000
+#define PS1_DEFAULT "user@bgox> "
+	//					int BACKGROUND = -1;
+	//					if (exec_vp(args[0], args, BACKGROUND) < 0){
+	//							char err[100];
+	//							str_concat("sbush: error command not found: ",args[0], "", err); 
+	//							print(err);
+	//					}
+	//					print(PS1);
+	//					continue;
+	//			}
+
+		exit(1);
+}

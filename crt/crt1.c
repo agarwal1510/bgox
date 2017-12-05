@@ -3,20 +3,14 @@
 #include <stdio.h>
 
 void _start(void) {
-/*char hello[10];
-int retval;
-__asm__ volatile ("int $0x80"
- : "=a" (retval)
-  : "a" (3), "b" (1), "c" (hello), "d" (1)
-   : "memory");
 
-__asm__ volatile ("int $0x80"
- : "=a" (retval)
-  : "a" (4), "b" (1), "c" (hello), "d" (sizeof(hello)-1)
-   : "memory");
-   __asm__ volatile ("int $0x80" : : "a" (1), "b" (0));
-*///	int ret =  
-	int ret = main(0, NULL, NULL);
+	uint64_t argc = 0;
+	uint64_t argv1 = 0, argv2 = 0;
+__asm__ volatile ("movq %%rax, %0; movq %%rbx, %1; movq %%rcx, %2"
+ : "=g" (argc), "=g"(argv1), "=g"(argv2)
+ );
+ char *argv[1] = {(char*)argv1};
+	int ret = main(argc, argv, NULL);
 	exit(ret);
   // call main() and exit() here
 }

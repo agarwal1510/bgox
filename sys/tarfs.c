@@ -7,7 +7,7 @@
 
 tarfs_e tarfs_list[TARFS_MAX];
 int tarf_idx = 0;
-
+int bytesdone = 0;
 static int skip_size = sizeof(posix_header);
 
 void init_tarfs(){
@@ -50,13 +50,28 @@ uint64_t opendir(char *dir) {
 		tarfs_e entry;
 		for(int i = 0; i < tarf_idx; i++){
 				entry = tarfs_list[i];
-//				kprintf("query: %s %s %d\n", entry.name, dir, entry.type);
+				kprintf("%s %s %d\n", entry.name, dir, entry.type);
 				if (entry.type == TYPE_DIRECTORY && (str_cmp(entry.name, dir) == 1)) {
 						return (uint64_t)entry.addr;
 				}
 		}   
 		kprintf("Opendir %s: No such directory\n", dir);
 		return 0;
+}
+
+void list_dir() {
+		tarfs_e entry;
+		for(int i = 0; i < tarf_idx; i++){
+				entry = tarfs_list[i];
+				if (entry.type == TYPE_DIRECTORY) {
+						kprintf("%s    		DIR\n", entry.name);
+				}
+				else if (entry.type == TYPE_FILE){
+						kprintf("%s    		FILE\n", entry.name);
+				}
+		}   
+//		kprintf("Opendir %s: No such directory\n", dir);
+//		return 0;
 }
 
 uint64_t read_dir(uint64_t addr)
@@ -92,8 +107,12 @@ file *open(char *filename) {
 						str_cpy(fd->name, filename);
 						return fd;
 				}
+				else if (str_cmp(filename, entry.name) == 1 && entry.type == TYPE_DIRECTORY) {
+						kprintf("Open %s: is a directory.", filename);
+						return NULL;
+				}
 		}
-		kprintf("Open %s: No such file\n", filename);
+		kprintf("Open %s: No such file.", filename);
 		return NULL;
 }        
 
@@ -109,14 +128,15 @@ int close(file *fd) {
 size_t read(file* fd, void *buf, size_t bytes){
 	if (fd->size == 0)
 		return 0;
-	int bytestoRead = (max(bytes, fd->size) == fd->size ? bytes : fd->size);
-	char* fileaddr = (char *)(fd->addr + skip_size);
+	int bytestoRead = (max(bytes, fd->size - bytesdone) == fd->size - bytesdone ? bytes : fd->size - bytesdone);
+	char* fileaddr = (char *)(fd->addr + skip_size + bytesdone);
 	int i = 0;
 	char *tempbuf = (char *)buf;
 	for(i = 0; i < bytestoRead; i++){
 		tempbuf[i] = *fileaddr++;
 	}
 	tempbuf[i] = '\0';
+	bytesdone += str_len(tempbuf)-1;
 
 	return bytestoRead;
 }
