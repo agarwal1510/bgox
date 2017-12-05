@@ -104,6 +104,8 @@ task_struct *elf_run_bin(uint64_t addr, file *fileptr){
 //	walk_page_table(0xFFFFFFFF800B8000);
 	pcb->pml4 = (uint64_t)pml4a;
 	pcb->cr3 = (uint64_t *)PADDR(pml4a);
+	pcb->is_waiting = 0;
+	pcb->sleep_time = 0;
 //	kprintf("pcb->ustack %p %p", pcb->ustack, PADDR(pcb->ustack));
 //	init_map_virt_phys_addr((uint64_t)pcb->ustack, PADDR(pcb->ustack), 2, (uint64_t *)pcb->pml4, 1);
 //	init_map_virt_phys_addr((uint64_t)pcb->ustack, PADDR(pcb->ustack), 2, ker_pml4_t, 1);
@@ -165,7 +167,7 @@ task_struct *elf_run_bin(uint64_t addr, file *fileptr){
 	for(; phdr < eph; phdr++){
 		if (phdr->p_type == ELF_PROG_LOAD) {
 
-			kprintf("***parent vma called***\n");
+//			kprintf("***parent vma called %p %p %p***\n", phdr->p_vaddr, phdr->p_memsz, phdr->p_filesz);
 			if (phdr->p_filesz > phdr->p_memsz)
 				kprintf("Wrong size in elf binary\n");
 		//	while(1);
@@ -187,6 +189,7 @@ task_struct *elf_run_bin(uint64_t addr, file *fileptr){
 		}
 	}             	
 	pcb->entry = elfhdr->e_entry;
+//	kprintf("entry: %p", pcb->entry);
 //	pcb->entry = (uint64_t) &test_function;
 	
 	pcb->kstack[507] = (uint64_t)pcb->entry; 

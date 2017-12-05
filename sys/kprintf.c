@@ -21,6 +21,17 @@ void scroll_up(){
 			Y = 23;
 			X = 0;
 }
+void clear_screen(){
+	char *init = "";
+	for(int y = 0; y < 25; y++){
+		for(int x = 0; x <= 160; x+=2){
+			char *addr = (char*)vd_addr + y*160 + x;
+			*addr = *init;
+		}
+	}
+	X = X_DEFAULT;
+	Y = Y_DEFAULT;
+}
 void print_seq(const char * seq, int x, int y){
 
 		int overwrite_cood = 0;

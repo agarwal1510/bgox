@@ -38,7 +38,6 @@ typedef struct task_struct {
 	int exit_status;
 	uint64_t entry;
 	uint64_t is_waiting;
-	uint64_t is_zombie;
 	uint64_t sleep_time;
 } task_struct;
 

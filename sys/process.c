@@ -4,6 +4,7 @@
 #include <sys/gdt.h>
 #include <sys/strings.h>
 #include <sys/paging.h>
+#include <sys/utils.h>
 
 extern void isr128(void);
 void switch_to(task_struct *next, task_struct *me, int first_switch);
@@ -52,6 +53,17 @@ void add_to_task_list(task_struct *process) {
 	task_count += 1;
 }
 
+int is_task_present(uint64_t pid) {
+	ready_task *temp = queue_head;
+	while (temp != NULL) {
+		if (temp->process->pid == pid) {
+			return 1;
+		}
+		temp = temp->next;
+	}
+	return 0;
+}
+
 void schedule(int first_switch) {
 	
 	//kprintf("head->id: %d %p", running_task->process->pid, PID);
@@ -68,9 +80,25 @@ void schedule(int first_switch) {
 		previous = running_task;
 		running_task = queue_head;			
 	}
+
+	if (running_task->process->is_waiting > 0) {
+		if (is_task_present(running_task->process->is_waiting)) {
+		//waiting and is present
+		if (running_task->next != NULL) {
+                	previous = running_task;
+                	running_task = running_task->next;
+         	} else {
+                	previous = running_task;
+                	running_task = queue_head;
+         	}
+		} else {
+			running_task->process->is_waiting = 0;
+		}
+	}
+
 //	if (head->process->pid > 0){ //Not Kernel
 //	if (first_switch == 0)
-	kprintf("head->id: %d", running_task->process->pid);
+//	kprintf("head->id: %d", running_task->process->pid);
 	set_tss_rsp(&running_task->process->kstack[511]);
 	
 //	for(int i = 0; i < 512; i++){
@@ -85,7 +113,7 @@ void schedule(int first_switch) {
 //		set_tss_rsp(initial_stack);
 //		kprintf("\npid > 0\n");
 //	}
-	kprintf("Saving rsp: %p",&running_task->process->kstack[511]);
+//	kprintf("Saving rsp: %p",&running_task->process->kstack[511]);
 	kprintf("\nnext: %d me: %d", running_task->process->pid, previous->process->pid);
 	//		if (make == 1)
 	switch_to(running_task->process, previous->process, first_switch);
@@ -150,16 +178,18 @@ void test_function() {
 }
 
 uint64_t sys_fork() {
-	kprintf("Fork called: %p", get_tss_rsp());
+//	kprintf("Fork called: %p", get_tss_rsp());
 	task_struct *parent = get_running_task();
 	task_struct *child = (task_struct *) kmalloc(sizeof(task_struct));
-	kprintf("%p %d %p", child, parent->pid, parent);
+//	kprintf("%p %d %p", child, parent->pid, parent);
 
 	child->mm = (mm_struct *)((char *)(child+1));
 	child->mm->mmap = NULL;
 	child->pid = PID++;
 	child->ppid = parent->pid;
-	//memcpy(child->tname, parent->tname, str_len(parent->tname));
+	memcpy(child->tname, parent->tname, str_len(parent->tname));
+	
+	add_to_task_list(child);
 	
 	struct page *pt_page = (struct page*) kmalloc(1);
 	uint64_t *pml4a = (uint64_t *)(pt_page);
@@ -176,6 +206,8 @@ uint64_t sys_fork() {
 	child->ustack = kmalloc_stack(1, pml4a);
 	child->pml4 = (uint64_t)pml4a;
 	child->cr3 = (uint64_t *)PADDR(pml4a);
+	child->is_waiting = 0;
+	child->sleep_time = 0;
 //	kprintf("%p", child->ustack);
 	for (uint64_t j = 0; j < 512; j++) {
 		temp_kstack[j] = parent->kstack[j];
@@ -183,18 +215,11 @@ uint64_t sys_fork() {
 //		kprintf("%p", parent->ustack[j]);
 	}
 
-//init_map_virt_phys_addr(0x0, 0x0, 32000, (uint64_t *)child->pml4, 1);
 	__asm__ volatile ("movq %0, %%cr3;"::"r"(child->cr3));
 	kprintf("cr3: %p", child->cr3);
 	for (uint64_t j = 0; j < 512; j++) {
 		child->ustack[j] = temp_ustack[j];
 	}
-	add_to_task_list(child);
-//		kprintf("%p", parent->ustack[j]);
-//	init_map_virt_phys_addr((uint64_t)child->ustack, PADDR(child->ustack), 1, pml4a, 1);
-//	__asm__ volatile ("movq %0, %%cr3;"::"b"(parent->cr3));
-//	uint64_t curr_rsp;
-//	__asm__ volatile ("movq %%rsp, %0;":"=m"(curr_rsp));
 
 	child->kstack[511] = 0x23;
 	child->kstack[510] = (uint64_t)(&child->ustack[511]);
@@ -236,7 +261,7 @@ uint64_t sys_fork() {
 		child_vma->vm_file = p_vma->vm_file;
 		child_vma->vm_flags = p_vma->vm_flags;
 		child_vma->vm_pgoff = p_vma->vm_pgoff;
-		kprintf("vma: %p %p", p_vma->vm_start, p_vma->vm_mmsz);
+//		kprintf("vma: %p %p", p_vma->vm_start, p_vma->vm_mmsz);
 //		__asm__ volatile ("movq %0, %%cr3;"::"b"(parent->cr3));
 		region_alloc(child, p_vma->vm_start, p_vma->vm_mmsz);
 //		__asm__ volatile ("movq %0, %%cr3;"::"b"(child->cr3));
@@ -258,7 +283,7 @@ uint64_t sys_fork() {
 	
 	
 //	if (get_running_task() == parent) {
-		kprintf("parent : %p", temp_kstack[506]);	
+//		kprintf("parent : %p", temp_kstack[506]);	
 		//child->kstack[507] = curr_rsp;
 		return child->pid;
 //	} else {
@@ -279,8 +304,11 @@ void sys_exit(uint64_t status) {
 //	kprintf("%p", running_task->process->pid);
 	delete_curr_from_task_list();
 	//PID--;
-	running_task = queue_head;
-	switch_to(running_task->process, previous->process, 1);
+//	running_task = queue_head;
+	
+//	kprintf("\nnextd: %d med: %d", running_task->process->pid, previous->process->pid);
+	schedule(1);
+//	switch_to(running_task->process, previous->process, 1);
 //	__asm__ volatile ("movq %0, %%cr3;"::"r"(queue_head->process->cr3));
 //	__asm__ volatile ("movq %0, %%rsp;"::"r"(queue_head->process->rsp));
 	
@@ -296,25 +324,20 @@ uint64_t sys_waitpid(uint64_t pid) {
 	task_struct *current = get_running_task();
 	task_struct *child;
 	uint64_t ppid = current->pid;
-	int pid_found = 0;
-	ready_task *temp = queue_head;		
+	//int pid_found = 0;
+	ready_task *temp = queue_head;
+	kprintf("PPid: %d", ppid);
 	if (pid < 0 || pid == 0) {
 		while (temp->next != NULL) {
 			if (temp->process->ppid == ppid) {
+				kprintf("child found");
 				child = temp->process;
-				if (child->is_zombie) {
-					current->is_waiting = 0;
-					return 0;
-				} else {
 					current->is_waiting = child->pid;
-					previous = running_task;
-					running_task = queue_head;
-					switch_to(running_task->process, previous->process, 1);
-					//schedule(1);
+					schedule(0);
+					//previous = running_task;
+					//running_task = queue_head;
+					//switch_to(running_task->process, previous->process, 1);
 					return 0;
-				}
-				pid_found = 1;
-				break;
 			}
 			temp = temp->next;
 		}
@@ -322,36 +345,27 @@ uint64_t sys_waitpid(uint64_t pid) {
 		while (temp->next != NULL) {
 			if (temp->process->pid == pid) {
 				child = temp->process;
-				if (child->is_zombie) {
-					current->is_waiting = 0;
-					return 0;
-				} else {
 					current->is_waiting = child->pid;
-					previous = running_task;
-					running_task = queue_head;
-					switch_to(running_task->process, previous->process, 1);
-					//schedule(1);
+					//previous = running_task;
+					//running_task = queue_head;
+					//switch_to(running_task->process, previous->process, 1);
+					schedule(0);
 					return 0;
-				}
-				pid_found = 1;
-				break;
 			}
 			temp = temp->next;
 		}
 	}
-	if (pid_found == 0) {
-		current->is_waiting = 0;
-		return 0;
-	}
+	current->is_waiting = 0;
 	return 0;
 }
 
 void sys_sleep(int time) {
 	task_struct *current = get_running_task();
 	current->sleep_time = time;
-	previous = running_task;
-	running_task = queue_head;
-	kprintf("\nnext: %d me: %d", running_task->process->pid, previous->process->pid);
-	switch_to(running_task->process, previous->process, 1);
+	schedule(0);
+	//previous = running_task;
+	//running_task = queue_head;
+	//kprintf("\nnexts: %d mes: %d", running_task->process->pid, previous->process->pid);
+	//switch_to(running_task->process, previous->process, 1);
 }
 

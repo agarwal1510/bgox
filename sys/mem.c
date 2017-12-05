@@ -144,11 +144,13 @@ void free(uint64_t *ptr){
 void region_alloc(task_struct *pcb, uint64_t va, uint64_t size) {
 	uint64_t start = get_starting_page(va);
 	uint64_t end = get_ending_page(va+size);
+	kprintf("\nstart: %p end: %p\n", start, end);
 	uint64_t v;
 	for (v = start; v < end; v += PAGE_SIZE) {
 		uint64_t *addr = kmalloc(1);
 		init_map_virt_phys_addr((uint64_t)v, PADDR(addr), 1, (uint64_t *)(pcb->pml4), 1);
 	}
+//	walk_page_table(va);
 }
 struct vm_area_struct *vma_malloc(struct mm_struct *mm) {
 
@@ -238,6 +240,7 @@ uint64_t *kmalloc_stack(uint64_t size, uint64_t * pml4e){
 			}
 			kprintf("before init %p %p", bumpPtr, ret);
 			init_map_virt_phys_addr((uint64_t)((uint64_t)bumpPtr+(uint64_t)ret), (uint64_t)ret, 1, pml4e, 1);
+		//	walk_page_table((uint64_t)0xfffff0f080b14006);
 			return (uint64_t *)((uint64_t)bumpPtr+(uint64_t)ret);
 		}
 		temp = (struct page *)VADDR(temp->next);

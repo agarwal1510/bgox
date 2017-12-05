@@ -127,24 +127,22 @@ void irq_timer_handler(void){
 void syscall_handler(void) {
 
 	uint64_t syscall_num = 0;
-	uint64_t buf, third, fourth, fifth;
+	uint64_t buf, third, fourth;
 	//Save register values
 	__asm__ volatile("movq %%rax, %0;"
 			"movq %%rbx, %1;"
 			"movq %%rcx, %2;"
 			"movq %%rdx, %3;"
-			"movq %%rdx, %4;"
-			: "=g"(syscall_num),"=g"(buf), "=g"(third), "=g"(fourth), "=g"(fifth)
+			: "=g"(syscall_num),"=g"(buf), "=g"(third), "=g"(fourth)
 			:
-			:"rax", "rbx", "rdx", "rsi","rcx"
+			:"rax", "rsi","rcx", "rdx"
 		      );  
 	
 	if (syscall_num == 1){ // Write
 		kprintf("%s", buf);
 	}
-	
 	else if (syscall_num == 2){
-				__asm__("sti");
+//				__asm__("sti");
 				char *buf_cpy = (char *)third;
 				int line = 0, idx = 0;
 				while(line == 0 && idx < fourth){
@@ -153,7 +151,9 @@ void syscall_handler(void) {
 					idx = buf_idx;
 				}
 				memcpy(buf_cpy, char_buf, str_len(char_buf));
-	} else if (syscall_num == 4) {
+//				__asm__ volatile("movq %0, %%rax;"::"r"(str_len(char_buf)));
+	}
+	else if (syscall_num == 4) {
 		sys_fork();
 	}
 	else if (syscall_num == 6){
@@ -356,7 +356,7 @@ void idt_init(void)
 }
 
 void mask_init(void){
-	outb(0x21 , 0xFF); //11111100
+	outb(0x21 , 0xFC); //11111100
 }
 
 void kmain(void){

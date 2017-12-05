@@ -185,7 +185,7 @@ isr14:
 	iretq
 
 isr128:
-#	cli
+	cli
 	pushq %rax
         pushq %rbx
         pushq %rcx
@@ -217,6 +217,7 @@ isr128:
         popq %rcx
         popq %rbx
         popq %rax
+	sti
 	iretq
 
 pusha:
