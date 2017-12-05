@@ -91,15 +91,16 @@ void start(uint32_t *modulep, void *physbase, void *physfree)
 
   uint64_t p = opendir("bin/");
   //kprintf("%p", p);
+  
   read_dir(p);
   file* fd = open("bin/hello");
-  //kprintf("handle for %s %p\n", fd->name, fd->addr);
-  //char buf[100] = {0};
-
-  task_struct *pcb_hello = elf_parse(fd->addr+512,(file *)fd->addr);
-//  kprintf("\nEntry: %p\n", pcb_hello->rsp);
+  char *argv1 = "myargs";
+  char *argv[1] = {argv1};
+  task_struct *pcb_hello = elf_parse(fd->addr+512,(file *)fd->addr, 1, argv);
   add_to_task_list(pcb_hello);
-//	while(1);
+
+
+	//	while(1);
   //if (read(fd, buf, 15) > 0){
   //	kprintf("buffer read: %s", buf);
   //}
@@ -112,7 +113,7 @@ void start(uint32_t *modulep, void *physbase, void *physfree)
 
   //syscall_init();
 //  set_tss_rsp(pcb_boot->kstack);
-
+//  clear_screen();
   schedule(1);
 
   //TODO disable interrupts before this and renable after pushf using EFLAGS;

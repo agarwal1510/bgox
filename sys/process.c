@@ -168,9 +168,10 @@ uint64_t sys_fork() {
 
 //	uint64_t curr_rsp = 0;
 	uint64_t *temp_kstack = kmalloc(1);
+	child->pml4 = (uint64_t)pml4a;
 	uint64_t *temp_ustack = kmalloc(1);
 	child->ustack = kmalloc_stack(1, pml4a);
-	child->pml4 = (uint64_t)pml4a;
+//	child->ustack = kmalloc_stack(1, pml4a);
 	child->cr3 = (uint64_t *)PADDR(pml4a);
 //	kprintf("%p", child->ustack);
 	for (uint64_t j = 0; j < 512; j++) {
@@ -178,18 +179,31 @@ uint64_t sys_fork() {
 		temp_ustack[j] = parent->ustack[j];
 //		kprintf("%p", parent->ustack[j]);
 	}
+//	uint64_t ptee = walk_page_table((uint64_t)parent->ustack);
+//	kprintf("***DOOM: %p %p***", parent->ustack, ptee);
 
+//	init_map_virt_phys_addr((uint64_t)child->ustack, (uint64_t)PADDR(temp_ustack), 1, pml4a, 1);
+//	init_map_virt_phys_addr((uint64_t)parent->ustack, (uint64_t)ptee, 1, pml4a, 1);
+	
+//	static uint64_t bumpPtr=(uint64_t )(0xFFFFF0F080700000);
+//	init_map_virt_phys_addr((uint64_t)parent->ustack, (uint64_t)((uint64_t)child->ustack - (uint64_t)bumpPtr), 1, pml4a, 1);
+	
 	__asm__ volatile ("movq %0, %%cr3;"::"r"(child->cr3));
 	kprintf("cr3: %p", child->cr3);
 	for (uint64_t j = 0; j < 512; j++) {
 		child->ustack[j] = temp_ustack[j];
+		kprintf("%p ", child->ustack[j]);
 	}
+	
+	
+//	init_map_virt_phys_addr((uint64_t)child->ustack, (uint64_t)PADDR(temp_ustack), 1, pml4a, 1);
+//	init_map_virt_phys_addr((uint64_t)parent->ustack, (uint64_t)ptee, 1, pml4a, 1);
 
 	child->kstack[511] = 0x23;
 	child->kstack[510] = (uint64_t)(&child->ustack[511]);
 	child->kstack[509] = 0x200286;
 	child->kstack[508] = 0x1b;
-	child->kstack[507] = (uint64_t)(child->ustack[505]);    //(uint64_t) &test_function; //entry point-505
+	child->kstack[507] = (uint64_t)(child->ustack[493]);    //(uint64_t) &test_function; //entry point-505
 
 	child->kstack[506] = 0;
 	child->kstack[505] = temp_kstack[504];

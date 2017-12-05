@@ -69,6 +69,6 @@ typedef struct {
   Elf64_Xword   p_align;
 } Elf64_Phdr;
 
-task_struct *elf_parse(uint64_t estart_addr, file *fileptr);
+task_struct *elf_parse(uint64_t estart_addr, file *fileptr, int argc, char *argv[]);
 
 #endif
