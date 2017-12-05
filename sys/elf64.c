@@ -63,7 +63,7 @@ int elf_check_supported(Elf64_Ehdr *hdr) {
 	return true;
 }
 
-task_struct *elf_run_bin(uint64_t addr, file *fileptr){
+task_struct *elf_run_bin(uint64_t addr, file *fileptr, int argc, char *argv[]){
 	
 	task_struct *parent = get_running_task();
 	kprintf("**elf running task %d**", parent->pid);
@@ -123,12 +123,19 @@ task_struct *elf_run_bin(uint64_t addr, file *fileptr){
 	//pcb->ustack = kmalloc_user((pml4e_t *)pcb->pml4e,STACK_SIZE);
 //	kprintf("pcb->cr3=%p",pcb->cr3);
 //	while(1);
-
-
-	pcb->kstack[506] = 1; pcb->kstack[505] = 2;  pcb->kstack[504] = 3;  pcb->kstack[503] = 4;
-	pcb->kstack[502] = 5; pcb->kstack[501] = 6;  pcb->kstack[500] = 7;  pcb->kstack[499] = 8;
-	pcb->kstack[498] = 9; pcb->kstack[497] = 10; pcb->kstack[496] = 11; pcb->kstack[495] = 12; 
-	pcb->kstack[494] = 13; pcb->kstack[493] = 14; pcb->kstack[492] = 15; 
+	pcb->kstack[506] = argc; 
+	
+	for(int i = 0; i < argc; i++){
+		pcb->kstack[505-i] = (uint64_t)argv[i];
+	}
+	int j = argc+1;
+	for(int i = 1; i <= 15; i++){
+		pcb->kstack[506 - argc - i] = j++;
+	}
+//	pcb->kstack[505] = 2;  pcb->kstack[504] = 3;  pcb->kstack[503] = 4;
+//	pcb->kstack[502] = 5; pcb->kstack[501] = 6;  pcb->kstack[500] = 7;  pcb->kstack[499] = 8;
+//	pcb->kstack[498] = 9; pcb->kstack[497] = 10; pcb->kstack[496] = 11; pcb->kstack[495] = 12; 
+//	pcb->kstack[494] = 13; pcb->kstack[493] = 14; pcb->kstack[492] = 15; 
 
 	pcb->kstack[491] = (uint64_t)(&isr128+29); 
 
@@ -198,11 +205,11 @@ task_struct *elf_run_bin(uint64_t addr, file *fileptr){
 	return pcb;
 }
 
-task_struct *elf_parse(uint64_t addr, file *fileptr){
+task_struct *elf_parse(uint64_t addr, file *fileptr, int argc, char *argv[1]){
 	Elf64_Ehdr *elfhdr = (Elf64_Ehdr *)addr;
 	if (elf_check_supported(elfhdr) == true){
 		kprintf("ELF file supported by machine\n");
 	}
-	return elf_run_bin(addr, fileptr);
+	return elf_run_bin(addr, fileptr, argc, argv);
 }
 

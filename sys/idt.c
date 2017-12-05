@@ -161,14 +161,17 @@ void syscall_handler(void) {
 		schedule(0);
 	}
 	else if (syscall_num == 8){
-		kprintf("exec called for %p\n", buf);
+		kprintf("execvp called for %p\n", buf);
 		file* fd = open((char *)buf);
 		if (fd == NULL)
 			kprintf("exec error: Command not found");
 		else{
 			task_struct *parent = get_running_task();
 			PID--; // Since pcb_exec increases PID by one on assignment
-			task_struct *pcb_exec = elf_parse(fd->addr+512,(file *)fd->addr);
+			int argc = third;
+			char *argv1 = (char*)fourth; // Supports exec with single argument
+			char *argv[1] = {argv1};
+			task_struct *pcb_exec = elf_parse(fd->addr+512,(file *)fd->addr, argc, argv);
 			pcb_exec->pid = parent->pid;
 			pcb_exec->ppid = parent->ppid;
 //			&parent = pcb_exec;
@@ -192,6 +195,29 @@ void syscall_handler(void) {
 		kprintf("sleep time: %d", buf);
 		sys_sleep(buf);
 	}
+	else if (syscall_num == 12){
+		list_dir();
+	}
+	else if (syscall_num == 14){
+			char *filename = (char *)buf;
+			file *fd = open(filename);
+			if (fd != NULL){
+					int bytes = 80;
+					int bread = 2048;
+					char readbuf[bytes];
+					while(bread >= bytes){
+							bread = read(fd, readbuf, bytes);
+							kprintf("%s", readbuf);
+					}
+					close(fd);
+			}
+	}
+	else if (syscall_num == 16){
+		kprintf("%s\n", buf); //Echo
+	}
+	else if (syscall_num == 18){
+		kprintf("This is a process"); //ps
+	}
 /*	
 	if (syscall_num == 2) { //Fork
 	
@@ -211,6 +237,8 @@ void irq_kb_handler(void){
 	if (status & 0x01){
 		//		outb(KB_STATUS, 0x20);
 		unsigned int key = inb(KB_DATA);
+//		kprintf("%p\n", key);
+//		return;
 		if (key < 0){
 			kprintf("OOPS");
 			return;
