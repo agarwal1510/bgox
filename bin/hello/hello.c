@@ -60,6 +60,7 @@ int main(int argc, char *argv[], char *envp[]){
 //		print(&pid);
 	} */
 	pid = fork();
+//	print("below fork");
 	if (pid == 0){
 		print("Child here pid 0\n");
 		execvp("bin/ls");
@@ -71,6 +72,7 @@ int main(int argc, char *argv[], char *envp[]){
 		yield();
 		print("below yield");
 	}
+	sleep(100);
 	exit(1);
 	return 0;
 }

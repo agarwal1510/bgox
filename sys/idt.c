@@ -184,6 +184,12 @@ void syscall_handler(void) {
 		//while(1);
 		kprintf("Exit called");
 		sys_exit(buf);
+	} else if (syscall_num == 12) {
+		kprintf("waitId: %d", buf);
+		sys_waitpid(buf);
+	} else if (syscall_num == 14) {
+		kprintf("sleep time: %d", buf);
+		sys_sleep(buf);
 	}
 /*	
 	if (syscall_num == 2) { //Fork

@@ -28,7 +28,7 @@ DEFN_SYSCALL1(kprintf, 0, const char*);
 void idle_proc(){
     kprintf("Idle process called");
 	while(1){
-		if (PID == 1) //Only Kernel is running
+		if (task_count == 1) //Only Kernel is running
 			break;
 		schedule(0);
 	};
