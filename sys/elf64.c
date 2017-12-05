@@ -165,7 +165,7 @@ task_struct *elf_run_bin(uint64_t addr, file *fileptr){
 	for(; phdr < eph; phdr++){
 		if (phdr->p_type == ELF_PROG_LOAD) {
 
-			kprintf("***parent vma called***\n");
+//			kprintf("***parent vma called %p %p %p***\n", phdr->p_vaddr, phdr->p_memsz, phdr->p_filesz);
 			if (phdr->p_filesz > phdr->p_memsz)
 				kprintf("Wrong size in elf binary\n");
 		//	while(1);
@@ -187,6 +187,7 @@ task_struct *elf_run_bin(uint64_t addr, file *fileptr){
 		}
 	}             	
 	pcb->entry = elfhdr->e_entry;
+//	kprintf("entry: %p", pcb->entry);
 //	pcb->entry = (uint64_t) &test_function;
 	
 	pcb->kstack[507] = (uint64_t)pcb->entry; 

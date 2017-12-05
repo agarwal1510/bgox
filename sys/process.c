@@ -4,6 +4,7 @@
 #include <sys/gdt.h>
 #include <sys/strings.h>
 #include <sys/paging.h>
+#include <sys/utils.h>
 
 extern void isr128(void);
 void switch_to(task_struct *next, task_struct *me, int first_switch);
@@ -52,7 +53,7 @@ void add_to_task_list(task_struct *process) {
 
 void schedule(int first_switch) {
 	
-	kprintf("head->id: %d %p", running_task->process->pid, PID);
+//	kprintf("head->id: %d %p", running_task->process->pid, PID);
 	
 	if (running_task->next != NULL) {
 		previous = running_task;
@@ -63,7 +64,7 @@ void schedule(int first_switch) {
 	}
 //	if (head->process->pid > 0){ //Not Kernel
 //	if (first_switch == 0)
-	kprintf("head->id: %d", running_task->process->pid);
+//	kprintf("head->id: %d", running_task->process->pid);
 	set_tss_rsp(&running_task->process->kstack[511]);
 	
 //	for(int i = 0; i < 512; i++){
@@ -78,8 +79,8 @@ void schedule(int first_switch) {
 //		set_tss_rsp(initial_stack);
 //		kprintf("\npid > 0\n");
 //	}
-	kprintf("Saving rsp: %p",&running_task->process->kstack[511]);
-	kprintf("\nnext: %d me: %d", running_task->process->pid, previous->process->pid);
+//	kprintf("Saving rsp: %p",&running_task->process->kstack[511]);
+//	kprintf("\nnext: %d me: %d", running_task->process->pid, previous->process->pid);
 	//		if (make == 1)
 	switch_to(running_task->process, previous->process, first_switch);
 
@@ -143,16 +144,18 @@ void test_function() {
 }
 
 uint64_t sys_fork() {
-	kprintf("Fork called: %p", get_tss_rsp());
+//	kprintf("Fork called: %p", get_tss_rsp());
 	task_struct *parent = get_running_task();
 	task_struct *child = (task_struct *) kmalloc(sizeof(task_struct));
-	kprintf("%p %d %p", child, parent->pid, parent);
+//	kprintf("%p %d %p", child, parent->pid, parent);
 
 	child->mm = (mm_struct *)((char *)(child+1));
 	child->mm->mmap = NULL;
 	child->pid = PID++;
 	child->ppid = parent->pid;
-	//memcpy(child->tname, parent->tname, str_len(parent->tname));
+	memcpy(child->tname, parent->tname, str_len(parent->tname));
+	
+	add_to_task_list(child);
 	
 	struct page *pt_page = (struct page*) kmalloc(1);
 	uint64_t *pml4a = (uint64_t *)(pt_page);
@@ -176,18 +179,11 @@ uint64_t sys_fork() {
 //		kprintf("%p", parent->ustack[j]);
 	}
 
-//init_map_virt_phys_addr(0x0, 0x0, 32000, (uint64_t *)child->pml4, 1);
 	__asm__ volatile ("movq %0, %%cr3;"::"r"(child->cr3));
 	kprintf("cr3: %p", child->cr3);
 	for (uint64_t j = 0; j < 512; j++) {
 		child->ustack[j] = temp_ustack[j];
 	}
-	add_to_task_list(child);
-//		kprintf("%p", parent->ustack[j]);
-//	init_map_virt_phys_addr((uint64_t)child->ustack, PADDR(child->ustack), 1, pml4a, 1);
-//	__asm__ volatile ("movq %0, %%cr3;"::"b"(parent->cr3));
-//	uint64_t curr_rsp;
-//	__asm__ volatile ("movq %%rsp, %0;":"=m"(curr_rsp));
 
 	child->kstack[511] = 0x23;
 	child->kstack[510] = (uint64_t)(&child->ustack[511]);
@@ -224,11 +220,11 @@ uint64_t sys_fork() {
 		child_vma->vm_start = p_vma->vm_start;
 		child_vma->vm_end = p_vma->vm_end;
 		child_vma->vm_mmsz = p_vma->vm_mmsz;
-		child_vma->vm_next = p_vma->vm_next;
+		child_vma->vm_next = NULL;
 		child_vma->vm_file = p_vma->vm_file;
 		child_vma->vm_flags = p_vma->vm_flags;
 		child_vma->vm_pgoff = p_vma->vm_pgoff;
-		kprintf("vma: %p %p", p_vma->vm_start, p_vma->vm_mmsz);
+//		kprintf("vma: %p %p", p_vma->vm_start, p_vma->vm_mmsz);
 //		__asm__ volatile ("movq %0, %%cr3;"::"b"(parent->cr3));
 		region_alloc(child, p_vma->vm_start, p_vma->vm_mmsz);
 //		__asm__ volatile ("movq %0, %%cr3;"::"b"(child->cr3));
@@ -250,7 +246,7 @@ uint64_t sys_fork() {
 	
 	
 //	if (get_running_task() == parent) {
-		kprintf("parent : %p", temp_kstack[506]);	
+//		kprintf("parent : %p", temp_kstack[506]);	
 		//child->kstack[507] = curr_rsp;
 		return child->pid;
 //	} else {

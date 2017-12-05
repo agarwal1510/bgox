@@ -49,6 +49,11 @@ int main(int argc, char *argv[], char *envp[]){
 //	for(int i = 0; i < 2; i++){
 //		print("Tfsdfsdfsdfs Maa ki chut");	
 //	}
+	char command[2] = "c";
+	char *PS1 = "user@bgox $>";
+	print (PS1);
+//	read(0, command, 10);
+
 	char pids[10];
 //	read(0, s, 10);
 //	print(s);
@@ -60,15 +65,20 @@ int main(int argc, char *argv[], char *envp[]){
 //		print(&pid);
 	} */
 	pid = fork();
+	print("hello");
 	if (pid == 0){
 		print("Child here pid 0\n");
-		execvp("bin/ls");
+		print(command);
+		while(1);
+//		execvp("bin/ls");
 	}
 	else{
 		itoa(pid, pids, 10);
-		print(pids);
-		print("Parent Here. Yielding now\n");
+//		print(pids);
+//		print(command);
+//		print("Parent Here. Yielding now\n");
 		yield();
+		while(1);
 		print("below yield");
 	}
 	exit(1);
