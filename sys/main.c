@@ -28,8 +28,12 @@ DEFN_SYSCALL1(kprintf, 0, const char*);
 void idle_proc(){
     kprintf("Idle process called");
 	while(1){
+		if (PID == 1) //Only Kernel is running
+			break;
 		schedule(0);
 	};
+	kprintf("All tasks done scheduling");
+	while(1);
 }
 void start(uint32_t *modulep, void *physbase, void *physfree)
 {
@@ -104,7 +108,6 @@ void start(uint32_t *modulep, void *physbase, void *physfree)
   //uint64_t add = (uint64_t) 0xeee40000;
   //struct page *pa = (struct page *)add;
   //kprintf("%d", pa->block_size);
-
   //  kprintf("PTEE: %p %p\n", walk_page_table(0xffffffff80200000), walk_page_table(0x400000));
 
   //syscall_init();
@@ -131,7 +134,6 @@ void start(uint32_t *modulep, void *physbase, void *physfree)
    */
   // while(1){}
   //  switch_user_thread();
- schedule(0);
  kprintf("All Tasks done scheduling\n");
  while(1);
 }
