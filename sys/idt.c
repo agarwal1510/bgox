@@ -180,7 +180,7 @@ void syscall_handler(void) {
 			task_struct *pcb_exec = elf_parse(fd->addr+512,(file *)fd->addr, 0, argv);
 			pcb_exec->pid = parent->pid;
 			pcb_exec->ppid = parent->ppid;
-			kprintf("%d", parent->pid);
+			kprintf("Pid: %d %d", parent->pid, parent->ppid);
 			delete_curr_from_task_list();
 			add_to_task_list(pcb_exec);
 			kprintf("name %s", pcb_exec->tname);

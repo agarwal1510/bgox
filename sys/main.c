@@ -29,9 +29,10 @@ char *PATH = "bin/";
 void idle_proc(){
 //    kprintf("Idle process called");
 	while(1){
-		if (task_count == 1) //Only Kernel is running
-			break;
+//		if (task_count == 1) //Only Kernel is running
+//			break;
 		schedule(0);
+		__asm__ ("sti;");
 	};
 	kprintf("All tasks done scheduling");
 	while(1);
@@ -72,7 +73,7 @@ void start(uint32_t *modulep, void *physbase, void *physfree)
   pcb_boot->pml4 = ker_pml4_t;  // kernel's page table   
   pcb_boot->cr3 = ker_cr3; // kernel's page table   
   pcb_boot->pid = PID++;  // I'm kernel init process  so pid 0 
-  
+  pcb_boot->ppid = -1;
   pcb_boot->kstack[511] = 0x10;
   pcb_boot->kstack[508] = 0x08;
   pcb_boot->kstack[510] = (uint64_t)&(pcb_boot->kstack[511]);
@@ -80,7 +81,9 @@ void start(uint32_t *modulep, void *physbase, void *physfree)
   pcb_boot->kstack[507] = (uint64_t)&idle_proc;
   pcb_boot->kstack[491] = (uint64_t)(&isr128+29);
   pcb_boot->rsp = &(pcb_boot->kstack[491]);
-
+  pcb_boot->is_sleeping = 0;
+  pcb_boot->sleep_time = 0;
+  pcb_boot->is_waiting = 0;
 
   add_to_task_list(pcb_boot);
   //  apicMain();

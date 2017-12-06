@@ -39,6 +39,7 @@ typedef struct task_struct {
 	uint64_t entry;
 	uint64_t is_waiting;
 	uint64_t sleep_time;
+	uint64_t is_sleeping;
 } task_struct;
 
 typedef struct ready_task {
