@@ -102,7 +102,7 @@ task_struct *elf_run_bin(uint64_t addr, file *fileptr, int argc, char *argv[]){
 
 //	init_map_virt_phys_addr(0xFFFFFFFF800B8000, 0xB8000, 1, pml4a,0);
 //	walk_page_table(0xFFFFFFFF800B8000);
-	pcb->pml4 = (uint64_t)pml4a;
+	pcb->pml4 = pml4a;
 	pcb->cr3 = (uint64_t *)PADDR(pml4a);
 	pcb->is_waiting = 0;
 	pcb->sleep_time = 0;

@@ -263,9 +263,8 @@ uint64_t sys_fork() {
 
 //	uint64_t curr_rsp = 0;
 	uint64_t *temp_kstack = kmalloc(1);
-	child->pml4 = (uint64_t)pml4a;
+	child->pml4 = pml4a;
 	uint64_t *temp_ustack = kmalloc(1);
-	child->ustack = kmalloc_stack(1, pml4a);
 //	child->ustack = kmalloc_stack(1, pml4a);
 	child->cr3 = (uint64_t *)PADDR(pml4a);
 	child->is_waiting = 0;
@@ -274,8 +273,10 @@ uint64_t sys_fork() {
 	for (uint64_t j = 0; j < 512; j++) {
 		temp_kstack[j] = parent->kstack[j];
 		temp_ustack[j] = parent->ustack[j];
+		child->pml4[j] = parent->pml4[j];
 //		kprintf("%p ", parent->kstack[j]);
 	}
+	child->ustack = kmalloc_stack(1, child->pml4);
 //	uint64_t ptee = walk_page_table((uint64_t)parent->ustack);
 //	kprintf("***DOOM: %p %p***", parent->ustack, ptee);
 
@@ -289,37 +290,46 @@ uint64_t sys_fork() {
 	kprintf("cr3: %p", child->cr3);
 	for (uint64_t j = 0; j < 512; j++) {
 		child->ustack[j] = temp_ustack[j];
-		kprintf("%p ", parent->kstack[j]);
+		child->kstack[j] = temp_kstack[j];
+//		kprintf("%p ", parent->kstack[j]);
 //		kprintf("%p ", child->ustack[j]);
 	}
-	
-	
+	uint64_t i;
+	for (i = 0; i < 512; i++) {
+		if (temp_ustack[i] != 0) {
+			break;
+		}
+	}
+	uint64_t offset = 511 - i - 1;
+
 //	init_map_virt_phys_addr((uint64_t)child->ustack, (uint64_t)PADDR(temp_ustack), 1, pml4a, 1);
 //	init_map_virt_phys_addr((uint64_t)parent->ustack, (uint64_t)ptee, 1, pml4a, 1);
 
 	child->kstack[511] = 0x23;
-	child->kstack[510] = (uint64_t)(&child->ustack[511]);
+	child->kstack[510] = (uint64_t)(&child->ustack[511 - offset]);
+//	child->kstack[510] = temp_kstack[506];
 	child->kstack[509] = 0x200286;
 	child->kstack[508] = 0x1b;
-	child->kstack[507] = (uint64_t)(parent->kstack[506]);    //(uint64_t) &test_function; //entry point-505
+	//child->kstack[507] = (uint64_t)(child->ustack[505]);    //(uint64_t) &test_function; //entry point-505
+	child->kstack[507] = temp_kstack[506];    //(uint64_t) &test_function; //entry point-505
 
 	child->kstack[506] = 0;
-	child->kstack[505] = temp_kstack[504];
-	child->kstack[504] = temp_kstack[503];
-	child->kstack[503] = temp_kstack[502];
-	child->kstack[502] = temp_kstack[501];
-	child->kstack[501] = temp_kstack[500];
-	child->kstack[500] = temp_kstack[499];
-	child->kstack[499] = temp_kstack[498];
-	child->kstack[498] = temp_kstack[497];
-	child->kstack[497] = temp_kstack[496];
-	child->kstack[496] = temp_kstack[495];
-	child->kstack[495] = temp_kstack[494];
-	child->kstack[494] = temp_kstack[493];
-	child->kstack[493] = temp_kstack[492];
-	child->kstack[492] = temp_kstack[491];
+//	child->kstack[505] = temp_kstack[504];
+//	child->kstack[504] = temp_kstack[503];
+//	child->kstack[503] = temp_kstack[502];
+//	child->kstack[502] = temp_kstack[501];
+//	child->kstack[501] = temp_kstack[500];
+//	child->kstack[500] = temp_kstack[499];
+//	child->kstack[499] = temp_kstack[498];
+//	child->kstack[498] = temp_kstack[497];
+//	child->kstack[497] = temp_kstack[496];
+//	child->kstack[496] = temp_kstack[495];
+//	child->kstack[495] = temp_kstack[494];
+//	child->kstack[494] = temp_kstack[493];
+//	child->kstack[493] = temp_kstack[492];
+//	child->kstack[492] = temp_kstack[491];
 	child->kstack[491] = (uint64_t)(&isr128+29);
-	
+
 	child->rsp = &(child->kstack[491]);
 //	child->rsp = &(child->kstack[491]);
 //	kmccrintf("Child cr3: %p\n", child->cr3);
@@ -347,7 +357,7 @@ uint64_t sys_fork() {
 
 		p_vma = p_vma->vm_next;
 	}
-	kprintf("qwerty");	
+//	kprintf("qwerty");	
 	__asm__ volatile ("movq %0, %%cr3;"::"r"(parent->cr3));
 
 

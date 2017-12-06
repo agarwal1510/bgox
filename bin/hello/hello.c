@@ -49,7 +49,7 @@ int main(int argc, char *argv[], char *envp[]){
 //	for(int i = 0; i < 2; i++){
 //		print("Tfsdfsdfsdfs Maa ki chut");	
 //	}
-//	char command[100] = "command";
+//	char command[10] = "command";
 	char *PS1 = "user@bgox $>";
 	print (PS1);
 //	read(0, command, 10);
@@ -69,7 +69,7 @@ int main(int argc, char *argv[], char *envp[]){
 //		print(&pid);
 	} */
 	pid = fork();
-	print("hello");
+//	print("hello");
 	if (pid == 0){
 		print("Child here pid 0\n");
 //		print(command);

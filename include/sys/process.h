@@ -34,7 +34,7 @@ typedef struct task_struct {
 	uint64_t *cr3;
 	char tname[100];
 	mm_struct *mm;
-	uint64_t pml4;
+	uint64_t *pml4;
 	int exit_status;
 	uint64_t entry;
 	uint64_t is_waiting;
