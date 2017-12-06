@@ -30,7 +30,7 @@ int elf_check_file(Elf64_Ehdr *elfhdr){
 		kprintf("ELF Header EI_MAG3 incorrect.\n");
 		return false;
 	}
-	kprintf("Valid ELF Header found\n");
+//	kprintf("Valid ELF Header found\n");
 	return true;
 }
 
@@ -66,7 +66,7 @@ int elf_check_supported(Elf64_Ehdr *hdr) {
 task_struct *elf_run_bin(uint64_t addr, file *fileptr, int argc, char *argv[]){
 	
 	task_struct *parent = get_running_task();
-	kprintf("**elf running task %d**", parent->pid);
+//	kprintf("**elf running task %d**", parent->pid);
 	
 	Elf64_Ehdr *elfhdr = (Elf64_Ehdr *)addr;
 	struct page *process_page = (struct page *)kmalloc(1);
@@ -99,7 +99,7 @@ task_struct *elf_run_bin(uint64_t addr, file *fileptr, int argc, char *argv[]){
 	pml4a[PAGES_PER_PML4 - 1] = (uint64_t)(ker_pml4_t[511]);
 	
 	pcb->ustack = (uint64_t*)kmalloc_stack(1, pml4a);
-	kprintf("stack: %p", pcb->ustack);
+//	kprintf("stack: %p", pcb->ustack);
 
 //	init_map_virt_phys_addr(0xFFFFFFFF800B8000, 0xB8000, 1, pml4a,0);
 //	walk_page_table(0xFFFFFFFF800B8000);
@@ -119,9 +119,9 @@ task_struct *elf_run_bin(uint64_t addr, file *fileptr, int argc, char *argv[]){
 		pcb->kstack[i] = 0;
 	}
 	
-	if (walk_page_table((uint64_t)pcb->ustack) == -1){
-		kprintf("couldn't walk");
-	}
+//	if (walk_page_table((uint64_t)pcb->ustack) == -1){
+//		kprintf("couldn't walk");
+//	}
 	for(uint64_t i=0; i < PAGES_PER_PML4; i++){
 		pcb->ustack[i] = 0;
 	}
@@ -138,8 +138,8 @@ task_struct *elf_run_bin(uint64_t addr, file *fileptr, int argc, char *argv[]){
 	for(int i = 1; i < 15; i++){
 		pcb->kstack[506 - argc - i] = j++;
 	}
-	for(int i = 0; i < 15; i++)
-		kprintf("%p ", pcb->kstack[491 + i]);
+//	for(int i = 0; i < 15; i++)
+//		kprintf("%p ", pcb->kstack[491 + i]);
 //	kprintf("IN PCB: %s", pcb->kstack[505]);
 //	pcb->kstack[505] = 2;  pcb->kstack[504] = 3;  pcb->kstack[503] = 4;
 //	pcb->kstack[502] = 5; pcb->kstack[501] = 6;  pcb->kstack[500] = 7;  pcb->kstack[499] = 8;
@@ -217,7 +217,7 @@ task_struct *elf_run_bin(uint64_t addr, file *fileptr, int argc, char *argv[]){
 task_struct *elf_parse(uint64_t addr, file *fileptr, int argc, char *argv[1]){
 	Elf64_Ehdr *elfhdr = (Elf64_Ehdr *)addr;
 	if (elf_check_supported(elfhdr) == true){
-		kprintf("ELF file supported by machine\n");
+//		kprintf("ELF file supported by machine\n");
 	}
 	return elf_run_bin(addr, fileptr, argc, argv);
 }
