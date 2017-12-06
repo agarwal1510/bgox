@@ -47,26 +47,29 @@ int get_num_pages_allocated(uint64_t *ptr) {
 }
 
 void calculate_free_list(uint64_t num_pages, uint64_t physfree) {
+//	kprintf("NUm pages: %d %d %p", num_pages, sizeof(struct page), physfree);
 	free_list = (struct page*)physfree;
 	uint64_t used_pages = physfree/0x1000;
 	uint64_t free_pages = num_pages - used_pages;
+//	kprintf("Used-free %d %d", used_pages, free_pages);
 	int used_ctr = 0, free_ctr = 0;
 	while (used_pages != 0) {
 		free_list->used = 1;
 		free_list->block_size = used_pages;
 		free_list->ref_count = 1;
-		free_list->next = free_list+sizeof(struct page);
+		free_list->next = free_list+1; //sizeof(struct page);
 		free_list = free_list->next;
 		used_pages--;
 		used_ctr++;
 	}
 	struct page *free_ptr = free_list;
+//	kprintf("%p ", free_ptr);
 
 	while (free_pages != 0) {
 		free_list->used = 0;
 		free_list->block_size = free_pages;
 		free_list->ref_count = 0;
-		free_list->next = free_list+sizeof(struct page);
+		free_list->next = free_list+1; //sizeof(struct page);
 		free_list = free_list->next;
 		free_pages--;
 		free_ctr++;
@@ -74,7 +77,7 @@ void calculate_free_list(uint64_t num_pages, uint64_t physfree) {
 	free_list->used = -1;
 	//Init pages occupied by freelist in freelist->used = 1;
 	int used_flspace = num_pages*sizeof(struct page)/PAGE_SIZE;
-//	kprintf("loop ctr: %d %d %d", used_ctr, free_ctr, used_flspace);
+//	kprintf("loop ctr: %d %d %d %p", used_ctr, free_ctr, used_flspace, free_list);
 	while(used_flspace != 0){
 		free_ptr->used = 1;
 		free_ptr->block_size = used_flspace;
@@ -82,7 +85,7 @@ void calculate_free_list(uint64_t num_pages, uint64_t physfree) {
 		free_ptr = free_ptr->next;
 		used_flspace--;
 	}
-//	kprintf("\nLast free list addr: %p", (uint64_t)free_ptr);
+//	kprintf("\nLast free list addr: %p", (uint64_t)free_list);
 	free_list = (struct page*)physfree;
 }
 
@@ -95,7 +98,7 @@ uint64_t *kmalloc_init(uint64_t size){
 	} else {
 		pages = size/PAGE_SIZE;
 	}
-	//kprintf("Pages: %d", pages);
+//	kprintf("Pages: %d %d", pages, size);
 	struct page *temp = free_list;
 	//kprintf("Temp addr: %p", (uint64_t)temp);
 	while(temp != NULL) {
@@ -119,6 +122,7 @@ uint64_t *kmalloc_init(uint64_t size){
 //			}
 
 //			uint64_t base = KERNEL_VADDR;
+		//	kprintf("Addr: %p", ret);
 			return (uint64_t *)VADDR(ret);
 		}
 		temp = temp->next;
