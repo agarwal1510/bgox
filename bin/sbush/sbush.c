@@ -70,7 +70,7 @@ int exec_vp(char *path, char *args[], int BACKGROUND){
 			}
 			else{
 		//			char *env[] = {ENV_PATH, ENV_PS1, ENV_HOME};
-					execvp(args[0]);
+					execvp(args[0], "");
 //					execve(args[0], args, env);
 			}
 			if (i != ctr-1)

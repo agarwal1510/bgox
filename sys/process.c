@@ -30,42 +30,12 @@ void dec_sleep_count() {
 		if (temp->process->sleep_time == 0) {
 			temp->process->is_sleeping = 0;
 			//add_to_task_list(temp->process);
-			remove_from_sleeping_queue(temp->process);
+//			remove_from_sleeping_queue(temp->process);
 		}
 		}
 		temp = temp->next;
 
 	}
-}
-/*
-void dec_sleep_count() {
-	kprintf("dec ");
-	ready_task *temp = sleeping_queue;
-	while (temp != NULL) {
-		temp->process->sleep_time -= 1;
-		kprintf("RSP: %p", temp->process->rsp);
-		if (temp->process->sleep_time == 0) {
-			add_to_task_list(temp->process);
-			remove_from_sleeping_queue(temp->process);
-		}
-		temp = temp->next;
-	}
-}
-*/
-void remove_from_sleeping_queue(task_struct *del) {
-//	kprintf("remove");
-	ready_task *prev;
-	ready_task *temp = sleeping_queue;
-	if (temp != NULL && temp->process == del) {
-		sleeping_queue = temp->next;
-		return;
-	}
-	while (temp != NULL && temp->process != del) {
-		prev = temp;
-		temp = temp->next;
-	}
-	if (temp == NULL) return;
-	prev->next = temp->next;
 }
 
 task_struct *get_sleeping_task() {
@@ -76,29 +46,6 @@ task_struct *get_sleeping_task() {
 	return temp->process;
 }
 
-void add_to_sleeping_queue(task_struct *process) {
-	kprintf("add");
-	if (sleeping_queue == NULL){
-		sleeping_queue= (ready_task *)kmalloc(sizeof(ready_task));
-		sleeping_queue->process = process;
-		sleeping_queue->next = NULL;
-		//sleeping_curr = sleeping_queue;
-		//task_count = 1;
-		return;
-	}
-	ready_task *temp = sleeping_queue;
-	while(sleeping_queue->next != NULL){
-		sleeping_queue = sleeping_queue->next;
-	}
-
-	ready_task *new_task = (ready_task *)kmalloc(sizeof(ready_task));
-	new_task->process = process;
-	new_task->next = NULL;
-	sleeping_queue->next  = new_task;
-	//sleeping_curr = sleeping_queue;
-	sleeping_queue = temp;
-//	task_count += 1;
-}
 
 void delete_curr_from_task_list(){
 	if (running_task->next){
@@ -158,7 +105,6 @@ int is_task_present(uint64_t pid) {
 
 void schedule(int first_switch) {
 	
-	//kprintf("head->id: %d %p", running_task->process->pid, PID);
 	if (running_task == NULL) {
 		if (previous->next == NULL) {
 			running_task = queue_head;
@@ -184,7 +130,7 @@ void schedule(int first_switch) {
 
 	set_tss_rsp(&running_task->process->kstack[511]);
 	
-	kprintf("\nnext: %d me: %d %d", running_task->process->pid, previous->process->pid, first_switch);
+//	kprintf("\nnext: %d me: %d %d", running_task->process->pid, previous->process->pid, first_switch);
 	switch_to(running_task->process, previous->process, first_switch);
 
 }
@@ -453,7 +399,7 @@ void sys_sleep(int time) {
 	current->sleep_time = time;
 	current->is_sleeping = 1;
 //	__asm__ volatile ("movq %%rsp, %0" : "=r"(current->rsp));
-	add_to_sleeping_queue(current);
+//	add_to_sleeping_queue(current);
 //	delete_curr_from_task_list();
 	schedule(0);
 }

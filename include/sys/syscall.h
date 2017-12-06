@@ -58,6 +58,8 @@ DECL_SYSCALL0(ps)
 DECL_SYSCALL1(kprintf, const char*)
 DECL_SYSCALL1(echo, const char*)
 DECL_SYSCALL1(cat, const char *)
+DECL_SYSCALL1(exec, char*)
+DECL_SYSCALL2(execvp, char *, char *)
 DECL_SYSCALL3(read, int, char *, uint16_t)
 //DECL_SYSCALL1(write_hex, const char*)
 

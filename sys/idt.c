@@ -143,7 +143,7 @@ void syscall_handler(void) {
 		kprintf("%s", buf);
 	}
 	else if (syscall_num == 2){
-//				__asm__("sti");
+				__asm__("sti");
 				char *buf_cpy = (char *)third;
 				int line = 0, idx = 0;
 				while(line == 0 && idx < fourth){
@@ -160,41 +160,54 @@ void syscall_handler(void) {
 	else if (syscall_num == 6){
 		schedule(0);
 	}
-	else if (syscall_num == 8){
-		kprintf("execvp called for %p\n", buf);
+	else if (syscall_num == 7){
+		kprintf("exec called for %s\n", buf);
 		file* fd = open((char *)buf);
 		if (fd == NULL)
 			kprintf("exec error: Command not found");
 		else{
 			task_struct *parent = get_running_task();
 			PID--; // Since pcb_exec increases PID by one on assignment
-			int argc = third;
-			char *argv1 = (char*)fourth; // Supports exec with single argument
+			char *argv1 = "myargs";
 			char *argv[1] = {argv1};
-			task_struct *pcb_exec = elf_parse(fd->addr+512,(file *)fd->addr, argc, argv);
+			task_struct *pcb_exec = elf_parse(fd->addr+512,(file *)fd->addr, 0, argv);
 			pcb_exec->pid = parent->pid;
 			pcb_exec->ppid = parent->ppid;
-//			&parent = pcb_exec;
 			kprintf("%d", parent->pid);
-//			memset(parent, 0, sizeoif(parent));
 			delete_curr_from_task_list();
 			add_to_task_list(pcb_exec);
-			kprintf("name %s", parent->tname);
+			kprintf("name %s", pcb_exec->tname);
 			schedule(1);
-//			kprintf("name: %s", pcb_exec->tname);
-	//		while(1);
 		}
-	} else if (syscall_num == 10) {
+	}
+	else if (syscall_num == 8){
+		kprintf("execvp called for %s\n", buf);
+		file* fd = open((char *)buf);
+		if (fd == NULL)
+			kprintf("exec error: Command not found");
+		else{
+			task_struct *parent = get_running_task();
+			PID--; // Since pcb_exec increases PID by one on assignment
+			kprintf("%s %s", buf, third);
+			char *argv1 = (char*)third; // Supports exec with single argument
+			char argument[50];
+			memcpy(argument, argv1, str_len((char*)third));
+			char *argv[1] = {argument};
+			task_struct *pcb_exec = elf_parse(fd->addr+512,(file *)fd->addr, 1, argv);
+			pcb_exec->pid = parent->pid;
+			pcb_exec->ppid = parent->ppid;
+			kprintf("%d", parent->pid);
+			delete_curr_from_task_list();
+			add_to_task_list(pcb_exec);
+			kprintf("name %s", pcb_exec->tname);
+			schedule(1);
+		}
+	} 
+	else if (syscall_num == 10) {
 		//while(1);
 		kprintf("Exit called");
 		sys_exit(buf);
-	} else if (syscall_num == 12) {
-		kprintf("waitId: %d", buf);
-		sys_waitpid(buf);
-	} else if (syscall_num == 14) {
-		kprintf("sleep time: %d", buf);
-		sys_sleep(buf);
-	}
+	} 
 	else if (syscall_num == 12){
 		list_dir();
 	}
@@ -217,6 +230,13 @@ void syscall_handler(void) {
 	}
 	else if (syscall_num == 18){
 		kprintf("This is a process"); //ps
+	}
+	else if (syscall_num == 20) {
+		kprintf("waitId: %d", buf);
+		sys_waitpid(buf);
+	} else if (syscall_num == 22) {
+		kprintf("sleep time: %d", buf);
+		sys_sleep(buf);
 	}
 /*	
 	if (syscall_num == 2) { //Fork
