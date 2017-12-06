@@ -114,6 +114,10 @@ task_struct *elf_run_bin(uint64_t addr, file *fileptr, int argc, char *argv[]){
 	__asm__ volatile ("movq %0, %%cr3;"
 			:: "r" (pcb->cr3));
 	
+	for(uint64_t i=0; i < PAGES_PER_PML4; i++){
+		pcb->kstack[i] = 0;
+	}
+	
 	if (walk_page_table((uint64_t)pcb->ustack) == -1){
 		kprintf("couldn't walk");
 	}
@@ -130,7 +134,7 @@ task_struct *elf_run_bin(uint64_t addr, file *fileptr, int argc, char *argv[]){
 		pcb->kstack[505-i] = (uint64_t)argv[i];
 	}
 	int j = argc+1;
-	for(int i = 1; i <= 15; i++){
+	for(int i = 1; i < 15; i++){
 		pcb->kstack[506 - argc - i] = j++;
 	}
 //	pcb->kstack[505] = 2;  pcb->kstack[504] = 3;  pcb->kstack[503] = 4;
