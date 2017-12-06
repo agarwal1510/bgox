@@ -108,11 +108,11 @@ file *open(char *filename) {
 						return fd;
 				}
 				else if (str_cmp(filename, entry.name) == 1 && entry.type == TYPE_DIRECTORY) {
-						kprintf("Open %s: is a directory.", filename);
+//						kprintf("Open %s: is a directory.", filename);
 						return NULL;
 				}
 		}
-		kprintf("Open %s: No such file.", filename);
+//		kprintf("Open %s: No such file.", filename);
 		return NULL;
 }        
 

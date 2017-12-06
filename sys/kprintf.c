@@ -3,35 +3,63 @@
 #include <sys/defs.h>
 #include <sys/strings.h>
 #include <sys/paging.h>
+#include <sys/portio.h>
+
 #define X_DEFAULT 0
 #define Y_DEFAULT 0
 int X = X_DEFAULT;
 int Y = Y_DEFAULT;
 uint64_t vd_addr = VADDR(0xb8000);
 void str_cpy(char *to_str, char *frm_str);
+void move_csr(void)
+{
+    unsigned temp;
+
+    temp = Y * 80 + X/2 + 1;
+
+    outb(0x3D4, 14);
+    outb(0x3D5, temp >> 8);
+    outb(0x3D4, 15);
+    outb(0x3D5, temp);
+}
 void scroll_up(){
+			char *init = "";
 			for(int i = 1; i < 24; i++){
-				char *next = (char*)vd_addr + i*160;
+					char *next = (char*)vd_addr + i*160;
+					char *top = (char*)vd_addr + (i-1)*160;
+					for(int k = 0; k < 160; k++)
+							*(top + k) = *init;
 					for(int j = 0; j < 160; j++){
-						char *top = (char*)vd_addr + (i-1)*160;
-						*(top + j) = *(next + j);
-						str_cpy((next+j),"");
+							*(top + j) = *(next + j);
+							*(next + j) = *(init);
 					}
 			}
 			Y = 23;
 			X = 0;
+		move_csr();
 }
 void clear_screen(){
 	char *init = "";
 	for(int y = 0; y < 25; y++){
-		for(int x = 0; x <= 160; x+=2){
+		for(int x = 0; x < 160; x++){
 			char *addr = (char*)vd_addr + y*160 + x;
 			*addr = *init;
 		}
 	}
 	X = X_DEFAULT;
 	Y = Y_DEFAULT;
+		move_csr();
 }
+void update_cursor(int x, int y)
+{
+		uint16_t pos = y *160 + x/2;
+
+		outb(0x3D4, 0x0F);
+		outb(0x3D5, (uint8_t) (pos & 0xFF));
+		outb(0x3D4, 0x0E);
+		outb(0x3D5, (uint8_t) ((pos >> 8) & 0xFF));
+}
+
 void print_seq(const char * seq, int x, int y){
 
 		int overwrite_cood = 0;
@@ -80,9 +108,9 @@ void print_seq(const char * seq, int x, int y){
 			X = x;
 			Y = y;
 		}
-
+		move_csr();
+//		update_cursor(X,Y);
 }
-
 int itoa(unsigned long long num, char *dest, int base){
 	unsigned long long i = 0;
 	if (num == 0){

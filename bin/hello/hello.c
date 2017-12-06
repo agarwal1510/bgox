@@ -1,7 +1,7 @@
 #include<stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
-#include <sys/process.h>
+#include <sys/utils.h>
 #define COMM_LEN 50
 
 void str_cpy(char *to_str, char *frm_str){
@@ -179,7 +179,6 @@ int main(int argc, char *argv[], char *envp[]){
 						}
 				}
 				str_substr(cmd, prev_ptr, i-1, split_cmd[arg_ctr++]);
-
 				pid_t pid = 22;
 
 				pid = fork();
@@ -196,6 +195,7 @@ int main(int argc, char *argv[], char *envp[]){
 						//		print(pids);
 		//				print("Parent Here. Yielding now\n");
 						yield();
+						waitpid(0);
 //						while(1);
 	//					print("below yield");
 				}
