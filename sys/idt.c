@@ -16,6 +16,7 @@
 #include <sys/tarfs.h>
 #include <sys/elf64.h>
 #include <sys/mem.h>
+#include <sys/env.h>
 #include "kb_map.h"
 
 extern void load_idt(unsigned long *idt_ptr);
@@ -32,6 +33,7 @@ void timer_init();
 extern unsigned char kbdus[128];
 
 static char char_buf[1024];
+
 static volatile int buf_idx = 0;
 static volatile int new_line = 0;
 
@@ -144,6 +146,7 @@ void syscall_handler(void) {
 	}
 	else if (syscall_num == 2){
 				__asm__("sti");
+				kprintf(PS1);
 				char *buf_cpy = (char *)third;
 				int line = 0, idx = 0;
 				while(line == 0 && idx < fourth){
@@ -152,6 +155,9 @@ void syscall_handler(void) {
 					idx = buf_idx;
 				}
 				memcpy(buf_cpy, char_buf, str_len(char_buf));
+				memset(char_buf, 0, 1024);
+				buf_idx = 0;
+				new_line = 0;
 //				__asm__ volatile("movq %0, %%rax;"::"r"(str_len(char_buf)));
 	}
 	else if (syscall_num == 4) {
@@ -181,31 +187,32 @@ void syscall_handler(void) {
 		}
 	}
 	else if (syscall_num == 8){
-		kprintf("execvp called for %s\n", buf);
-		file* fd = open((char *)buf);
+//		kprintf("execvp called for %s\n", buf);
+		
+		char cmd[50];
+		str_concat(PATH, (char*)buf, cmd);
+		file* fd = open((char *)cmd);
 		if (fd == NULL)
 			kprintf("exec error: Command not found");
 		else{
 			task_struct *parent = get_running_task();
 			PID--; // Since pcb_exec increases PID by one on assignment
-			kprintf("%s %s", buf, third);
-			char *argv1 = (char*)third; // Supports exec with single argument
 			char argument[50];
-			memcpy(argument, argv1, str_len((char*)third));
-			char *argv[1] = {argument};
+			memcpy(argument, (char*)third, str_len((char*)third));
+			char *argv[1] = {(char*)argument};
 			task_struct *pcb_exec = elf_parse(fd->addr+512,(file *)fd->addr, 1, argv);
 			pcb_exec->pid = parent->pid;
 			pcb_exec->ppid = parent->ppid;
-			kprintf("%d", parent->pid);
+//			kprintf("%d", parent->pid);
 			delete_curr_from_task_list();
 			add_to_task_list(pcb_exec);
-			kprintf("name %s", pcb_exec->tname);
+//			kprintf("name %s", pcb_exec->tname);
 			schedule(1);
 		}
 	} 
 	else if (syscall_num == 10) {
 		//while(1);
-		kprintf("Exit called");
+//		kprintf("Exit called");
 		sys_exit(buf);
 	} 
 	else if (syscall_num == 12){
@@ -274,7 +281,7 @@ void irq_kb_handler(void){
 		if (key == 0x1d){
 			CTRL_ON = 1;
 			SHIFT_ON = 1; // should be ^C and not ^c
-			kprintf_at("%c", 146, 24, '^');
+			kprintf_at("%c", '^');
 			return;
 		}
 		else if (key == 0x9d){
@@ -284,84 +291,85 @@ void irq_kb_handler(void){
 		}
 		if (key == 0x1c){
 			new_line = 1;
+			kprintf("\n");
 			char_buf[buf_idx++] = '\n';
 			return;
 		}
 		if (key < 0x52){ // Keys over SSH
-			if (CTRL_ON == 0)
-				kprintf_at("%c", 146, 24, ' ');
+//			if (CTRL_ON == 0)
+//				kprintf("%c", ' ');
 			if (SHIFT_ON == 1){
 				switch (key){
 					case 2:
-						kprintf_at("%c", 148, 24, '!');
+						kprintf("%c", '!');
 						break;
 					case 3:
-						kprintf_at("%c", 148, 24, '@');
+						kprintf("%c", '@');
 						break;
 					case 4:
-						kprintf_at("%c", 148, 24, '#');
+						kprintf("%c", '#');
 						break;
 					case 5:
-						kprintf_at("%c", 148, 24, '$');
+						kprintf("%c", '$');
 						break;
 					case 6:
-						kprintf_at("%c", 148, 24, '%');
+						kprintf("%c", '%');
 						break;
 					case 7:
-						kprintf_at("%c", 148, 24, '^');
+						kprintf("%c",  '^');
 						break;
 					case 8:
-						kprintf_at("%c", 148, 24, '&');
+						kprintf("%c", '&');
 						break;
 					case 9:
-						kprintf_at("%c", 148, 24, '*');
+						kprintf("%c", '*');
 						break;
 					case 10:
-						kprintf_at("%c", 148, 24, '(');
+						kprintf("%c", '(');
 						break;
 					case 11:
-						kprintf_at("%c", 148, 24, ')');
+						kprintf("%c", ')');
 						break;
 					case 12:
-						kprintf_at("%c", 148, 24, '_');
+						kprintf("%c", '_');
 						break;
 					case 13:
-						kprintf_at("%c", 148, 24, '+');
+						kprintf("%c", '+');
 						break;
 					case 26:
-						kprintf_at("%c", 148, 24, '{');
+						kprintf("%c", '{');
 						break;
 					case 27:
-						kprintf_at("%c", 148, 24, '}');
+						kprintf("%c", '}');
 						break;
 					case 39:
-						kprintf_at("%c", 148, 24, ':');
+						kprintf("%c", ':');
 						break;
 					case 40:
-						kprintf_at("%c", 148, 24, '"');
+						kprintf("%c", '"');
 						break;
 					case 41:
-						kprintf_at("%c", 148, 24, '~');
+						kprintf("%c", '~');
 						break;
 					case 43:
-						kprintf_at("%c", 148, 24, '|');
+						kprintf("%c", '|');
 						break;
 					case 51:
-						kprintf_at("%c", 148, 24, '<');
+						kprintf("%c", '<');
 						break;
 					case 52:
-						kprintf_at("%c", 148, 24, '>');
+						kprintf("%c", '>');
 						break;
 					case 53:
-						kprintf_at("%c", 148, 24, '?');
+						kprintf("%c", '?');
 						break;
 					default:
-						kprintf_at("%c", 148, 24, kbdus[key] - 32);	
+						kprintf("%c", kbdus[key] - 32);	
 						break;
 				}
 			}
 			else
-				kprintf_at("%c", 148, 24, kbdus[key]);
+				kprintf("%c", kbdus[key]);
 				
 			char_buf[buf_idx++] = kbdus[key];
 		}

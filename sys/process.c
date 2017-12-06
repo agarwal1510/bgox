@@ -77,7 +77,7 @@ void delete_curr_from_task_list(){
 		running_task = NULL;
 	}
 	else{
-		kprintf("No next encounterd");
+//		kprintf("No next encounterd");
 		previous->next = NULL;
 		running_task = NULL;
 	}
@@ -174,7 +174,7 @@ void schedule(int first_switch) {
 //		kprintf("\npid > 0\n");
 //	}
 //	kprintf("Saving rsp: %p",&running_task->process->kstack[511]);
-	kprintf("\nnext: %d me: %d", running_task->process->pid, previous->process->pid);
+//	kprintf("\nnext: %d me: %d", running_task->process->pid, previous->process->pid);
 	//		if (make == 1)
 	switch_to(running_task->process, previous->process, first_switch);
 
@@ -286,7 +286,7 @@ uint64_t sys_fork() {
 //	init_map_virt_phys_addr((uint64_t)parent->ustack, (uint64_t)((uint64_t)child->ustack - (uint64_t)bumpPtr), 1, pml4a, 1);
 	
 	__asm__ volatile ("movq %0, %%cr3;"::"r"(child->cr3));
-	kprintf("cr3: %p", child->cr3);
+//	kprintf("cr3: %p", child->cr3);
 	for (uint64_t j = 0; j < 512; j++) {
 		child->ustack[j] = temp_ustack[j];
 		child->kstack[j] = temp_kstack[j];
@@ -337,7 +337,7 @@ uint64_t sys_fork() {
 	vm_area_struct *p_vma = parent->mm->mmap;
 	vm_area_struct *child_vma;
 	while (p_vma != NULL) {
-		kprintf("inside vma");
+//		kprintf("inside vma");
 		child_vma = vma_malloc(child->mm);
 		child_vma->vm_start = p_vma->vm_start;
 		child_vma->vm_end = p_vma->vm_end;

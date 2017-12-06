@@ -6,7 +6,6 @@
 #include <string.h>
 #define WNOHANG 1
 #define WUNTRACED 2
-#define COMM_LEN  100
 #define BIN_LEN  10
 #define ARG_LEN  20
 #define ENV_LEN 1000
@@ -70,7 +69,7 @@ int exec_vp(char *path, char *args[], int BACKGROUND){
 			}
 			else{
 		//			char *env[] = {ENV_PATH, ENV_PS1, ENV_HOME};
-					execvp(args[0]);
+					execvp(args[0],"");
 //					execve(args[0], args, env);
 			}
 			if (i != ctr-1)

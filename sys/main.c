@@ -12,6 +12,7 @@
 #include <sys/process.h>
 #include <sys/syscall.h>
 #include <sys/elf64.h>
+#include <sys/env.h>
 
 extern void isr128(void);
 uint32_t* loader_stack;
@@ -22,11 +23,11 @@ extern char kernmem, physbase;
 uint64_t initial_stack[STACK_SIZE]__attribute__((aligned(16)));
 
 int PID = 0;
-//struct pcb *bootProcess;
-DEFN_SYSCALL1(kprintf, 0, const char*);
-//void thread1(){
+char *PS1 = "user@bgox$> ";
+char *PATH = "bin/";
+
 void idle_proc(){
-    kprintf("Idle process called");
+//    kprintf("Idle process called");
 	while(1){
 		if (task_count == 1) //Only Kernel is running
 			break;
@@ -35,6 +36,7 @@ void idle_proc(){
 	kprintf("All tasks done scheduling");
 	while(1);
 }
+
 void start(uint32_t *modulep, void *physbase, void *physfree)
 {
 		struct smap_t {
@@ -113,7 +115,7 @@ void start(uint32_t *modulep, void *physbase, void *physfree)
 
   //syscall_init();
 //  set_tss_rsp(pcb_boot->kstack);
-//  clear_screen();
+  clear_screen();
   schedule(1);
 
   //TODO disable interrupts before this and renable after pushf using EFLAGS;

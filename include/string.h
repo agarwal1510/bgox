@@ -1,7 +1,7 @@
 #ifndef _STRING_H
 #define _STRING_H
 
-#define COMM_LEN 100
+#define COMM_LEN 50
 
 void str_cpy(char *to_str, char *frm_str);
 int str_len(char *str);

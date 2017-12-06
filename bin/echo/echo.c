@@ -8,6 +8,5 @@ int main(int argc, char *argv[], char *envp[]){
 		print("echo: insufficient arguments. Usage: echo echo-string");
 	else
 		syscall_echo(argv[0]);
-	while(1);
 	exit(1);
 }
