@@ -79,6 +79,7 @@ task_struct *elf_run_bin(uint64_t addr, file *fileptr, int argc, char *argv[]){
 		pcb->mm->count = 0;
 		pcb->mm->mmap = NULL;
 		pcb->pid = PID++;
+		pcb->ppid = parent->pid;
 
 	
 	
@@ -106,6 +107,7 @@ task_struct *elf_run_bin(uint64_t addr, file *fileptr, int argc, char *argv[]){
 	pcb->cr3 = (uint64_t *)PADDR(pml4a);
 	pcb->is_waiting = 0;
 	pcb->sleep_time = 0;
+	pcb->is_sleeping = 0;
 //	kprintf("pcb->ustack %p %p", pcb->ustack, PADDR(pcb->ustack));
 //	init_map_virt_phys_addr((uint64_t)pcb->ustack, PADDR(pcb->ustack), 2, (uint64_t *)pcb->pml4, 1);
 //	init_map_virt_phys_addr((uint64_t)pcb->ustack, PADDR(pcb->ustack), 2, ker_pml4_t, 1);
