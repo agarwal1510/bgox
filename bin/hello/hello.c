@@ -193,7 +193,7 @@ int main(int argc, char *argv[], char *envp[]){
 				}
 				else{
 						//		print(pids);
-		//				print("Parent Here. Yielding now\n");
+						//print("Parent Here. Yielding now\n");
 						yield();
 						waitpid(0);
 //						while(1);

@@ -189,7 +189,6 @@ void syscall_handler(void) {
 	}
 	else if (syscall_num == 8){
 //		kprintf("execvp called for %s\n", buf);
-		
 		char cmd[50];
 		str_concat(PATH, (char*)buf, cmd);
 		file* fd = open((char *)cmd);
@@ -245,7 +244,7 @@ void syscall_handler(void) {
 //		kprintf("waitId: %d", buf);
 		sys_waitpid(buf);
 	} else if (syscall_num == 22) {
-		kprintf("sleep time: %d", atoi((char*)buf));
+//		kprintf("sleep time: %d", atoi((char*)buf));
 		sys_sleep(atoi((char*)buf));
 	}
 /*	
@@ -299,7 +298,7 @@ void irq_kb_handler(void){
 				X -= 2;
 				buf_idx--;
 			}
-			move_csr();
+			//move_csr();
 			return;
 		
 		}
