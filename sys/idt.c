@@ -179,10 +179,10 @@ void syscall_handler(void) {
 			task_struct *pcb_exec = elf_parse(fd->addr+512,(file *)fd->addr, 0, argv);
 			pcb_exec->pid = parent->pid;
 			pcb_exec->ppid = parent->ppid;
-			kprintf("Pid: %d %d", parent->pid, parent->ppid);
+			//kprintf("%d", parent->pid);
 			delete_curr_from_task_list();
 			add_to_task_list(pcb_exec);
-			kprintf("name %s", pcb_exec->tname);
+			//kprintf("name %s", pcb_exec->tname);
 			schedule(1);
 		}
 	}
@@ -236,7 +236,7 @@ void syscall_handler(void) {
 		kprintf("%s\n", buf); //Echo
 	}
 	else if (syscall_num == 18){
-		kprintf("This is a process"); //ps
+		print_task_list(); //ps
 	}
 	else if (syscall_num == 20) {
 		kprintf("waitId: %d", buf);

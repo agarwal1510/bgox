@@ -17,6 +17,23 @@ task_struct *get_running_task() {
 	return running_task->process;
 }
 
+void print_task_list() {
+         kprintf("PID NAME STATUS\n");
+          ready_task *temp = queue_head;
+          char *status = NULL;
+          while (temp != NULL) {
+                  kprintf("%d %s", temp->process->pid, temp->process->tname);
+                  if (temp->process->is_waiting > 0) {
+                          status = "Waiting";
+                 } else if (temp->process->is_sleeping == 1) {
+                          status = "Sleeping";
+                  } else {
+                          status = "Running";
+                  }
+                  kprintf(" %s\n", status);
+                  temp = temp->next;
+          }
+}
 
 void dec_sleep_count() {
 //	kprintf("dec ");
@@ -199,7 +216,7 @@ uint64_t sys_fork() {
 	child->mm->mmap = NULL;
 	child->pid = PID++;
 	child->ppid = parent->pid;
-	kprintf("Pid: %d %d", child->pid, child->ppid);
+	//kprintf("Pid: %d %d", child->pid, child->ppid);
 	memcpy(child->tname, parent->tname, str_len(parent->tname));
 	
 	add_to_task_list(child);
