@@ -13,6 +13,8 @@
 #include <sys/syscall.h>
 #include <sys/elf64.h>
 #include <sys/env.h>
+#include <sys/strings.h>
+#include <sys/memutils.h>
 
 extern void isr128(void);
 uint32_t* loader_stack;
@@ -84,7 +86,8 @@ void start(uint32_t *modulep, void *physbase, void *physfree)
   pcb_boot->is_sleeping = 0;
   pcb_boot->sleep_time = 0;
   pcb_boot->is_waiting = 0;
-
+  //pcb_boot->tname = "Kernel";	
+  memcpy(pcb_boot->tname, "Kernel", str_len("Kernel"));
   add_to_task_list(pcb_boot);
   //  apicMain();
   //  find_ahci();
