@@ -21,7 +21,6 @@ extern char **__environ;
 #ifdef __USE_GNU
 extern char **environ;
 #endif
-void sleep(unsigned int seconds);
 
 pid_t getpid(void);
 pid_t getppid(void);
