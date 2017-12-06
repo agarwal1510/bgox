@@ -18,7 +18,8 @@
 #include <sys/mem.h>
 #include <sys/env.h>
 #include "kb_map.h"
-
+extern int X;
+extern int Y;
 extern void load_idt(unsigned long *idt_ptr);
 extern void isr0(void);
 extern void isr1(void);
@@ -167,7 +168,7 @@ void syscall_handler(void) {
 		schedule(0);
 	}
 	else if (syscall_num == 7){
-		kprintf("exec called for %s\n", buf);
+//		kprintf("exec called for %s\n", buf);
 		file* fd = open((char *)buf);
 		if (fd == NULL)
 			kprintf("exec error: Command not found");
@@ -192,8 +193,10 @@ void syscall_handler(void) {
 		char cmd[50];
 		str_concat(PATH, (char*)buf, cmd);
 		file* fd = open((char *)cmd);
-		if (fd == NULL)
-			kprintf("exec error: Command not found");
+		if (fd == NULL){
+			kprintf("oxTerm error: Command %s not found\n", buf);
+			sys_exit(1);
+		}
 		else{
 			task_struct *parent = get_running_task();
 			PID--; // Since pcb_exec increases PID by one on assignment
@@ -239,11 +242,11 @@ void syscall_handler(void) {
 		kprintf("This is a process"); //ps
 	}
 	else if (syscall_num == 20) {
-		kprintf("waitId: %d", buf);
+//		kprintf("waitId: %d", buf);
 		sys_waitpid(buf);
 	} else if (syscall_num == 22) {
-		kprintf("sleep time: %d", buf);
-		sys_sleep(buf);
+		kprintf("sleep time: %d", atoi((char*)buf));
+		sys_sleep(atoi((char*)buf));
 	}
 /*	
 	if (syscall_num == 2) { //Fork
@@ -255,9 +258,8 @@ void syscall_handler(void) {
 	}
 */
 }
-
 void irq_kb_handler(void){
-	outb(0x20, 0x20);
+		outb(0x20, 0x20);
 	outb(0xa0, 0x20);
 	
 	char status = inb(KB_STATUS);
@@ -288,6 +290,17 @@ void irq_kb_handler(void){
 			CTRL_ON = 0;
 			SHIFT_ON = 0;
 			return;
+		}
+		else if (key == 0x0e){
+			if (buf_idx > 0){
+				char_buf[buf_idx] = 0;
+				X -= 2;
+				kprintf(" ");
+				X -= 2;
+				buf_idx--;
+			}
+			return;
+		
 		}
 		if (key == 0x1c){
 			new_line = 1;
@@ -370,7 +383,6 @@ void irq_kb_handler(void){
 			}
 			else
 				kprintf("%c", kbdus[key]);
-				
 			char_buf[buf_idx++] = kbdus[key];
 		}
 	}
@@ -413,7 +425,10 @@ void idt_init(void)
 }
 
 void mask_init(void){
-	outb(0x21 , 0xFC); //11111100
+		outb(0x21 , 0xFC); //11111100
+
+		outb(0x3D4, 0x0A);  // Disable ugly cursors
+		outb(0x3D5, 0x20);
 }
 
 void kmain(void){
