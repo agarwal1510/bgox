@@ -73,8 +73,10 @@ int main(int argc, char *argv[], char *envp[]){
 	if (pid == 0){
 		print("Child here pid 0\n");
 //		print(command);
-		while(1);
-//	sleep(100);
+//		while(1);
+	sleep(5);
+	print("below sleep");
+	while(1);
 //		execvp("bin/ls");
 	}
 	else{
@@ -86,6 +88,10 @@ int main(int argc, char *argv[], char *envp[]){
 		yield();
 //		while(1);
 		print("below yield");
+	}
+//	yield();
+	while(1) {
+		yield();
 	}
 //	waitpid(0);
 	exit(1);

@@ -28,8 +28,8 @@ DEFN_SYSCALL1(kprintf, 0, const char*);
 void idle_proc(){
     kprintf("Idle process called");
 	while(1){
-		if (task_count == 1) //Only Kernel is running
-			break;
+//		if (task_count == 1) //Only Kernel is running
+//			break;
 		schedule(0);
 	};
 	kprintf("All tasks done scheduling");
@@ -78,7 +78,9 @@ void start(uint32_t *modulep, void *physbase, void *physfree)
   pcb_boot->kstack[507] = (uint64_t)&idle_proc;
   pcb_boot->kstack[491] = (uint64_t)(&isr128+29);
   pcb_boot->rsp = &(pcb_boot->kstack[491]);
-
+  pcb_boot->is_sleeping = 0;
+  pcb_boot->sleep_time = 0;
+  pcb_boot->is_waiting = 0;
 
   add_to_task_list(pcb_boot);
   //  apicMain();
