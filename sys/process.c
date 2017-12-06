@@ -127,7 +127,6 @@ int is_task_present(uint64_t pid) {
 
 void schedule(int first_switch) {
 	
-	//kprintf("head->id: %d %p", running_task->process->pid, PID);
 	if (running_task == NULL) {
 		if (previous->next == NULL) {
 			running_task = queue_head;

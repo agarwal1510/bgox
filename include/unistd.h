@@ -13,7 +13,8 @@ char *getcwd(char *buf, size_t size);
 
 pid_t fork();
 int execve(const char *file, char **const argv, char **const envp);
-int execvp(char *file);
+int execvp(char *proc, char *arg);
+int exec(char *proc);
 pid_t wait(int *status);
 pid_t waitpid(int pid);
 extern char **__environ;

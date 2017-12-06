@@ -136,6 +136,9 @@ task_struct *elf_run_bin(uint64_t addr, file *fileptr, int argc, char *argv[]){
 	for(int i = 1; i < 15; i++){
 		pcb->kstack[506 - argc - i] = j++;
 	}
+	for(int i = 0; i < 15; i++)
+		kprintf("%p ", pcb->kstack[491 + i]);
+//	kprintf("IN PCB: %s", pcb->kstack[505]);
 //	pcb->kstack[505] = 2;  pcb->kstack[504] = 3;  pcb->kstack[503] = 4;
 //	pcb->kstack[502] = 5; pcb->kstack[501] = 6;  pcb->kstack[500] = 7;  pcb->kstack[499] = 8;
 //	pcb->kstack[498] = 9; pcb->kstack[497] = 10; pcb->kstack[496] = 11; pcb->kstack[495] = 12; 

@@ -1,8 +1,8 @@
 #include <sys/syscall.h>
 
-DEFN_SYSCALL1(execvp, 8, char *);
+DEFN_SYSCALL2(execvp, 8, char *, char *);
 
-int execvp(char* file) {
-	int ret = syscall_execvp(file);
+int execvp(char *proc, char* arg) {
+	int ret = syscall_execvp(proc, arg);
 	return ret;
 }

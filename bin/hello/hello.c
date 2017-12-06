@@ -46,16 +46,13 @@ int main(int argc, char *argv[], char *envp[]){
 //	print("Running hello now");
 //	while(1);
 //	char buf[1024] = {0};
-//	for(int i = 0; i < 2; i++){
-//		print("Tfsdfsdfsdfs Maa ki chut");	
-//	}
-//	char command[10] = "command";
+	
+//	char command[50] = {0};
+	char command[50] = "dummy";
 	char *PS1 = "user@bgox $>";
-	print (PS1);
-//	read(0, command, 10);
-	char pids[10];
-//	read(0, s, 10);
-//	print(s);
+	print(PS1);
+	read(0, command, 50);
+	print(command);
 //	itoa(argc, pids, 10);
 //	print(pids);
 //	print("pids before");
@@ -72,15 +69,14 @@ int main(int argc, char *argv[], char *envp[]){
 //	print("hello");
 	if (pid == 0){
 		print("Child here pid 0\n");
-//		print(command);
-		while(1);
+		print(command);
+//		while(1);
 //	sleep(100);
-//		execvp("bin/ls");
+		execvp("bin/echo", "usr/userfile");
 	}
 	else{
-		itoa(pid, pids, 10);
 //		print(pids);
-//		print(command);
+		print(command);
 		print("Parent Here. Yielding now\n");
 //		waitpid(0);
 		yield();
