@@ -10,7 +10,7 @@ uint64_t max(uint64_t a, uint64_t b){
 
 	return (a > b) ? a : b;
 }
-int atoi(char *str){
+uint64_t atoi(char *str){
 
 	int res = 0, sign = 1, i = 0;
 	
@@ -43,16 +43,16 @@ uint64_t get_ending_page(uint64_t addr) {
 	return get_starting_page(addr + (uint64_t)0x1000 - 1);
 }
 
-void memcpy(void *dest, void* src, int size ){
+void memcpy(void *dest, void* src, uint64_t size ){
 		char *source = (char *)src;
 		char * dst = (char *)dest;
-		for(int i = 0; i < size; i ++){
+		for(uint64_t i = 0; i < size; i ++){
 				dst[i] = source[i];
 		}
 }
 
-void memset (void *address, int value, int size) {
+void memset (void *address, uint64_t value, uint64_t size) {
          unsigned char *p = address;
-         for (int i = 0; i< size; i++)
+         for (uint64_t i = 0; i< size; i++)
              *p++ = (unsigned char)value;
 }
