@@ -299,6 +299,7 @@ void irq_kb_handler(void){
 				X -= 2;
 				buf_idx--;
 			}
+			move_csr();
 			return;
 		
 		}
@@ -427,8 +428,8 @@ void idt_init(void)
 void mask_init(void){
 		outb(0x21 , 0xFC); //11111100
 
-		outb(0x3D4, 0x0A);  // Disable ugly cursors
-		outb(0x3D5, 0x20);
+//		outb(0x3D4, 0x0A);  // Disable ugly cursors
+//		outb(0x3D5, 0x20);
 }
 
 void kmain(void){

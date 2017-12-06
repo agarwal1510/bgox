@@ -37,6 +37,7 @@ void dec_sleep_count() {
 }
 
 void delete_curr_from_task_list(){
+//	kprintf("deleting: %d", running_task->process->pid);
 	if (running_task->next){
 		previous->next = running_task->next;
 		//running_task->next = NULL;
