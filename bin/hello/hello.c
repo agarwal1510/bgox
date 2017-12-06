@@ -1,6 +1,7 @@
 #include<stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/process.h>
 char* itoa(int num, char* str, int base)
 {
@@ -43,47 +44,44 @@ char* itoa(int num, char* str, int base)
 }
 
 int main(int argc, char *argv[], char *envp[]){
-//	print("Running hello now");
-//	while(1);
-//	char buf[1024] = {0};
-	
-//	char command[50] = {0};
-	char command[50] = "dummy";
-	char *PS1 = "user@bgox $>";
-	print(PS1);
-	read(0, command, 50);
-	print(command);
-//	itoa(argc, pids, 10);
-//	print(pids);
-//	print("pids before");
-	print(argv[0]);
-//	while(1);
-	pid_t pid = 22;
-/*	if ((pid = fork()) != -1) {
-		print("Inside");
-		itoa(pid, pids, 10);
-		print(pids);
-//		print(&pid);
-	} */
-	pid = fork();
-//	print("hello");
-	if (pid == 0){
-		print("Child here pid 0\n");
-		print(command);
-//		while(1);
-//	sleep(100);
-		execvp("bin/echo", "usr/userfile");
-	}
-	else{
-//		print(pids);
-		print(command);
-		print("Parent Here. Yielding now\n");
-//		waitpid(0);
-		yield();
-//		while(1);
-		print("below yield");
-	}
-//	waitpid(0);
-	exit(1);
-	return 0;
+
+		char input[COMM_LEN] = {0};
+		char cmd[COMM_LEN];
+//		char pets[10];
+		while(1){
+				read(0, input, COMM_LEN);
+				print(input);
+				str_substr(input, 0, str_len(input)-1, cmd);
+				char split_cmd[2][COMM_LEN];
+				split(cmd, split_cmd);
+				print(split_cmd[0]);
+//				itoa(ctr, pets, 10);
+//				print(pets);
+
+
+				pid_t pid = 22;
+
+				pid = fork();
+
+				if (pid == 0){
+						print("Child here pid 0\n");
+						print("wewewew");
+						while(1);
+//						execvp(cmd, "usr/userfile");
+				}
+				else{
+						//		print(pids);
+						print("Parent Here. Yielding now\n");
+						yield();
+						while(1);
+						print("below yield");
+				}
+				for(int i = 0; i < COMM_LEN; i++){
+						input[i] = 0;
+						cmd[i] = 0;
+				}
+		}
+		//	waitpid(0);
+		exit(1);
+		return 0;
 }
