@@ -13,8 +13,6 @@ ready_task *queue_head = NULL;
 ready_task *running_task = NULL;
 ready_task *previous = NULL;
 
-ready_task *sleeping_queue = NULL;
-
 task_struct *get_running_task() {
 	return running_task->process;
 }
@@ -37,15 +35,6 @@ void dec_sleep_count() {
 
 	}
 }
-
-task_struct *get_sleeping_task() {
-	ready_task *temp = sleeping_queue;
-	while (temp->next != NULL) {
-		temp = temp->next;
-	}
-	return temp->process;
-}
-
 
 void delete_curr_from_task_list(){
 	if (running_task->next){
@@ -84,20 +73,20 @@ void add_to_task_list(task_struct *process) {
 	task_count += 1;
 }
 
-int is_task_present(uint64_t pid) {
+int is_child_done(uint64_t pid) {
+	int present = 0;
 	ready_task *temp = queue_head;
 	while (temp != NULL) {
 		if (temp->process->pid == pid) {
-			return 1;
+			present = 1;
+			break;
 		}
 		temp = temp->next;
 	}
-	temp = sleeping_queue;
-	while (temp != NULL) {
-		if (temp->process->pid == pid) {
-			return 1;
-		}
-		temp = temp->next;
+	if (present == 0) {
+		return 1;
+	} else if (temp->process->is_sleeping == 0){
+		return 1;
 	}
 	return 0;
 }
@@ -117,6 +106,9 @@ void schedule(int first_switch) {
 			&& (temp->next->process->is_sleeping != 0
 			|| temp->next->process->is_waiting > 0)) {
 			temp = temp->next; 
+		}
+		if (temp->process->is_waiting > 0 && is_child_done(temp->process->is_waiting)) {
+			temp->process->is_waiting = 0;
 		}
 
 		if (temp->next != NULL) {
@@ -207,6 +199,7 @@ uint64_t sys_fork() {
 	child->mm->mmap = NULL;
 	child->pid = PID++;
 	child->ppid = parent->pid;
+	kprintf("Pid: %d %d", child->pid, child->ppid);
 	memcpy(child->tname, parent->tname, str_len(parent->tname));
 	
 	add_to_task_list(child);
@@ -361,23 +354,24 @@ uint64_t sys_waitpid(uint64_t pid) {
 	uint64_t ppid = current->pid;
 	//int pid_found = 0;
 	ready_task *temp = queue_head;
-	kprintf("PPid: %d", ppid);
+	kprintf("PPid: %d %d", ppid, pid);
 	if (pid < 0 || pid == 0) {
-		while (temp->next != NULL) {
+		while (temp != NULL) {
+			kprintf(" %d ", temp->process->ppid);
 			if (temp->process->ppid == ppid) {
 				kprintf("child found");
 				child = temp->process;
-					current->is_waiting = child->pid;
-					schedule(0);
+				current->is_waiting = child->pid;
+				schedule(0);
 					//previous = running_task;
 					//running_task = queue_head;
 					//switch_to(running_task->process, previous->process, 1);
-					return 0;
+				return 0;
 			}
 			temp = temp->next;
 		}
 	} else {
-		while (temp->next != NULL) {
+		while (temp != NULL) {
 			if (temp->process->pid == pid) {
 				child = temp->process;
 					current->is_waiting = child->pid;
@@ -390,7 +384,7 @@ uint64_t sys_waitpid(uint64_t pid) {
 			temp = temp->next;
 		}
 	}
-	current->is_waiting = 0;
+	//current->is_waiting = 0;
 	return 0;
 }
 

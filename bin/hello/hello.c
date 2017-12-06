@@ -72,11 +72,11 @@ int main(int argc, char *argv[], char *envp[]){
 //		print(command);
 //		while(1);
 	sleep(5);
-//	print("below sleep");
+	print("below sleep");
 //	while(1);
 //		execvp("bin/ls");
-		execvp("bin/cat", "usr/userfile");
-	while(1);
+//		execvp("bin/cat", "usr/userfile");
+//	while(1);
 	}
 	else{
 //		print(pids);
@@ -84,6 +84,7 @@ int main(int argc, char *argv[], char *envp[]){
 		print("Parent Here. Yielding now\n");
 //		waitpid(0);
 		yield();
+		waitpid(2);
 //		while(1);
 		print("below yield");
 	}

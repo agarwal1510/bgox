@@ -79,6 +79,7 @@ task_struct *elf_run_bin(uint64_t addr, file *fileptr, int argc, char *argv[]){
 		pcb->mm->count = 0;
 		pcb->mm->mmap = NULL;
 		pcb->pid = PID++;
+		pcb->ppid = parent->pid;
 
 	
 	

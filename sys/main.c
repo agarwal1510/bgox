@@ -31,6 +31,7 @@ void idle_proc(){
 //		if (task_count == 1) //Only Kernel is running
 //			break;
 		schedule(0);
+		__asm__ ("sti;");
 	};
 	kprintf("All tasks done scheduling");
 	while(1);
@@ -70,7 +71,7 @@ void start(uint32_t *modulep, void *physbase, void *physfree)
   pcb_boot->pml4 = ker_pml4_t;  // kernel's page table   
   pcb_boot->cr3 = ker_cr3; // kernel's page table   
   pcb_boot->pid = PID++;  // I'm kernel init process  so pid 0 
-  
+  pcb_boot->ppid = -1;
   pcb_boot->kstack[511] = 0x10;
   pcb_boot->kstack[508] = 0x08;
   pcb_boot->kstack[510] = (uint64_t)&(pcb_boot->kstack[511]);
