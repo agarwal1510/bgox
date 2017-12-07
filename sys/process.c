@@ -54,7 +54,7 @@ void dec_sleep_count() {
 }
 
 void delete_curr_from_task_list(){
-	ready_task *temp = previous;
+	ready_task *temp = queue_head;
 //	kprintf("RP: %d", running_task->process->pid);
 	
 	while (temp->next != running_task) {
@@ -73,6 +73,45 @@ void delete_curr_from_task_list(){
 
 	}
 	task_count -= 1;
+}
+
+void delete_from_task_list(uint64_t pid) {
+	ready_task *temp = queue_head;
+	while (temp != NULL) {
+		if (temp->process->pid == pid) {
+			break;
+		}
+		temp = temp->next;
+	}
+	if (temp == NULL) {
+		kprintf("Process with PID:%d not found\n", pid);
+	} else {
+		if (temp == previous) {
+			temp = queue_head;
+			while (temp->next != previous) {
+				temp = temp->next;
+			}
+			if (previous->next) {
+				temp->next = previous->next;
+			} else {
+				temp->next = NULL;
+			}
+			
+		} else if (temp == queue_head){
+			queue_head = temp->next;
+		} else {
+			ready_task *del = temp;
+			temp = queue_head;
+			while (temp->next != del) {
+				temp = temp->next;
+			}
+			if (del->next) {
+				temp->next = del->next;
+			} else {
+				temp->next = NULL;
+			}
+		}
+	}
 }
 
 void add_to_task_list(task_struct *process) {
@@ -372,6 +411,31 @@ void sys_exit(uint64_t status) {
 
 }
 
+void sys_kill(uint64_t pid) {
+//	kprintf("pid %d %d", pid, running_task->process->pid);	
+	ready_task *temp = queue_head;
+	if (running_task->process->ppid == pid) {
+		kprintf("Logging out\n");
+		delete_from_task_list(pid);
+		schedule(0);
+		return;
+	}
+	while (temp != NULL) {
+		if (temp->process->pid == pid && str_cmp(temp->process->tname, kernel) == 1) {
+			kprintf("Error: Cannot kill kernel\n");
+			schedule(0);
+			return;
+		} else if (temp->process->pid == pid && temp == running_task) {
+			delete_curr_from_task_list();
+			schedule(1);
+			return;
+		}
+		temp = temp->next;
+	}
+	delete_from_task_list(pid);
+	schedule(0);
+}
+
 uint64_t sys_waitpid(uint64_t pid) {
 	task_struct *current = get_running_task();
 	task_struct *child;
@@ -383,7 +447,7 @@ uint64_t sys_waitpid(uint64_t pid) {
 		while (temp != NULL) {
 //			kprintf(" %d ", temp->process->ppid);
 			if (temp->process->ppid == ppid) {
-//				kprintf("child found");
+				//kprintf("child found");
 				child = temp->process;
 				current->is_waiting = child->pid;
 				schedule(0);

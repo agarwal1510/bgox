@@ -8,6 +8,7 @@
 extern int PID;
 extern uint64_t initial_stack[STACK_SIZE]__attribute__((aligned(16)));
 int task_count;
+extern char *kernel;
 
 typedef struct vm_area_struct {
         struct mm_struct *vm_mm;
@@ -63,5 +64,5 @@ uint64_t sys_waitpid(uint64_t 	pid);
 void dec_sleep_count();
 void remove_from_sleeping_queue(task_struct *process);
 void print_task_list();
-
+void sys_kill(uint64_t pid);
 #endif
