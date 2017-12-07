@@ -25,6 +25,7 @@ extern char kernmem, physbase;
 uint64_t initial_stack[STACK_SIZE]__attribute__((aligned(16)));
 
 int PID = 0;
+char *kernel = "root";
 char *PS1 = "user@bgox$> ";
 char *PATH = "bin/";
 
@@ -87,7 +88,7 @@ void start(uint32_t *modulep, void *physbase, void *physfree)
   pcb_boot->sleep_time = 0;
   pcb_boot->is_waiting = 0;
   //pcb_boot->tname = "Kernel";	
-  memcpy(pcb_boot->tname, "Kernel", str_len("Kernel"));
+  memcpy(pcb_boot->tname, kernel, str_len(kernel));
   add_to_task_list(pcb_boot);
   //  apicMain();
   //  find_ahci();

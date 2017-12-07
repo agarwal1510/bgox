@@ -168,10 +168,9 @@ void syscall_handler(void) {
 			"movq %%rcx, %2;"
 			"movq %%rdx, %3;"
 			: "=g"(syscall_num),"=g"(buf), "=g"(third), "=g"(fourth)
-		    :
+			:
 			:"rax","rbx", "rcx", "rdx");
-
-//	kprintf("syscall: %d", syscall_num);
+	
 	if (syscall_num == 1){ // Write
 		kprintf("%s", buf);
 		return;
@@ -268,6 +267,9 @@ void syscall_handler(void) {
 		sys_waitpid(buf);
 	} else if (syscall_num == 22) {
 		sys_sleep(atoi((char*)buf));
+	} else if (syscall_num == 24) {
+//		kprintf("%d %d %d", atoi((char *)buf), third, fourth);
+		sys_kill(atoi((char *)buf));
 	}
 /*	
 	if (syscall_num == 2) { //Fork

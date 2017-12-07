@@ -161,7 +161,7 @@ int main(int argc, char *argv[], char *envp[]){
 		char input[COMM_LEN] = {0};
 		char split_cmd[2][COMM_LEN];
 		char cmd[COMM_LEN];
-		char pets[10];
+		char pets[50];
 		while(1){
 				for(int i = 0; i < COMM_LEN; i++){
 						input[i] = 0;
@@ -183,25 +183,31 @@ int main(int argc, char *argv[], char *envp[]){
 						}
 				}
 				str_substr(cmd, prev_ptr, i-1, split_cmd[arg_ctr++]);
-				pid_t pid = 22;
+				pid_t pid = 1;
 
 						itoa(arg_ctr, pets, 10);
 						print(pets);
+//						print("done");
+//						print(pets);
+//						print(split_cmd[arg_ctr-1]);
 				pid = fork();
 
 				if (pid == 0){
-						
-
-						if (arg_ctr > 1)
+//						print("hi there");	
+//						while(1);
+	//					print("second");
+//						if (arg_ctr > 1){
 							execvp(split_cmd[0], split_cmd[1]);
-						else
-							exec(split_cmd[0]);
-	//					print("here");
+//						}
+//						else
+//							exec(split_cmd[0]);
+//						print("here");
 						while(1);
 				}
 				else{
 						//		print(pids);
 						yield();
+//						while(1);
 						waitpid(0);
 //						while(1);
 	//					print("below yield");
