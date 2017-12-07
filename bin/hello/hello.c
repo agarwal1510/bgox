@@ -180,13 +180,25 @@ int main(int argc, char *argv[], char *envp[]){
 						if (cmd[i] == '\t' || cmd[i] == ' '){
 								str_substr(cmd, prev_ptr, i-1, split_cmd[arg_ctr++]);
 								prev_ptr = i+1;
+								break;
+						}
+						else if (cmd[i+1] == '\0'){
+								str_substr(cmd, prev_ptr, i, split_cmd[arg_ctr++]);
+								prev_ptr = i+1;
+								break;	
 						}
 				}
-				str_substr(cmd, prev_ptr, i-1, split_cmd[arg_ctr++]);
+				if (arg_ctr > 0)
+					str_substr(cmd, prev_ptr, str_len(cmd)-1, split_cmd[arg_ctr++]);
+				else
+					str_substr(cmd, 0, str_len(cmd)-1, split_cmd[arg_ctr++]);
+				
 				pid_t pid = 1;
 
 						itoa(arg_ctr, pets, 10);
-						print(pets);
+//						print(pets);
+//						print(split_cmd[0]);
+//						print(split_cmd[1]);
 //						print("done");
 //						print(pets);
 //						print(split_cmd[arg_ctr-1]);
