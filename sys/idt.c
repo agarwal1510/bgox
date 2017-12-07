@@ -288,8 +288,10 @@ void syscall_handler(void) {
 			char out[3];
 			str_split_delim((char*)buf, ' ', cmd_args);
 			str_substr((char*)cmd_args[1], 1, str_len(cmd_args[1])-1, out);
-//		kprintf("PID: %s *%s*", out, (char*)buf);
-		sys_kill(atoi(out));
+		if (str_len(out) == 0)
+			kprintf("oxTerm: Usage: kill -9 PID\n");
+		else
+			sys_kill(atoi(out));
 	}
 /*	
 	if (syscall_num == 2) { //Fork
