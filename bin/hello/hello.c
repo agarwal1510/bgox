@@ -196,8 +196,8 @@ int main(int argc, char *argv[], char *envp[]){
 				pid_t pid = 1;
 
 						itoa(arg_ctr, pets, 10);
-						if (argc > 0)
-							print(1, argv[0]);
+//						if (argc > 0)
+//							print(1, argv[0]);
 //						print(pets);
 //						print(split_cmd[0]);
 //						print(split_cmd[1]);
