@@ -197,34 +197,8 @@ void syscall_handler(void) {
 	else if (syscall_num == 6){
 		schedule(0);
 	}
-<<<<<<< HEAD
 	else if (syscall_num == 7 || syscall_num == 8){
-		kprintf("execvp called for %s\n", buf);
-		
-=======
-	else if (syscall_num == 7){
-//		kprintf("exec called for %s\n", buf);
-		file* fd = open((char *)buf);
-		if (fd == NULL)
-			kprintf("exec error: Command not found");
-		else{
-			task_struct *parent = get_running_task();
-			PID--; // Since pcb_exec increases PID by one on assignment
-			char *argv1 = "myargs";
-			char *argv[1] = {argv1};
-			task_struct *pcb_exec = elf_parse(fd->addr+512,(file *)fd->addr, 0, argv);
-			pcb_exec->pid = parent->pid;
-			pcb_exec->ppid = parent->ppid;
-			//kprintf("%d", parent->pid);
-			delete_curr_from_task_list();
-			add_to_task_list(pcb_exec);
-			//kprintf("name %s", pcb_exec->tname);
-			schedule(1);
-		}
-	}
-	else if (syscall_num == 8){
 //		kprintf("execvp called for %s\n", buf);
->>>>>>> f4411461b25beff074e3c41f285b5f708133bbdd
 		char cmd[50];
 		str_concat(PATH, (char*)buf, cmd);
 		file* fd = open((char *)cmd);
