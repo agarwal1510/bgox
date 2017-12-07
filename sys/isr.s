@@ -3,12 +3,27 @@
 .global _x86_64_asm_lidt
 .global isr0
 .global isr1
-.global isr128
+.global isr3
+.global isr4
+.global isr5
+.global isr6
+.global isr7
+.global isr8
+.global isr9
+.global isr10
+.global isr11
+.global isr12
 .global isr13
 .global isr14
-#.global timer_init
-.global pusha
-.global popa
+.global isr15
+.global isr16
+.global isr17
+.global isr18
+.global isr19
+.global isr20
+.global isr32
+.global isr33
+.global isr128
 
 .extern irq_timer_handler
 .extern page_fault_handler
@@ -16,22 +31,12 @@
 .extern syscall_handler
 .extern irq_kb_handler
 
-#timer_init:
-#	movw	$11931, %dx
-#	movb	$0x36, %al
-#	outb	%al, $0x43
-#	movw	%dx, %ax
-#	outb	%al, $0x40
-#	xchg	%al, %ah
-#	outb	%al, $0x40
-#	ret
-
 _x86_64_asm_lidt:
 	lidt (%rdi)
 	sti
 	retq
 
-isr0:
+isr32:
 	cli
         pushq %rax
         pushq %rbx
@@ -67,7 +72,7 @@ isr0:
 	sti
 	iretq
 
-isr1:
+isr33:
 	cli
         pushq %rax
         pushq %rbx
@@ -220,35 +225,3 @@ isr128:
 	sti
 	iretq
 
-pusha:
-	pushq %rax
-        pushq %rbx
-        pushq %rcx
-        pushq %rdx
-        pushq %rsi
-        pushq %rdi
-        pushq %rbp
-        pushq %r8
-        pushq %r9
-        pushq %r10
-        pushq %r11
-        pushq %r12
-        pushq %r13
-        pushq %r14
-        pushq %r15
-popa:
-	popq %r15
-        popq %r14
-        popq %r13
-        popq %r12
-        popq %r11
-        popq %r10
-        popq %r9
-        popq %r8
-        popq %rbp
-        popq %rdi
-        popq %rsi
-        popq %rdx
-        popq %rcx
-        popq %rbx
-        popq %rax
