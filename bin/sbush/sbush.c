@@ -93,10 +93,10 @@ int main(int argc, char *argv[], char *envp[]) {
 		pid = fork();
 
 		if (pid == 0){
-			print("This is child");
+			print(1, "This is child");
 		}
 		else{
-		print("Waiting on child. Giving up");
+		print(1, "Waiting on child. Giving up");
 		yield();
 		while(1);
 		}

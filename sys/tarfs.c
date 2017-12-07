@@ -58,6 +58,9 @@ uint64_t opendir(char *dir) {
 		kprintf("Opendir %s: No such directory\n", dir);
 		return 0;
 }
+uint64_t closedir(uint64_t addr){
+	return 1;
+}
 
 void list_dir() {
 		tarfs_e entry;
@@ -108,11 +111,11 @@ file *open(char *filename) {
 						return fd;
 				}
 				else if (str_cmp(filename, entry.name) == 1 && entry.type == TYPE_DIRECTORY) {
-						kprintf("Open %s: is a directory.", filename);
+//						kprintf("%s: is a directory.", filename);
 						return NULL;
 				}
 		}
-		kprintf("Open %s: No such file.", filename);
+		kprintf("%s: No such file\n", filename);
 		return NULL;
 }        
 
@@ -120,6 +123,7 @@ int close(file *fd) {
 		fd->addr = 0;
 		fd->size = 0;
 		str_cpy(fd->name, "");
+		bytesdone = 0;
 //		free((uint64_t *)fd);
 		return 1;
 }
@@ -137,6 +141,5 @@ size_t read(file* fd, void *buf, size_t bytes){
 	}
 	tempbuf[i] = '\0';
 	bytesdone += str_len(tempbuf)-1;
-
 	return bytestoRead;
 }

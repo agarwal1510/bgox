@@ -13,5 +13,5 @@ void str_concat(const char *prev, const char *current, char *dest);
 int str_split_delim(const char *str, char delim, char out[][FMT_LEN]);
 void str_reverse(char *str, char *dest);
 void str_substr(const char *str, int from, int to, char *out_str);
-
+int str_contains(char *str, char *query);
 #endif

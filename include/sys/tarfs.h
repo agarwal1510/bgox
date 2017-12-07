@@ -9,7 +9,6 @@
 
 extern char _binary_tarfs_start;
 extern char _binary_tarfs_end;
-
 typedef struct posix_header_ustar {
   char name[100];
   char mode[8];
@@ -47,6 +46,7 @@ void init_tarfs();
 void list_dir();
 uint64_t opendir(char *dir);
 uint64_t read_dir(uint64_t dir);
+uint64_t closedir(uint64_t dir);
 
 file *open(char *filename);
 int close(file *fd);

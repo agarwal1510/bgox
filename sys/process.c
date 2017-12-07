@@ -17,6 +17,23 @@ task_struct *get_running_task() {
 	return running_task->process;
 }
 
+void print_task_list() {
+         kprintf("PID NAME STATUS\n");
+          ready_task *temp = queue_head;
+          char *status = NULL;
+          while (temp != NULL) {
+                  kprintf("%d %s", temp->process->pid, temp->process->tname);
+                  if (temp->process->is_waiting > 0) {
+                          status = "Waiting";
+                 } else if (temp->process->is_sleeping == 1) {
+                          status = "Sleeping";
+                  } else {
+                          status = "Running";
+                  }
+                  kprintf(" %s\n", status);
+                  temp = temp->next;
+          }
+}
 
 void dec_sleep_count() {
 //	kprintf("dec ");
@@ -37,17 +54,64 @@ void dec_sleep_count() {
 }
 
 void delete_curr_from_task_list(){
+	ready_task *temp = queue_head;
+//	kprintf("RP: %d", running_task->process->pid);
+	
+	while (temp->next != running_task) {
+		temp = temp->next;
+	}
+
 	if (running_task->next){
-		previous->next = running_task->next;
+		temp->next = running_task->next;
 		//running_task->next = NULL;
 		running_task = NULL;
 	}
 	else{
 //		kprintf("No next encounterd");
-		previous->next = NULL;
+		temp->next = NULL;
 		running_task = NULL;
+
 	}
 	task_count -= 1;
+}
+
+void delete_from_task_list(uint64_t pid) {
+	ready_task *temp = queue_head;
+	while (temp != NULL) {
+		if (temp->process->pid == pid) {
+			break;
+		}
+		temp = temp->next;
+	}
+	if (temp == NULL) {
+		kprintf("Process with PID:%d not found\n", pid);
+	} else {
+		if (temp == previous) {
+			temp = queue_head;
+			while (temp->next != previous) {
+				temp = temp->next;
+			}
+			if (previous->next) {
+				temp->next = previous->next;
+			} else {
+				temp->next = NULL;
+			}
+			
+		} else if (temp == queue_head){
+			queue_head = temp->next;
+		} else {
+			ready_task *del = temp;
+			temp = queue_head;
+			while (temp->next != del) {
+				temp = temp->next;
+			}
+			if (del->next) {
+				temp->next = del->next;
+			} else {
+				temp->next = NULL;
+			}
+		}
+	}
 }
 
 void add_to_task_list(task_struct *process) {
@@ -92,24 +156,51 @@ int is_child_done(uint64_t pid) {
 }
 
 
+
 void schedule(int first_switch) {
-	
 	if (running_task == NULL) {
+//		kprintf("here");
 		if (previous->next == NULL) {
 			running_task = queue_head;
 		} else {
-			running_task = previous->next;
+			ready_task *temp = previous;
+			while (temp->next != NULL 
+				&& (temp->next->process->is_sleeping != 0
+				|| temp->next->process->is_waiting > 0)) {
+//				kprintf("%d ", temp->process->is_waiting);
+			if (temp->process->is_waiting > 0 && (is_child_done(temp->process->is_waiting))) {
+//				kprintf("Done ");
+				temp->process->is_waiting = 0;
+			}
+				temp = temp->next; 
+			}
+//		if (temp->process->is_waiting > 0 && (is_child_done(temp->process->is_waiting))) {
+//			temp->process->is_waiting = 0;
+//		}
+		//kprintf("id: %d", temp->process->pid);
+		if (temp->next != NULL) {
+			running_task = temp->next;
+		} else {
+			running_task = queue_head;			
+		}
+			//running_task = previous->next;
 		}
 	} else {
 		ready_task *temp = running_task;
 		while (temp->next != NULL 
 			&& (temp->next->process->is_sleeping != 0
 			|| temp->next->process->is_waiting > 0)) {
+
+			if (temp->process->is_waiting > 0 && (is_child_done(temp->process->is_waiting))) {
+//				kprintf("Done ");
+				temp->process->is_waiting = 0;
+			}
 			temp = temp->next; 
 		}
-		if (temp->process->is_waiting > 0 && is_child_done(temp->process->is_waiting)) {
-			temp->process->is_waiting = 0;
-		}
+//		if (temp->process->is_waiting > 0 && (is_child_done(temp->process->is_waiting))) {
+			//kprintf("Done");
+//			temp->process->is_waiting = 0;
+//		}
 
 		if (temp->next != NULL) {
 			previous = running_task;
@@ -121,7 +212,7 @@ void schedule(int first_switch) {
 	}
 
 	set_tss_rsp(&running_task->process->kstack[511]);
-	
+//	if (count == 10) while(1);
 //	kprintf("\nnext: %d me: %d %d", running_task->process->pid, previous->process->pid, first_switch);
 	switch_to(running_task->process, previous->process, first_switch);
 
@@ -199,7 +290,7 @@ uint64_t sys_fork() {
 	child->mm->mmap = NULL;
 	child->pid = PID++;
 	child->ppid = parent->pid;
-	kprintf("Pid: %d %d", child->pid, child->ppid);
+	//kprintf("Pid: %d %d", child->pid, child->ppid);
 	memcpy(child->tname, parent->tname, str_len(parent->tname));
 	
 	add_to_task_list(child);
@@ -340,26 +431,51 @@ void sys_exit(uint64_t status) {
 //	kprintf("%p", running_task->process->pid);
 	delete_curr_from_task_list();
 	//PID--;
-//	running_task = queue_head;
-	
+//	running_task = queue_head;	
 //	kprintf("\nnextd: %d med: %d", running_task->process->pid, previous->process->pid);
 	schedule(1);
 //	switch_to(running_task->process, previous->process, 1);
 
 }
 
-uint64_t sys_waitpid(uint64_t pid) {
+void sys_kill(uint64_t pid) {
+//	kprintf("pid %d %d", pid, running_task->process->pid);	
+	ready_task *temp = queue_head;
+	if (running_task->process->ppid == pid) {
+		kprintf("oxTerm: Session Terminated...\n");
+		delete_from_task_list(pid);
+		schedule(0);
+		return;
+	}
+	while (temp != NULL) {
+		if (temp->process->pid == pid && str_cmp(temp->process->tname, kernel) == 1) {
+			kprintf("oxTerm: err: Can't kill kernel. You don't have privileges!\n");
+			schedule(0);
+			return;
+		} else if (temp->process->pid == pid && temp == running_task) {
+			delete_curr_from_task_list();
+			schedule(1);
+			return;
+		}
+		temp = temp->next;
+	}
+	delete_from_task_list(pid);
+	schedule(0);
+}
+
+uint64_t sys_waitpid(uint64_t pid, uint64_t is_bg) {
+	if (is_bg == 1) return 0;
 	task_struct *current = get_running_task();
 	task_struct *child;
 	uint64_t ppid = current->pid;
 	//int pid_found = 0;
 	ready_task *temp = queue_head;
-	kprintf("PPid: %d %d", ppid, pid);
+//	kprintf("PPid: %d %d", ppid, pid);
 	if (pid < 0 || pid == 0) {
 		while (temp != NULL) {
-			kprintf(" %d ", temp->process->ppid);
-			if (temp->process->ppid == ppid) {
-				kprintf("child found");
+//			kprintf(" %d ", temp->process->ppid);
+			if (temp->process->ppid == ppid && temp->process->is_bg != 1) {
+				//kprintf("child found");
 				child = temp->process;
 				current->is_waiting = child->pid;
 				schedule(0);
@@ -395,6 +511,7 @@ void sys_sleep(int time) {
 //	__asm__ volatile ("movq %%rsp, %0" : "=r"(current->rsp));
 //	add_to_sleeping_queue(current);
 //	delete_curr_from_task_list();
+//	kprintf("sleep called");
 	schedule(0);
 }
 

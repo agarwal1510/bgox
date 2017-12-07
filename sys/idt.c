@@ -18,13 +18,32 @@
 #include <sys/mem.h>
 #include <sys/env.h>
 #include "kb_map.h"
-
+extern int X;
+extern int Y;
 extern void load_idt(unsigned long *idt_ptr);
 extern void isr0(void);
 extern void isr1(void);
+extern void isr2(void);
+extern void isr3(void);
+extern void isr4(void);
+extern void isr5(void);
+extern void isr6(void);
+extern void isr7(void);
+extern void isr8(void);
+extern void isr9(void);
+extern void isr10(void);
+extern void isr11(void);
+extern void isr12(void);
+extern void isr16(void);
+extern void isr17(void);
+extern void isr18(void);
+extern void isr19(void);
+extern void isr20(void);
 extern void isr128(void);
 extern void isr14(void);
 extern void isr13(void);
+extern void isr32(void);
+extern void isr33(void);
 extern void pusha(void);
 extern void popa(void);
 
@@ -33,12 +52,15 @@ void timer_init();
 extern unsigned char kbdus[128];
 
 static char char_buf[1024];
+static char char_err_buf[1024];
 
 static volatile int buf_idx = 0;
+static volatile int buf_err_idx = 0;
 static volatile int new_line = 0;
 
 int SHIFT_ON = 0;
 int CTRL_ON = 0;
+int is_bg = 0;
 /*struct gate_str{
   uint16_t offset_low;     // offset bits 0...15
   uint16_t selector;       // a code segment selector in GDT or LDT 16...31
@@ -77,38 +99,59 @@ struct idtr_t idtr = {((sizeof(struct gate_str))*MAX_IDT), (uint64_t)&IDT};
 
 void _x86_64_asm_lidt(struct idtr_t *idtr);
 
-
+/*
+0  0  0 - Supervisory process tried to read a non-present page entry
+0  0  1 - Supervisory process tried to read a page and caused a protection fault
+0  1  0 - Supervisory process tried to write to a non-present page entry
+0  1  1 - Supervisory process tried to write a page and caused a protection fault
+1  0  0 - User process tried to read a non-present page entry
+1  0  1 - User process tried to read a page and caused a protection fault
+1  1  0 - User process tried to write to a non-present page entry
+1  1  1 - User process tried to write a page and caused a protection fault
+*/
 void page_fault_handler(uint64_t err_code, uint64_t err_rip) {
 	uint64_t pf_addr, curr_cr3;
 	__asm__ volatile ("movq %%cr2, %0":"=r"(pf_addr));
 	__asm__ volatile ("movq %%cr3, %0":"=r"(curr_cr3));
-	kprintf("handler");
-	kprintf("Page Fault address: %p %p %d\n", pf_addr, err_rip, err_code);
-	walk_page_table(pf_addr);
-	while(1);
-	if (err_code >= 4){
-//		struct page *pp = (struct page *)kmalloc(1);
-//		kprintf("page addr: %p", pp);
-//		memcpy((void*)pp, (void *)get_starting_page(pf_addr), 512);
-//		init_map_virt_phys_addr(pf_addr, (uint64_t)pp, 1, (uint64_t *)VADDR(curr_cr3), 1);
-		
-		init_map_virt_phys_addr(pf_addr, (uint64_t)PADDR(pf_addr), 1, (uint64_t *)VADDR(curr_cr3), 1);
-		//while(1);
-		walk_page_table(pf_addr);
-//:		walkpage_table((uint64_t)pp);
-		while(1);
-		__asm__ volatile ("movq %0, %%cr3"::"r"(curr_cr3));
-//		while(1);
-//	handle_page_fault(pf_addr, err_code);
+//	kprintf("Page Fault encountered: %p %p Code: %d\n", pf_addr, err_rip, err_code);
+
+	if (err_code == 4 || err_code == 6){
+		struct page *pp = (struct page *)kmalloc(1);	
+		init_map_virt_phys_addr(pf_addr, (uint64_t)PADDR(pp), 1, (uint64_t *)VADDR(curr_cr3), 1);
+		kprintf("(Segmentation Fault)\n");
 	}
-	//__asm__ volatile ("hlt;");
-//		while(1);
+	else if (err_code == 5 || err_code == 7){
+		init_map_virt_phys_addr(pf_addr, (uint64_t)PADDR(pf_addr), 1, (uint64_t *)VADDR(curr_cr3), 1);
+		kprintf("(Segmentation Fault)\n");
+	}
+	else if(err_code == 0 || err_code == 2){
+		struct page *pp = (struct page *)kmalloc(1);	
+		init_map_virt_phys_addr(pf_addr, (uint64_t)PADDR(pp), 1, (uint64_t *)VADDR(curr_cr3), 1);
+		kprintf("(Segmentation Fault)\n");
+	}
+	else if(err_code == 1 || err_code == 3){
+		init_map_virt_phys_addr(pf_addr, (uint64_t)PADDR(pf_addr), 1, (uint64_t *)VADDR(curr_cr3), 1);
+		kprintf("(Segmentation Fault)\n");
+	}
+	else {
+		struct page *pp = (struct page *)kmalloc(1);	
+		init_map_virt_phys_addr(pf_addr, (uint64_t)PADDR(pp), 1, (uint64_t *)VADDR(curr_cr3), 1);
+		kprintf("(Segmentation Fault)\n");
+	}
+//	__asm__ volatile ("movq %0, %%cr3"::"r"(ker_cr3));
+//	kprintf("Pid: %d", get_running_task()->pid);
+	//delete_curr_from_task_list();
+//	kprintf("delete done");
+	load_sbush();
+//	kprintf("load");
+	delete_curr_from_task_list();
+	schedule(1);
 }
 
 void general_protection_fault_handler(uint64_t err_code, uint64_t err_rip) {
-	uint64_t pf_addr;
-	__asm__ volatile ("movq %%cr2, %0":"=r"(pf_addr));
-	kprintf("GPF Handler: %p %d %p\n", pf_addr, err_code, err_rip);
+//	uint64_t pf_addr;
+//	__asm__ volatile ("movq %%cr2, %0":"=r"(pf_addr));
+	kprintf("GPF Encountered\n");
 	__asm__ volatile ("hlt;");
 	while(1);
 }
@@ -128,7 +171,6 @@ void irq_timer_handler(void){
 }
 
 void syscall_handler(void) {
-
 	uint64_t syscall_num = 0;
 	uint64_t buf, third, fourth;
 	//Save register values
@@ -138,11 +180,18 @@ void syscall_handler(void) {
 			"movq %%rdx, %3;"
 			: "=g"(syscall_num),"=g"(buf), "=g"(third), "=g"(fourth)
 			:
-			:"rax", "rsi","rcx", "rdx"
-		      );  
+			:"rax","rbx", "rcx", "rdx");
 	
 	if (syscall_num == 1){ // Write
-		kprintf("%s", buf);
+		if (buf == 1)
+			kprintf("%s", (char *)third);
+		else{
+			memcpy(char_err_buf, (char*)third, str_len((char*)third));
+			buf_err_idx = str_len((char*)third);
+			kprintf("STDERR: %s", char_err_buf);
+			buf_err_idx = 0;
+		}
+		return;
 	}
 	else if (syscall_num == 2){
 				__asm__("sti");
@@ -166,63 +215,60 @@ void syscall_handler(void) {
 	else if (syscall_num == 6){
 		schedule(0);
 	}
-	else if (syscall_num == 7){
-		kprintf("exec called for %s\n", buf);
-		file* fd = open((char *)buf);
-		if (fd == NULL)
-			kprintf("exec error: Command not found");
-		else{
-			task_struct *parent = get_running_task();
-			PID--; // Since pcb_exec increases PID by one on assignment
-			char *argv1 = "myargs";
-			char *argv[1] = {argv1};
-			task_struct *pcb_exec = elf_parse(fd->addr+512,(file *)fd->addr, 0, argv);
-			pcb_exec->pid = parent->pid;
-			pcb_exec->ppid = parent->ppid;
-			kprintf("Pid: %d %d", parent->pid, parent->ppid);
-			delete_curr_from_task_list();
-			add_to_task_list(pcb_exec);
-			kprintf("name %s", pcb_exec->tname);
-			schedule(1);
-		}
-	}
-	else if (syscall_num == 8){
-//		kprintf("execvp called for %s\n", buf);
-		
+//	else if (syscall_num == 7){
+//		kprintf("exec");
+//
+//	}
+	else if (syscall_num == 7 || syscall_num == 8){
+	//	kprintf("execvp called for %s %s\n", buf, ((char*)third));
 		char cmd[50];
 		str_concat(PATH, (char*)buf, cmd);
 		file* fd = open((char *)cmd);
-		if (fd == NULL)
-			kprintf("exec error: Command not found");
+		if (fd == NULL){
+			kprintf("oxTerm error: Command %s not found\n", buf);
+			sys_exit(1);
+		}
 		else{
 			task_struct *parent = get_running_task();
 			PID--; // Since pcb_exec increases PID by one on assignment
 			char argument[50];
 			memcpy(argument, (char*)third, str_len((char*)third));
+//			while(1);
 			char *argv[1] = {(char*)argument};
-			task_struct *pcb_exec = elf_parse(fd->addr+512,(file *)fd->addr, 1, argv);
+			task_struct *pcb_exec;
+//			char argument[10];
+//			memcpy(argument, (char*)third, str_len((char*)third));
+//			kprintf("\nargs:%s %s\n", argument, buf);
+			if (str_len((char*)argument) > 0 && str_cmp((char*)argument, (char*)buf) < 0 )
+				pcb_exec = elf_parse(fd->addr+512,(file *)fd->addr, 1, argv);
+			else
+				pcb_exec = elf_parse(fd->addr+512,(file *)fd->addr, 0, argv);
 			pcb_exec->pid = parent->pid;
 			pcb_exec->ppid = parent->ppid;
 //			kprintf("%d", parent->pid);
 			delete_curr_from_task_list();
 			add_to_task_list(pcb_exec);
-//			kprintf("name %s", pcb_exec->tname);
+//			kprintf("name %s %d", pcb_exec->tname, parent->pid);
 			schedule(1);
 		}
 	} 
 	else if (syscall_num == 10) {
 		//while(1);
-//		kprintf("Exit called");
+		//kprintf("Exit called");
 		sys_exit(buf);
 	} 
 	else if (syscall_num == 12){
 		list_dir();
 	}
 	else if (syscall_num == 14){
-			char *filename = (char *)buf;
+			char cmd_args[2][FMT_LEN];
+
+			str_split_delim((char*)buf, ' ', cmd_args);
+//			kprintf("args:%s", cmd_args[0]);
+			char *filename = (char *)cmd_args[0];
 			file *fd = open(filename);
 			if (fd != NULL){
-					int bytes = 80;
+					int bytes = 60;
 					int bread = 2048;
 					char readbuf[bytes];
 					while(bread >= bytes){
@@ -236,14 +282,32 @@ void syscall_handler(void) {
 		kprintf("%s\n", buf); //Echo
 	}
 	else if (syscall_num == 18){
-		kprintf("This is a process"); //ps
+		print_task_list(); //ps
 	}
 	else if (syscall_num == 20) {
-		kprintf("waitId: %d", buf);
-		sys_waitpid(buf);
+//		kprintf("waitId: %d %d", buf, third);
+		sys_waitpid(buf, is_bg);
+		//is_bg = 0;
 	} else if (syscall_num == 22) {
-		kprintf("sleep time: %d", buf);
-		sys_sleep(buf);
+		char cmd_args[2][FMT_LEN];
+		str_split_delim((char*)buf, ' ', cmd_args);
+//		kprintf("args:%d", atoi(cmd_args[0]));
+		if (str_contains((char *)buf, "&") != -1){
+			get_running_task()->is_bg = 1;
+			is_bg = 1;
+		} else {
+			is_bg = 0;
+		}
+		sys_sleep(atoi(cmd_args[0]));
+	} else if (syscall_num == 24) {
+			char cmd_args[3][FMT_LEN];
+			char out[3];
+			str_split_delim((char*)buf, ' ', cmd_args);
+			str_substr((char*)cmd_args[1], 1, str_len(cmd_args[1])-1, out);
+		if (str_len(out) == 0)
+			kprintf("oxTerm: Usage: kill -9 PID\n");
+		else
+			sys_kill(atoi(out));
 	}
 /*	
 	if (syscall_num == 2) { //Fork
@@ -255,9 +319,8 @@ void syscall_handler(void) {
 	}
 */
 }
-
 void irq_kb_handler(void){
-	outb(0x20, 0x20);
+		outb(0x20, 0x20);
 	outb(0xa0, 0x20);
 	
 	char status = inb(KB_STATUS);
@@ -288,6 +351,18 @@ void irq_kb_handler(void){
 			CTRL_ON = 0;
 			SHIFT_ON = 0;
 			return;
+		}
+		else if (key == 0x0e){
+			if (buf_idx > 0){
+				char_buf[buf_idx] = 0;
+				X -= 2;
+				kprintf(" ");
+				X -= 2;
+				buf_idx--;
+			}
+			move_csr();
+			return;
+		
 		}
 		if (key == 0x1c){
 			new_line = 1;
@@ -320,6 +395,7 @@ void irq_kb_handler(void){
 						break;
 					case 8:
 						kprintf("%c", '&');
+						char_buf[buf_idx++] = '&';
 						break;
 					case 9:
 						kprintf("%c", '*');
@@ -366,12 +442,13 @@ void irq_kb_handler(void){
 					default:
 						kprintf("%c", kbdus[key] - 32);	
 						break;
+//					char_buf[buf_idx++] = kbdus[key];
 				}
 			}
-			else
+			else {
 				kprintf("%c", kbdus[key]);
-				
-			char_buf[buf_idx++] = kbdus[key];
+				char_buf[buf_idx++] = kbdus[key];
+			}
 		}
 	}
 }
@@ -404,16 +481,36 @@ void setup_gate(int32_t num, uint64_t handler_addr, unsigned dpl){
 }
 void idt_init(void)
 {
+	setup_gate(0, (uint64_t)isr0, 0);
+	setup_gate(1, (uint64_t)isr1, 0);
+	setup_gate(3, (uint64_t)isr3, 0);
+	setup_gate(4, (uint64_t)isr4, 0);
+	setup_gate(5, (uint64_t)isr5, 0);
+	setup_gate(6, (uint64_t)isr6, 0);
+	setup_gate(7, (uint64_t)isr7, 0);
+	setup_gate(8, (uint64_t)isr8, 0);
+	setup_gate(9, (uint64_t)isr9, 0);
+	setup_gate(10, (uint64_t)isr10, 0);
+	setup_gate(11, (uint64_t)isr11, 0);
+	setup_gate(12, (uint64_t)isr12, 0);
 	setup_gate(13, (uint64_t)isr13, 0);
 	setup_gate(14, (uint64_t)isr14, 0);
-	setup_gate(32, (uint64_t)isr0, 0);
-	setup_gate(33, (uint64_t)isr1, 0);
+	setup_gate(16, (uint64_t)isr16, 0);
+	setup_gate(17, (uint64_t)isr17, 0);
+	setup_gate(18, (uint64_t)isr18, 0);
+	setup_gate(19, (uint64_t)isr19, 0);
+	setup_gate(20, (uint64_t)isr20, 0);
+	setup_gate(32, (uint64_t)isr32, 0);
+	setup_gate(33, (uint64_t)isr33, 0);
 	setup_gate(128, (uint64_t)isr128, 3);
 	_x86_64_asm_lidt(&idtr);
 }
 
 void mask_init(void){
-	outb(0x21 , 0xFC); //11111100
+		outb(0x21 , 0xFC); //11111100
+
+//		outb(0x3D4, 0x0A);  // Disable ugly cursors
+//		outb(0x3D5, 0x20);
 }
 
 void kmain(void){

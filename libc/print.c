@@ -1,9 +1,10 @@
 #include <stdio.h>
 #include <sys/syscall.h>
 
-DEFN_SYSCALL1(kprintf, 1, const char*);
+DEFN_SYSCALL2(kprintf, 1, int, const char*);
 
-void print(const char *s)
+void print(int stream, const char *s)
 {
-	syscall_kprintf(s);
+	syscall_kprintf(stream, s);
+	return;
 }

@@ -13,6 +13,8 @@
 #include <sys/syscall.h>
 #include <sys/elf64.h>
 #include <sys/env.h>
+#include <sys/strings.h>
+#include <sys/memutils.h>
 
 extern void isr128(void);
 uint32_t* loader_stack;
@@ -23,6 +25,7 @@ extern char kernmem, physbase;
 uint64_t initial_stack[STACK_SIZE]__attribute__((aligned(16)));
 
 int PID = 0;
+char *kernel = "root";
 char *PS1 = "user@bgox$> ";
 char *PATH = "bin/";
 
@@ -36,6 +39,17 @@ void idle_proc(){
 	};
 	kprintf("All tasks done scheduling");
 	while(1);
+}
+
+void load_sbush() {
+  file* fd = open("bin/hello");
+  char *argv1 = "myargs";
+  char *argv[1] = {argv1};
+  task_struct *pcb_hello = elf_parse(fd->addr+512,(file *)fd->addr, 1, argv);
+  pcb_hello->pid = 1;
+  pcb_hello->ppid = 0;
+//  kprintf("elf %d %d", pcb_hello->ppid, pcb_hello->pid);
+  add_to_task_list(pcb_hello);
 }
 
 void start(uint32_t *modulep, void *physbase, void *physfree)
@@ -84,7 +98,8 @@ void start(uint32_t *modulep, void *physbase, void *physfree)
   pcb_boot->is_sleeping = 0;
   pcb_boot->sleep_time = 0;
   pcb_boot->is_waiting = 0;
-
+  //pcb_boot->tname = "Kernel";	
+  memcpy(pcb_boot->tname, kernel, str_len(kernel));
   add_to_task_list(pcb_boot);
   //  apicMain();
   //  find_ahci();
@@ -98,12 +113,7 @@ void start(uint32_t *modulep, void *physbase, void *physfree)
   //kprintf("%p", p);
   
   read_dir(p);
-  file* fd = open("bin/hello");
-  char *argv1 = "myargs";
-  char *argv[1] = {argv1};
-  task_struct *pcb_hello = elf_parse(fd->addr+512,(file *)fd->addr, 1, argv);
-  add_to_task_list(pcb_hello);
-
+  load_sbush();
 
 	//	while(1);
   //if (read(fd, buf, 15) > 0){
