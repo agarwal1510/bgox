@@ -5,7 +5,7 @@
 DEFN_SYSCALL1(echo, 16, const char *);
 int main(int argc, char *argv[], char *envp[]){
 	if (argc < 1)
-		print("echo: insufficient arguments. Usage: echo echo-string");
+		print("echo: Usage: echo echo-string\n");
 	else
 		syscall_echo(argv[0]);
 	exit(1);
