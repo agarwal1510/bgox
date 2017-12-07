@@ -201,10 +201,6 @@ int main(int argc, char *argv[], char *envp[]){
 				}
 				else{
 						//		print(pids);
-		//				print("Parent Here. Yielding now\n");
-				//		x = 7;
-				//		itoa(x, pets, 10);
-				//		print(pets);
 						yield();
 						waitpid(0);
 //						while(1);

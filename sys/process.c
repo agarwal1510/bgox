@@ -54,16 +54,23 @@ void dec_sleep_count() {
 }
 
 void delete_curr_from_task_list(){
-//	kprintf("deleting: %d", running_task->process->pid);
+	ready_task *temp = previous;
+//	kprintf("RP: %d", running_task->process->pid);
+	
+	while (temp->next != running_task) {
+		temp = temp->next;
+	}
+
 	if (running_task->next){
-		previous->next = running_task->next;
+		temp->next = running_task->next;
 		//running_task->next = NULL;
 		running_task = NULL;
 	}
 	else{
 //		kprintf("No next encounterd");
-		previous->next = NULL;
+		temp->next = NULL;
 		running_task = NULL;
+
 	}
 	task_count -= 1;
 }
@@ -110,8 +117,8 @@ int is_child_done(uint64_t pid) {
 }
 
 
+
 void schedule(int first_switch) {
-	
 	if (running_task == NULL) {
 		if (previous->next == NULL) {
 			running_task = queue_head;
@@ -139,7 +146,7 @@ void schedule(int first_switch) {
 	}
 
 	set_tss_rsp(&running_task->process->kstack[511]);
-	
+//	if (count == 10) while(1);
 //	kprintf("\nnext: %d me: %d %d", running_task->process->pid, previous->process->pid, first_switch);
 	switch_to(running_task->process, previous->process, first_switch);
 
@@ -358,8 +365,7 @@ void sys_exit(uint64_t status) {
 //	kprintf("%p", running_task->process->pid);
 	delete_curr_from_task_list();
 	//PID--;
-//	running_task = queue_head;
-	
+//	running_task = queue_head;	
 //	kprintf("\nnextd: %d med: %d", running_task->process->pid, previous->process->pid);
 	schedule(1);
 //	switch_to(running_task->process, previous->process, 1);
@@ -372,12 +378,12 @@ uint64_t sys_waitpid(uint64_t pid) {
 	uint64_t ppid = current->pid;
 	//int pid_found = 0;
 	ready_task *temp = queue_head;
-	kprintf("PPid: %d %d", ppid, pid);
+//	kprintf("PPid: %d %d", ppid, pid);
 	if (pid < 0 || pid == 0) {
 		while (temp != NULL) {
-			kprintf(" %d ", temp->process->ppid);
+//			kprintf(" %d ", temp->process->ppid);
 			if (temp->process->ppid == ppid) {
-				kprintf("child found");
+//				kprintf("child found");
 				child = temp->process;
 				current->is_waiting = child->pid;
 				schedule(0);
@@ -413,6 +419,7 @@ void sys_sleep(int time) {
 //	__asm__ volatile ("movq %%rsp, %0" : "=r"(current->rsp));
 //	add_to_sleeping_queue(current);
 //	delete_curr_from_task_list();
+//	kprintf("sleep called");
 	schedule(0);
 }
 
