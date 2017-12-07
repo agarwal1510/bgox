@@ -168,12 +168,13 @@ void syscall_handler(void) {
 			"movq %%rcx, %2;"
 			"movq %%rdx, %3;"
 			: "=g"(syscall_num),"=g"(buf), "=g"(third), "=g"(fourth)
-			:
-			:"rax", "rsi","rcx", "rdx"
-		      );  
-	
+		    :
+			:"rax","rbx", "rcx", "rdx");
+
+//	kprintf("syscall: %d", syscall_num);
 	if (syscall_num == 1){ // Write
 		kprintf("%s", buf);
+		return;
 	}
 	else if (syscall_num == 2){
 				__asm__("sti");
@@ -197,8 +198,12 @@ void syscall_handler(void) {
 	else if (syscall_num == 6){
 		schedule(0);
 	}
+//	else if (syscall_num == 7){
+//		kprintf("exec");
+//
+//	}
 	else if (syscall_num == 7 || syscall_num == 8){
-//		kprintf("execvp called for %s\n", buf);
+	//	kprintf("execvp called for %s %s\n", buf, ((char*)third));
 		char cmd[50];
 		str_concat(PATH, (char*)buf, cmd);
 		file* fd = open((char *)cmd);
@@ -211,9 +216,13 @@ void syscall_handler(void) {
 			PID--; // Since pcb_exec increases PID by one on assignment
 			char argument[50];
 			memcpy(argument, (char*)third, str_len((char*)third));
+//			while(1);
 			char *argv[1] = {(char*)argument};
 			task_struct *pcb_exec;
-			if (str_len((char*)third) > 0)
+//			char argument[10];
+//			memcpy(argument, (char*)third, str_len((char*)third));
+//			kprintf("\nargs:%s %s\n", argument, buf);
+			if (str_len((char*)argument) > 0 && str_cmp((char*)argument, (char*)buf) < 0 )
 				pcb_exec = elf_parse(fd->addr+512,(file *)fd->addr, 1, argv);
 			else
 				pcb_exec = elf_parse(fd->addr+512,(file *)fd->addr, 0, argv);
@@ -238,7 +247,7 @@ void syscall_handler(void) {
 			char *filename = (char *)buf;
 			file *fd = open(filename);
 			if (fd != NULL){
-					int bytes = 80;
+					int bytes = 60;
 					int bread = 2048;
 					char readbuf[bytes];
 					while(bread >= bytes){
@@ -258,7 +267,6 @@ void syscall_handler(void) {
 //		kprintf("waitId: %d", buf);
 		sys_waitpid(buf);
 	} else if (syscall_num == 22) {
-//		kprintf("sleep time: %d", atoi((char*)buf));
 		sys_sleep(atoi((char*)buf));
 	}
 /*	
@@ -312,7 +320,7 @@ void irq_kb_handler(void){
 				X -= 2;
 				buf_idx--;
 			}
-			//move_csr();
+			move_csr();
 			return;
 		
 		}
