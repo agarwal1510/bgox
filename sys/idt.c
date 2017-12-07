@@ -52,8 +52,10 @@ void timer_init();
 extern unsigned char kbdus[128];
 
 static char char_buf[1024];
+static char char_err_buf[1024];
 
 static volatile int buf_idx = 0;
+static volatile int buf_err_idx = 0;
 static volatile int new_line = 0;
 
 int SHIFT_ON = 0;
@@ -181,7 +183,14 @@ void syscall_handler(void) {
 			:"rax","rbx", "rcx", "rdx");
 	
 	if (syscall_num == 1){ // Write
-		kprintf("%s", buf);
+		if (buf == 1)
+			kprintf("%s", (char *)third);
+		else{
+			memcpy(char_err_buf, (char*)third, str_len((char*)third));
+			buf_err_idx = str_len((char*)third);
+			kprintf("STDERR: %s", char_err_buf);
+			buf_err_idx = 0;
+		}
 		return;
 	}
 	else if (syscall_num == 2){
@@ -425,6 +434,7 @@ void irq_kb_handler(void){
 					default:
 						kprintf("%c", kbdus[key] - 32);	
 						break;
+//					char_buf[buf_idx++] = kbdus[key];
 				}
 			}
 			else

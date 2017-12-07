@@ -4,7 +4,7 @@
 DEFN_SYSCALL1(exec, 7, char *);
 
 int exec(char *proc) {
-	print("EXec");
+//	print("EXec");
 	int ret = syscall_exec(proc);
 	return ret;
 }

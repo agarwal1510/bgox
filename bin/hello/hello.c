@@ -171,7 +171,7 @@ int main(int argc, char *argv[], char *envp[]){
 				if (input[0] == '\n')
 					continue;
 				else if (str_len(input) >= COMM_LEN){
-					print("\noxTerm: Careful with command lengths !\n");
+					print(1, "\noxTerm: Careful with command lengths !\n");
 					continue;
 				}
 				str_substr(input, 0, str_len(input)-2, cmd);
@@ -196,6 +196,8 @@ int main(int argc, char *argv[], char *envp[]){
 				pid_t pid = 1;
 
 						itoa(arg_ctr, pets, 10);
+						if (argc > 0)
+							print(1, argv[0]);
 //						print(pets);
 //						print(split_cmd[0]);
 //						print(split_cmd[1]);

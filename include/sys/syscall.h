@@ -55,11 +55,11 @@ int syscall_##fn(P1 p1, P2 p2) \
 
 DECL_SYSCALL0(ls)
 DECL_SYSCALL0(ps)
-DECL_SYSCALL1(kprintf, const char*)
 DECL_SYSCALL1(echo, const char*)
 DECL_SYSCALL1(cat, const char *)
 DECL_SYSCALL1(sleep, const char *)
 DECL_SYSCALL1(exec, char*)
+DECL_SYSCALL2(kprintf, int, const char*)
 DECL_SYSCALL2(execvp, char *, char *)
 DECL_SYSCALL3(read, int, char *, uint16_t)
 //DECL_SYSCALL1(write_hex, const char*)
