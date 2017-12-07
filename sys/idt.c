@@ -23,9 +23,27 @@ extern int Y;
 extern void load_idt(unsigned long *idt_ptr);
 extern void isr0(void);
 extern void isr1(void);
+extern void isr2(void);
+extern void isr3(void);
+extern void isr4(void);
+extern void isr5(void);
+extern void isr6(void);
+extern void isr7(void);
+extern void isr8(void);
+extern void isr9(void);
+extern void isr10(void);
+extern void isr11(void);
+extern void isr12(void);
+extern void isr16(void);
+extern void isr17(void);
+extern void isr18(void);
+extern void isr19(void);
+extern void isr20(void);
 extern void isr128(void);
 extern void isr14(void);
 extern void isr13(void);
+extern void isr32(void);
+extern void isr33(void);
 extern void pusha(void);
 extern void popa(void);
 
@@ -78,32 +96,44 @@ struct idtr_t idtr = {((sizeof(struct gate_str))*MAX_IDT), (uint64_t)&IDT};
 
 void _x86_64_asm_lidt(struct idtr_t *idtr);
 
-
+/*
+0  0  0 - Supervisory process tried to read a non-present page entry
+0  0  1 - Supervisory process tried to read a page and caused a protection fault
+0  1  0 - Supervisory process tried to write to a non-present page entry
+0  1  1 - Supervisory process tried to write a page and caused a protection fault
+1  0  0 - User process tried to read a non-present page entry
+1  0  1 - User process tried to read a page and caused a protection fault
+1  1  0 - User process tried to write to a non-present page entry
+1  1  1 - User process tried to write a page and caused a protection fault
+*/
 void page_fault_handler(uint64_t err_code, uint64_t err_rip) {
 	uint64_t pf_addr, curr_cr3;
 	__asm__ volatile ("movq %%cr2, %0":"=r"(pf_addr));
 	__asm__ volatile ("movq %%cr3, %0":"=r"(curr_cr3));
-	kprintf("handler");
-	kprintf("Page Fault address: %p %p %d\n", pf_addr, err_rip, err_code);
-	walk_page_table(pf_addr);
-	while(1);
-	if (err_code >= 4){
-//		struct page *pp = (struct page *)kmalloc(1);
-//		kprintf("page addr: %p", pp);
-//		memcpy((void*)pp, (void *)get_starting_page(pf_addr), 512);
-//		init_map_virt_phys_addr(pf_addr, (uint64_t)pp, 1, (uint64_t *)VADDR(curr_cr3), 1);
-		
-		init_map_virt_phys_addr(pf_addr, (uint64_t)PADDR(pf_addr), 1, (uint64_t *)VADDR(curr_cr3), 1);
-		//while(1);
-		walk_page_table(pf_addr);
-//:		walkpage_table((uint64_t)pp);
-		while(1);
-		__asm__ volatile ("movq %0, %%cr3"::"r"(curr_cr3));
-//		while(1);
-//	handle_page_fault(pf_addr, err_code);
+	kprintf("Page Fault encountered: %p %p Code: %d\n", pf_addr, err_rip, err_code);
+
+	if (err_code == 4 || err_code == 6){
+		struct page *pp = (struct page *)kmalloc(1);	
+		init_map_virt_phys_addr(pf_addr, (uint64_t)PADDR(pp), 1, (uint64_t *)VADDR(curr_cr3), 1);
 	}
-	//__asm__ volatile ("hlt;");
-//		while(1);
+	else if (err_code == 5 || err_code == 7){
+		init_map_virt_phys_addr(pf_addr, (uint64_t)PADDR(pf_addr), 1, (uint64_t *)VADDR(curr_cr3), 1);
+	}
+	else if(err_code == 0 || err_code == 2){
+		struct page *pp = (struct page *)kmalloc(1);	
+		init_map_virt_phys_addr(pf_addr, (uint64_t)PADDR(pp), 1, (uint64_t *)VADDR(curr_cr3), 1);
+		kprintf("(Segmentation Fault)\n");
+	}
+	else if(err_code == 1 || err_code == 3){
+		init_map_virt_phys_addr(pf_addr, (uint64_t)PADDR(pf_addr), 1, (uint64_t *)VADDR(curr_cr3), 1);
+		kprintf("(Segmentation Fault)\n");
+	}
+	else {
+		struct page *pp = (struct page *)kmalloc(1);	
+		init_map_virt_phys_addr(pf_addr, (uint64_t)PADDR(pp), 1, (uint64_t *)VADDR(curr_cr3), 1);
+		kprintf("(Segmentation Fault)\n");
+	}
+		__asm__ volatile ("movq %0, %%cr3"::"r"(curr_cr3));
 }
 
 void general_protection_fault_handler(uint64_t err_code, uint64_t err_rip) {
@@ -167,27 +197,7 @@ void syscall_handler(void) {
 	else if (syscall_num == 6){
 		schedule(0);
 	}
-	else if (syscall_num == 7){
-//		kprintf("exec called for %s\n", buf);
-		file* fd = open((char *)buf);
-		if (fd == NULL)
-			kprintf("exec error: Command not found");
-		else{
-			task_struct *parent = get_running_task();
-			PID--; // Since pcb_exec increases PID by one on assignment
-			char *argv1 = "myargs";
-			char *argv[1] = {argv1};
-			task_struct *pcb_exec = elf_parse(fd->addr+512,(file *)fd->addr, 0, argv);
-			pcb_exec->pid = parent->pid;
-			pcb_exec->ppid = parent->ppid;
-			//kprintf("%d", parent->pid);
-			delete_curr_from_task_list();
-			add_to_task_list(pcb_exec);
-			//kprintf("name %s", pcb_exec->tname);
-			schedule(1);
-		}
-	}
-	else if (syscall_num == 8){
+	else if (syscall_num == 7 || syscall_num == 8){
 //		kprintf("execvp called for %s\n", buf);
 		char cmd[50];
 		str_concat(PATH, (char*)buf, cmd);
@@ -202,7 +212,11 @@ void syscall_handler(void) {
 			char argument[50];
 			memcpy(argument, (char*)third, str_len((char*)third));
 			char *argv[1] = {(char*)argument};
-			task_struct *pcb_exec = elf_parse(fd->addr+512,(file *)fd->addr, 1, argv);
+			task_struct *pcb_exec;
+			if (str_len((char*)third) > 0)
+				pcb_exec = elf_parse(fd->addr+512,(file *)fd->addr, 1, argv);
+			else
+				pcb_exec = elf_parse(fd->addr+512,(file *)fd->addr, 0, argv);
 			pcb_exec->pid = parent->pid;
 			pcb_exec->ppid = parent->ppid;
 //			kprintf("%d", parent->pid);
@@ -419,10 +433,27 @@ void setup_gate(int32_t num, uint64_t handler_addr, unsigned dpl){
 }
 void idt_init(void)
 {
+	setup_gate(0, (uint64_t)isr0, 0);
+	setup_gate(1, (uint64_t)isr1, 0);
+	setup_gate(3, (uint64_t)isr3, 0);
+	setup_gate(4, (uint64_t)isr4, 0);
+	setup_gate(5, (uint64_t)isr5, 0);
+	setup_gate(6, (uint64_t)isr6, 0);
+	setup_gate(7, (uint64_t)isr7, 0);
+	setup_gate(8, (uint64_t)isr8, 0);
+	setup_gate(9, (uint64_t)isr9, 0);
+	setup_gate(10, (uint64_t)isr10, 0);
+	setup_gate(11, (uint64_t)isr11, 0);
+	setup_gate(12, (uint64_t)isr12, 0);
 	setup_gate(13, (uint64_t)isr13, 0);
 	setup_gate(14, (uint64_t)isr14, 0);
-	setup_gate(32, (uint64_t)isr0, 0);
-	setup_gate(33, (uint64_t)isr1, 0);
+	setup_gate(16, (uint64_t)isr16, 0);
+	setup_gate(17, (uint64_t)isr17, 0);
+	setup_gate(18, (uint64_t)isr18, 0);
+	setup_gate(19, (uint64_t)isr19, 0);
+	setup_gate(20, (uint64_t)isr20, 0);
+	setup_gate(32, (uint64_t)isr32, 0);
+	setup_gate(33, (uint64_t)isr33, 0);
 	setup_gate(128, (uint64_t)isr128, 3);
 	_x86_64_asm_lidt(&idtr);
 }

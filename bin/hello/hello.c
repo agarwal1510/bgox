@@ -161,7 +161,7 @@ int main(int argc, char *argv[], char *envp[]){
 		char input[COMM_LEN] = {0};
 		char split_cmd[2][COMM_LEN];
 		char cmd[COMM_LEN];
-//		char pets[10];
+		char pets[10];
 		while(1){
 				for(int i = 0; i < COMM_LEN; i++){
 						input[i] = 0;
@@ -170,6 +170,10 @@ int main(int argc, char *argv[], char *envp[]){
 				read(0, input, COMM_LEN);
 				if (input[0] == '\n')
 					continue;
+				else if (str_len(input) >= COMM_LEN){
+					print("\noxTerm: Careful with command lengths !\n");
+					continue;
+				}
 				str_substr(input, 0, str_len(input)-2, cmd);
 				int i, prev_ptr = 0, arg_ctr = 0;
 				for(i=0; cmd[i] != '\0'; i++){
@@ -181,19 +185,22 @@ int main(int argc, char *argv[], char *envp[]){
 				str_substr(cmd, prev_ptr, i-1, split_cmd[arg_ctr++]);
 				pid_t pid = 22;
 
+						itoa(arg_ctr, pets, 10);
+						print(pets);
 				pid = fork();
 
 				if (pid == 0){
-			//			print(split_cmd[0]);
+						
+
 						if (arg_ctr > 1)
 							execvp(split_cmd[0], split_cmd[1]);
 						else
 							exec(split_cmd[0]);
+	//					print("here");
 						while(1);
 				}
 				else{
 						//		print(pids);
-						//print("Parent Here. Yielding now\n");
 						yield();
 						waitpid(0);
 //						while(1);
