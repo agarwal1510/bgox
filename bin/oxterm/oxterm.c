@@ -2,7 +2,16 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <sys/utils.h>
+#include <sys/tarfs.h>
 #define COMM_LEN 50
+
+void mem_cpy(void *dest, void* src, uint64_t size ){
+		char *source = (char *)src;
+		char * dst = (char *)dest;
+		for(uint64_t i = 0; i < size; i ++){
+				dst[i] = source[i];
+		}
+}
 
 void str_cpy(char *to_str, char *frm_str){
 		int i=0;
@@ -159,79 +168,95 @@ char* itoa(int num, char* str, int base)
 int main(int argc, char *argv[], char *envp[]){
 
 		char input[COMM_LEN] = {0};
-		char split_cmd[2][COMM_LEN];
 		char cmd[COMM_LEN];
-		char pets[50];
-		while(1){
-				for(int i = 0; i < COMM_LEN; i++){
-						input[i] = 0;
-						cmd[i] = 0;
-				}
-				read(0, input, COMM_LEN);
-				if (input[0] == '\n')
-					continue;
-				else if (str_len(input) >= COMM_LEN){
-					print(1, "\noxTerm: Careful with command lengths !\n");
-					continue;
-				}
-				str_substr(input, 0, str_len(input)-2, cmd);
-				int i, prev_ptr = 0, arg_ctr = 0;
-				for(i=0; cmd[i] != '\0'; i++){
-						if (cmd[i] == '\t' || cmd[i] == ' '){
-								str_substr(cmd, prev_ptr, i-1, split_cmd[arg_ctr++]);
-								prev_ptr = i+1;
-								break;
-						}
-						else if (cmd[i+1] == '\0'){
-								str_substr(cmd, prev_ptr, i, split_cmd[arg_ctr++]);
-								prev_ptr = i+1;
-								break;	
-						}
-				}
-				if (arg_ctr > 0)
-					str_substr(cmd, prev_ptr, str_len(cmd)-1, split_cmd[arg_ctr++]);
-				else
-					str_substr(cmd, 0, str_len(cmd)-1, split_cmd[arg_ctr++]);
-				
-				pid_t pid = 1;
-
-						itoa(arg_ctr, pets, 10);
-						if (argc > 0)
-							print(1, argv[0]);
-//						print(pets);
-//						print(split_cmd[0]);
-//						print(split_cmd[1]);
-//						print("done");
-//						print(pets);
-//						print(split_cmd[arg_ctr-1]);
-				pid = fork();
-
-				if (pid == 0){
-//						print("hi there");	
-//						while(1);
-	//					print("second");
-//						if (arg_ctr > 1){
-							execvp(split_cmd[0], split_cmd[1]);
-//						}
-//						else
-//							exec(split_cmd[0]);
-//						print("here");
-						while(1);
+//		char pets[50];
+		if (argc > 0){
+//				print(1, argv[0]);
+				pid_t pid2 = 1;
+//				char sc[10];
+//				mem_cpy(sc, argv[0], 5);
+//				sc[0] = argv[0][0];
+//				sc[0] = 'a';
+//				print(1, sc);
+//				for(int i = 0; i < str_len(argv[0]); i++)
+//					print(1, (char*)argv[0][i]);
+//				str_cpy(sc, argv[0]);
+//				print(1, sc);
+//				while(1);
+				pid2 = fork();
+				if (pid2 == 0){
+						yield();
+		//				waitpid(0);
 				}
 				else{
-						//		print(pids);
-						yield();
+						execvp(argv[0], argv[0]);
 //						while(1);
-						waitpid(0);
-//						while(1);
-	//					print("below yield");
 				}
-	//			for(int i = 0; i < COMM_LEN; i++){
-	//					input[i] = 0;
-	//					cmd[i] = 0;
-	//			}
+//		print(1, "here finally");
+		}
+		else{
+				while(1){
+						char split_cmd[2][COMM_LEN];
+						for(int i = 0; i < COMM_LEN; i++){
+								input[i] = 0;
+								split_cmd[0][i] = 0;
+								split_cmd[1][i] = 0;
+								cmd[i] = 0;
+						}
+						readb(0, input, COMM_LEN);
+						if (input[0] == '\n')
+								continue;
+						else if (str_len(input) >= COMM_LEN){
+								print(1, "\noxTerm: Careful with command lengths !\n");
+								continue;
+						}
+						str_substr(input, 0, str_len(input)-2, cmd);
+						int i, prev_ptr = 0, arg_ctr = 0;
+						for(i=0; cmd[i] != '\0'; i++){
+								if (cmd[i] == '\t' || cmd[i] == ' '){
+										str_substr(cmd, prev_ptr, i-1, split_cmd[arg_ctr++]);
+										prev_ptr = i+1;
+										break;
+								}
+								else if (cmd[i+1] == '\0'){
+										str_substr(cmd, prev_ptr, i, split_cmd[arg_ctr++]);
+										prev_ptr = i+1;
+										break;	
+								}
+						}
+						if (arg_ctr > 0)
+								str_substr(cmd, prev_ptr, str_len(cmd)-1, split_cmd[arg_ctr++]);
+						else
+								str_substr(cmd, 0, str_len(cmd)-1, split_cmd[arg_ctr++]);
+
+						pid_t pid = 1;
+
+			//			itoa(arg_ctr, pets, 10);
+								print(1, "split");
+								print(1, split_cmd[0]);
+						//						print(pets);
+						//						print(split_cmd[0]);
+						//						print(split_cmd[1]);
+						//						print("done");
+						//						print(pets);
+						//						print(split_cmd[arg_ctr-1]);
+						pid = fork();
+						if (pid != 0){
+								print(1, "dedede");
+				//				while(1);
+								execvp(split_cmd[0], split_cmd[1]);
+								while(1);
+						}
+						else{
+								yield();
+								waitpid(0);
+						}
+						//			for(int i = 0; i < COMM_LEN; i++){
+						//					input[i] = 0;
+						//					cmd[i] = 0;
+						//			}
+				}
 		}
 		//	waitpid(0);
 		exit(1);
-		return 0;
 }

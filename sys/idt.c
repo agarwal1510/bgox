@@ -3,6 +3,7 @@
 #define KERNEL_CODE_SEGMENT_OFFSET 0x08
 #define KB_DATA	0x60
 #define KB_STATUS 0x64
+#define MAX_SCRIPT_CMDS 50
 #include <sys/kprintf.h>
 #include <sys/defs.h>
 #include <sys/portio.h>
@@ -112,29 +113,27 @@ void page_fault_handler(uint64_t err_code, uint64_t err_rip) {
 	uint64_t pf_addr, curr_cr3;
 	__asm__ volatile ("movq %%cr2, %0":"=r"(pf_addr));
 	__asm__ volatile ("movq %%cr3, %0":"=r"(curr_cr3));
-//	kprintf("Page Fault encountered: %p %p Code: %d\n", pf_addr, err_rip, err_code);
+	kprintf("Page Fault encountered: %p %p Code: %d\n", pf_addr, err_rip, err_code);
 
 	if (err_code == 4 || err_code == 6){
 		struct page *pp = (struct page *)kmalloc(1);	
 		init_map_virt_phys_addr(pf_addr, (uint64_t)PADDR(pp), 1, (uint64_t *)VADDR(curr_cr3), 1);
-		kprintf("(Segmentation Fault)\n");
+//		kprintf("(Segmentation Fault)\n");
 	}
 	else if (err_code == 5 || err_code == 7){
 		init_map_virt_phys_addr(pf_addr, (uint64_t)PADDR(pf_addr), 1, (uint64_t *)VADDR(curr_cr3), 1);
-		kprintf("(Segmentation Fault)\n");
+//		kprintf("(Segmentation Fault)\n");
 	}
 	else if(err_code == 0 || err_code == 2){
 		struct page *pp = (struct page *)kmalloc(1);	
 		init_map_virt_phys_addr(pf_addr, (uint64_t)PADDR(pp), 1, (uint64_t *)VADDR(curr_cr3), 1);
-		kprintf("(Segmentation Fault)\n");
+//		kprintf("(Segmentation Fault)\n");
 	}
 	else if(err_code == 1 || err_code == 3){
 		init_map_virt_phys_addr(pf_addr, (uint64_t)PADDR(pf_addr), 1, (uint64_t *)VADDR(curr_cr3), 1);
-		kprintf("(Segmentation Fault)\n");
+//		kprintf("(Segmentation Fault)\n");
 	}
 	else {
-		struct page *pp = (struct page *)kmalloc(1);	
-		init_map_virt_phys_addr(pf_addr, (uint64_t)PADDR(pp), 1, (uint64_t *)VADDR(curr_cr3), 1);
 		kprintf("(Segmentation Fault)\n");
 	}
 //	__asm__ volatile ("movq %0, %%cr3"::"r"(ker_cr3));
@@ -209,6 +208,22 @@ void syscall_handler(void) {
 				new_line = 0;
 //				__asm__ volatile("movq %0, %%rax;"::"r"(str_len(char_buf)));
 	}
+	else if (syscall_num == 3){
+				__asm__("sti");
+				kprintf(PS1);
+				char *buf_cpy = (char *)third;
+				int line = 0, idx = 0;
+				while(line == 0 && idx < fourth){
+				//poll
+					line = new_line;
+					idx = buf_idx;
+				}
+				memcpy(buf_cpy, char_buf, str_len(char_buf));
+				memset(char_buf, 0, 1024);
+				buf_idx = 0;
+				new_line = 0;
+//				__asm__ volatile("movq %0, %%rax;"::"r"(str_len(char_buf)));
+	}
 	else if (syscall_num == 4) {
 		sys_fork();
 	}
@@ -220,37 +235,94 @@ void syscall_handler(void) {
 //
 //	}
 	else if (syscall_num == 7 || syscall_num == 8){
-	//	kprintf("execvp called for %s %s\n", buf, ((char*)third));
+		kprintf("execvp called for %s %s\n", buf, ((char*)third));
 		char cmd[50];
 		str_concat(PATH, (char*)buf, cmd);
-		file* fd = open((char *)cmd);
+		file* fd = (file*)open((char *)cmd);
 		if (fd == NULL){
-			kprintf("oxTerm error: Command %s not found\n", buf);
-			sys_exit(1);
+				file* fd2 = (file*)open((char*)buf);
+				if (fd2 == 0){
+						kprintf("oxTerm: command not found\n");
+						//		schedule(1);
+				}
+				else{
+						char shebang[50];
+						if (readline(fd2, shebang, 50) > 0){
+								if (str_cmp("!#bin/oxTerm", shebang) > 0){
+										kprintf("shebang");
+										char microcmd[50];
+										int idx = 0;
+										task_struct *parsed[MAX_SCRIPT_CMDS];
+										task_struct *parent = get_running_task();
+										while(readline(fd2, microcmd, 50) > 0){
+												char task[50] ;
+												str_concat(PATH, microcmd, task);
+												file* microfd = (file*)open(task);
+												if (microfd == NULL){
+														kprintf("oxTerm: %s: command not found\n", task);
+														//			while(1);
+														//					return;
+												}
+												else{	
+											//			kprintf("dedew");
+											//			while(1);
+														file *tfd = open(task); //TODO Tokenize
+											//			char argument[50];
+											//			memcpy(argument, (char*)third, str_len((char*)third));
+														char *argv[1] = {""};
+														//			while(1);
+														parsed[idx] = elf_parse(tfd->addr+512, (file*)tfd->addr, 0, argv);
+														parsed[idx]->pid = parent->pid;
+														parsed[idx]->ppid = parent->ppid;
+														//					close(tfd);
+												}
+												idx++;
+												memset(microcmd, 0, 50);
+									//			kprintf(microcmd);
+									//			while(1);
+										}
+										delete_curr_from_task_list();
+										for(int i = 0; i < idx; i++){
+												add_to_task_list(parsed[i]);
+										}
+										close(fd2);
+							//			sys_exit(1);	
+										schedule(1);
+								}
+								else{
+										kprintf("oxTerm err: Trying to execute invalid oxTerm script\n");
+								}
+						}
+
+						//				close((file*)fd2);
+						//				kprintf("idx: %d", idx);
+				}
 		}
 		else{
-			task_struct *parent = get_running_task();
-			PID--; // Since pcb_exec increases PID by one on assignment
-			char argument[50];
-			memcpy(argument, (char*)third, str_len((char*)third));
-//			while(1);
-			char *argv[1] = {(char*)argument};
-			task_struct *pcb_exec;
-//			char argument[10];
-//			memcpy(argument, (char*)third, str_len((char*)third));
-//			kprintf("\nargs:%s %s\n", argument, buf);
-			if (str_len((char*)argument) > 0 && str_cmp((char*)argument, (char*)buf) < 0 )
-				pcb_exec = elf_parse(fd->addr+512,(file *)fd->addr, 1, argv);
-			else
-				pcb_exec = elf_parse(fd->addr+512,(file *)fd->addr, 0, argv);
-			pcb_exec->pid = parent->pid;
-			pcb_exec->ppid = parent->ppid;
-//			kprintf("%d", parent->pid);
-			delete_curr_from_task_list();
-			add_to_task_list(pcb_exec);
-//			kprintf("name %s", pcb_exec->tname);
-			schedule(1);
+				task_struct *parent = get_running_task();
+				PID--; // Since pcb_exec increases PID by one on assignment
+				char argument[50];
+				memcpy(argument, (char*)third, str_len((char*)third));
+				//			while(1);
+				char *argv[1] = {(char*)argument};
+				task_struct *pcb_exec;
+				//			char argument[10];
+				//			memcpy(argument, (char*)third, str_len((char*)third));
+			//				kprintf("\nargs:%s %s\n", argument, buf);
+				if (str_len((char*)argument) > 0 && str_cmp((char*)argument, (char*)buf) < 0 )
+						pcb_exec = elf_parse(fd->addr+512,(file *)fd->addr, 1, argv);
+				else
+						pcb_exec = elf_parse(fd->addr+512,(file *)fd->addr, 0, argv);
+				pcb_exec->pid = parent->pid;
+				pcb_exec->ppid = parent->ppid;
+				//			kprintf("%d", parent->pid);
+				delete_curr_from_task_list();
+				add_to_task_list(pcb_exec);
+										kprintf("arg: %s", pcb_exec->tname);
+				//			kprintf("name %s", pcb_exec->tname);
+//				close(fd);
 		}
+				schedule(1);
 	} 
 	else if (syscall_num == 10) {
 		//while(1);
@@ -262,11 +334,14 @@ void syscall_handler(void) {
 	}
 	else if (syscall_num == 14){
 			char cmd_args[2][FMT_LEN];
-
 			str_split_delim((char*)buf, ' ', cmd_args);
 //			kprintf("args:%s", cmd_args[0]);
 			char *filename = (char *)cmd_args[0];
-			file *fd = open(filename);
+			file* fd = (file*)open(filename);
+			if (fd == NULL){
+				kprintf("%s: No such file", filename);
+				return;
+			}
 			if (fd != NULL){
 					int bytes = 60;
 					int bread = 2048;

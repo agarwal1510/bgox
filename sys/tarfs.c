@@ -105,7 +105,7 @@ file *open(char *filename) {
 				entry = tarfs_list[i];
 				if (str_cmp(filename, entry.name) == 1 && entry.type == TYPE_FILE) {
 						fd->addr = entry.addr;
-			//			kprintf("size: %d, entry.size", entry.size);
+		//				kprintf("size: %d, entry.size", entry.size);
 						fd->size = entry.size;
 						str_cpy(fd->name, filename);
 						return fd;
@@ -115,7 +115,7 @@ file *open(char *filename) {
 						return NULL;
 				}
 		}
-		kprintf("%s: No such file\n", filename);
+//		kprintf("%s: No such file\n", filename);
 		return NULL;
 }        
 
@@ -142,4 +142,24 @@ size_t read(file* fd, void *buf, size_t bytes){
 	tempbuf[i] = '\0';
 	bytesdone += str_len(tempbuf)-1;
 	return bytestoRead;
+}
+
+size_t readline(file* fd, void *buf, size_t bytes){
+	if (fd->size == 0 || bytesdone - fd->size == 0)
+		return 0;
+	int bytestoRead = (max(bytes, fd->size - bytesdone) == fd->size - bytesdone ? bytes : fd->size - bytesdone);
+	char* fileaddr = (char *)(fd->addr + skip_size + bytesdone);
+	int i = 0;
+	char *tempbuf = (char *)buf;
+	for(i = 0; i < bytestoRead; i++){
+		if (*fileaddr == '\n'){
+			bytesdone++;
+			break;
+		}
+		tempbuf[i] = *fileaddr++;
+	}
+	tempbuf[i] = '\0';
+//	while(1);
+	bytesdone += str_len(tempbuf);
+	return str_len(tempbuf);
 }

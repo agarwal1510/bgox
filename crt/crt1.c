@@ -11,10 +11,17 @@ void _start(void) {
 	             "movq %%rcx, %2;"
 	             : "=g"(argc),"=g"(argv1), "=g"(argv2)
 	             :
-	             :"rax", "rsi","rcx", "rbx"
+	             :"rax", "rcx", "rbx", "rsi"
 	               );
- 	char *argv[1] = {(char*)argv1};
-	int ret = main(argc, argv,  NULL);
+	int ret;
+	if (argc == 0){
+		print(1, "zero");
+		ret = main(argc, NULL,  NULL);	
+	}
+	else{
+ 		char *argv[1] = {(char*)argv1};
+		ret = main(argc, argv,  NULL);
+	}
 	exit(ret);
   // call main() and exit() here
 }
