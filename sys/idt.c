@@ -243,7 +243,11 @@ void syscall_handler(void) {
 		list_dir();
 	}
 	else if (syscall_num == 14){
-			char *filename = (char *)buf;
+			char cmd_args[2][FMT_LEN];
+
+			str_split_delim((char*)buf, ' ', cmd_args);
+//			kprintf("args:%s", cmd_args[0]);
+			char *filename = (char *)cmd_args[0];
 			file *fd = open(filename);
 			if (fd != NULL){
 					int bytes = 60;
@@ -266,10 +270,18 @@ void syscall_handler(void) {
 //		kprintf("waitId: %d", buf);
 		sys_waitpid(buf);
 	} else if (syscall_num == 22) {
-		sys_sleep(atoi((char*)buf));
+			char cmd_args[2][FMT_LEN];
+
+			str_split_delim((char*)buf, ' ', cmd_args);
+//			kprintf("args:%s", cmd_args[0]);
+		sys_sleep(atoi(cmd_args[0]));
 	} else if (syscall_num == 24) {
-//		kprintf("%d %d %d", atoi((char *)buf), third, fourth);
-		sys_kill(atoi((char *)buf));
+			char cmd_args[3][FMT_LEN];
+			char out[3];
+			str_split_delim((char*)buf, ' ', cmd_args);
+			str_substr((char*)cmd_args[1], 1, str_len(cmd_args[1])-1, out);
+//		kprintf("PID: %s *%s*", out, (char*)buf);
+		sys_kill(atoi(out));
 	}
 /*	
 	if (syscall_num == 2) { //Fork

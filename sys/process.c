@@ -415,14 +415,14 @@ void sys_kill(uint64_t pid) {
 //	kprintf("pid %d %d", pid, running_task->process->pid);	
 	ready_task *temp = queue_head;
 	if (running_task->process->ppid == pid) {
-		kprintf("Logging out\n");
+		kprintf("oxTerm: Session Terminated...\n");
 		delete_from_task_list(pid);
 		schedule(0);
 		return;
 	}
 	while (temp != NULL) {
 		if (temp->process->pid == pid && str_cmp(temp->process->tname, kernel) == 1) {
-			kprintf("Error: Cannot kill kernel\n");
+			kprintf("oxTerm: err: Can't kill kernel. You don't have privileges!\n");
 			schedule(0);
 			return;
 		} else if (temp->process->pid == pid && temp == running_task) {
