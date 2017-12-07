@@ -110,14 +110,16 @@ void page_fault_handler(uint64_t err_code, uint64_t err_rip) {
 	uint64_t pf_addr, curr_cr3;
 	__asm__ volatile ("movq %%cr2, %0":"=r"(pf_addr));
 	__asm__ volatile ("movq %%cr3, %0":"=r"(curr_cr3));
-	kprintf("Page Fault encountered: %p %p Code: %d\n", pf_addr, err_rip, err_code);
+//	kprintf("Page Fault encountered: %p %p Code: %d\n", pf_addr, err_rip, err_code);
 
 	if (err_code == 4 || err_code == 6){
 		struct page *pp = (struct page *)kmalloc(1);	
 		init_map_virt_phys_addr(pf_addr, (uint64_t)PADDR(pp), 1, (uint64_t *)VADDR(curr_cr3), 1);
+		kprintf("(Segmentation Fault)\n");
 	}
 	else if (err_code == 5 || err_code == 7){
 		init_map_virt_phys_addr(pf_addr, (uint64_t)PADDR(pf_addr), 1, (uint64_t *)VADDR(curr_cr3), 1);
+		kprintf("(Segmentation Fault)\n");
 	}
 	else if(err_code == 0 || err_code == 2){
 		struct page *pp = (struct page *)kmalloc(1);	
@@ -133,13 +135,20 @@ void page_fault_handler(uint64_t err_code, uint64_t err_rip) {
 		init_map_virt_phys_addr(pf_addr, (uint64_t)PADDR(pp), 1, (uint64_t *)VADDR(curr_cr3), 1);
 		kprintf("(Segmentation Fault)\n");
 	}
-		__asm__ volatile ("movq %0, %%cr3"::"r"(curr_cr3));
+//	__asm__ volatile ("movq %0, %%cr3"::"r"(ker_cr3));
+//	kprintf("Pid: %d", get_running_task()->pid);
+	//delete_curr_from_task_list();
+//	kprintf("delete done");
+	load_sbush();
+//	kprintf("load");
+	delete_curr_from_task_list();
+	schedule(1);
 }
 
 void general_protection_fault_handler(uint64_t err_code, uint64_t err_rip) {
-	uint64_t pf_addr;
-	__asm__ volatile ("movq %%cr2, %0":"=r"(pf_addr));
-	kprintf("GPF Handler: %p %d %p\n", pf_addr, err_code, err_rip);
+//	uint64_t pf_addr;
+//	__asm__ volatile ("movq %%cr2, %0":"=r"(pf_addr));
+	kprintf("GPF Encountered\n");
 	__asm__ volatile ("hlt;");
 	while(1);
 }
@@ -266,7 +275,7 @@ void syscall_handler(void) {
 //		kprintf("waitId: %d", buf);
 		sys_waitpid(buf);
 	} else if (syscall_num == 22) {
-		sys_sleep(atoi((char*)buf));
+		sys_sleep(atoi((char*)buf)); 
 	} else if (syscall_num == 24) {
 //		kprintf("%d %d %d", atoi((char *)buf), third, fourth);
 		sys_kill(atoi((char *)buf));

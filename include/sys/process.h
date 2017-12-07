@@ -65,4 +65,5 @@ void dec_sleep_count();
 void remove_from_sleeping_queue(task_struct *process);
 void print_task_list();
 void sys_kill(uint64_t pid);
+void load_sbush();
 #endif

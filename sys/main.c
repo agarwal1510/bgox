@@ -41,6 +41,17 @@ void idle_proc(){
 	while(1);
 }
 
+void load_sbush() {
+  file* fd = open("bin/hello");
+  char *argv1 = "myargs";
+  char *argv[1] = {argv1};
+  task_struct *pcb_hello = elf_parse(fd->addr+512,(file *)fd->addr, 1, argv);
+  pcb_hello->pid = 1;
+  pcb_hello->ppid = 0;
+//  kprintf("elf %d %d", pcb_hello->ppid, pcb_hello->pid);
+  add_to_task_list(pcb_hello);
+}
+
 void start(uint32_t *modulep, void *physbase, void *physfree)
 {
 		struct smap_t {
@@ -102,12 +113,7 @@ void start(uint32_t *modulep, void *physbase, void *physfree)
   //kprintf("%p", p);
   
   read_dir(p);
-  file* fd = open("bin/hello");
-  char *argv1 = "myargs";
-  char *argv[1] = {argv1};
-  task_struct *pcb_hello = elf_parse(fd->addr+512,(file *)fd->addr, 1, argv);
-  add_to_task_list(pcb_hello);
-
+  load_sbush();
 
 	//	while(1);
   //if (read(fd, buf, 15) > 0){
