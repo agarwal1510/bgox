@@ -159,21 +159,48 @@ int is_child_done(uint64_t pid) {
 
 void schedule(int first_switch) {
 	if (running_task == NULL) {
+//		kprintf("here");
 		if (previous->next == NULL) {
 			running_task = queue_head;
 		} else {
-			running_task = previous->next;
+			ready_task *temp = previous;
+			while (temp->next != NULL 
+				&& (temp->next->process->is_sleeping != 0
+				|| temp->next->process->is_waiting > 0)) {
+//				kprintf("%d ", temp->process->is_waiting);
+			if (temp->process->is_waiting > 0 && (is_child_done(temp->process->is_waiting))) {
+//				kprintf("Done ");
+				temp->process->is_waiting = 0;
+			}
+				temp = temp->next; 
+			}
+//		if (temp->process->is_waiting > 0 && (is_child_done(temp->process->is_waiting))) {
+//			temp->process->is_waiting = 0;
+//		}
+		//kprintf("id: %d", temp->process->pid);
+		if (temp->next != NULL) {
+			running_task = temp->next;
+		} else {
+			running_task = queue_head;			
+		}
+			//running_task = previous->next;
 		}
 	} else {
 		ready_task *temp = running_task;
 		while (temp->next != NULL 
 			&& (temp->next->process->is_sleeping != 0
 			|| temp->next->process->is_waiting > 0)) {
+
+			if (temp->process->is_waiting > 0 && (is_child_done(temp->process->is_waiting))) {
+//				kprintf("Done ");
+				temp->process->is_waiting = 0;
+			}
 			temp = temp->next; 
 		}
-		if (temp->process->is_waiting > 0 && is_child_done(temp->process->is_waiting)) {
-			temp->process->is_waiting = 0;
-		}
+//		if (temp->process->is_waiting > 0 && (is_child_done(temp->process->is_waiting))) {
+			//kprintf("Done");
+//			temp->process->is_waiting = 0;
+//		}
 
 		if (temp->next != NULL) {
 			previous = running_task;
@@ -436,7 +463,8 @@ void sys_kill(uint64_t pid) {
 	schedule(0);
 }
 
-uint64_t sys_waitpid(uint64_t pid) {
+uint64_t sys_waitpid(uint64_t pid, uint64_t is_bg) {
+	if (is_bg == 1) return 0;
 	task_struct *current = get_running_task();
 	task_struct *child;
 	uint64_t ppid = current->pid;
@@ -446,7 +474,7 @@ uint64_t sys_waitpid(uint64_t pid) {
 	if (pid < 0 || pid == 0) {
 		while (temp != NULL) {
 //			kprintf(" %d ", temp->process->ppid);
-			if (temp->process->ppid == ppid) {
+			if (temp->process->ppid == ppid && temp->process->is_bg != 1) {
 				//kprintf("child found");
 				child = temp->process;
 				current->is_waiting = child->pid;
