@@ -41,6 +41,7 @@ typedef struct task_struct {
 	uint64_t is_waiting;
 	uint64_t sleep_time;
 	uint64_t is_sleeping;
+	uint64_t is_bg;
 } task_struct;
 
 typedef struct ready_task {
@@ -60,7 +61,7 @@ task_struct *get_running_task();
 uint64_t sys_fork();
 void sys_exit(uint64_t status);
 void sys_sleep(int time);
-uint64_t sys_waitpid(uint64_t 	pid);
+uint64_t sys_waitpid(uint64_t pid, uint64_t is_background);
 void dec_sleep_count();
 void remove_from_sleeping_queue(task_struct *process);
 void print_task_list();

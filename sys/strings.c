@@ -78,3 +78,26 @@ void str_substr(const char *str, int from, int to, char *out_str){
                 }
                 out_str[index] = '\0';
 }
+
+int str_contains(char *str, char *query){
+                  int j=0, i=0;
+                  int startIdx = -1, found = 0;
+                  for(i=0;str[i] != '\0';i++){
+                                  if (str[i] == query[j]){
+  //                                              print("found");
+                                                  j++;
+                                                  startIdx = i;
+                                                  if (j == str_len(query)){
+                                                                  found = 1;
+                                                                  break;
+                                                  }
+                                  }
+                                  else if (startIdx >= 0){
+                                                  j = 0;
+                                                  startIdx = -1;
+                                  }
+  //                              print("i ");
+                  }
+ 
+                  return (found == 1) ?  startIdx - str_len(query) + 1: -1; // Start Index of query substring
+  }

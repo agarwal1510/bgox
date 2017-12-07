@@ -60,6 +60,7 @@ static volatile int new_line = 0;
 
 int SHIFT_ON = 0;
 int CTRL_ON = 0;
+int is_bg = 0;
 /*struct gate_str{
   uint16_t offset_low;     // offset bits 0...15
   uint16_t selector;       // a code segment selector in GDT or LDT 16...31
@@ -170,7 +171,6 @@ void irq_timer_handler(void){
 }
 
 void syscall_handler(void) {
-
 	uint64_t syscall_num = 0;
 	uint64_t buf, third, fourth;
 	//Save register values
@@ -248,13 +248,13 @@ void syscall_handler(void) {
 //			kprintf("%d", parent->pid);
 			delete_curr_from_task_list();
 			add_to_task_list(pcb_exec);
-//			kprintf("name %s", pcb_exec->tname);
+//			kprintf("name %s %d", pcb_exec->tname, parent->pid);
 			schedule(1);
 		}
 	} 
 	else if (syscall_num == 10) {
 		//while(1);
-//		kprintf("Exit called");
+		//kprintf("Exit called");
 		sys_exit(buf);
 	} 
 	else if (syscall_num == 12){
@@ -285,12 +285,19 @@ void syscall_handler(void) {
 		print_task_list(); //ps
 	}
 	else if (syscall_num == 20) {
-//		kprintf("waitId: %d", buf);
-		sys_waitpid(buf);
+//		kprintf("waitId: %d %d", buf, third);
+		sys_waitpid(buf, is_bg);
+		//is_bg = 0;
 	} else if (syscall_num == 22) {
-			char cmd_args[2][FMT_LEN];
-			str_split_delim((char*)buf, ' ', cmd_args);
-//			kprintf("args:%s", cmd_args[0]);
+		char cmd_args[2][FMT_LEN];
+		str_split_delim((char*)buf, ' ', cmd_args);
+//		kprintf("args:%d", atoi(cmd_args[0]));
+		if (str_contains((char *)buf, "&") != -1){
+			get_running_task()->is_bg = 1;
+			is_bg = 1;
+		} else {
+			is_bg = 0;
+		}
 		sys_sleep(atoi(cmd_args[0]));
 	} else if (syscall_num == 24) {
 			char cmd_args[3][FMT_LEN];
@@ -388,6 +395,7 @@ void irq_kb_handler(void){
 						break;
 					case 8:
 						kprintf("%c", '&');
+						char_buf[buf_idx++] = '&';
 						break;
 					case 9:
 						kprintf("%c", '*');
@@ -437,9 +445,10 @@ void irq_kb_handler(void){
 //					char_buf[buf_idx++] = kbdus[key];
 				}
 			}
-			else
+			else {
 				kprintf("%c", kbdus[key]);
-			char_buf[buf_idx++] = kbdus[key];
+				char_buf[buf_idx++] = kbdus[key];
+			}
 		}
 	}
 }
