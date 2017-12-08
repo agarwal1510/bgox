@@ -196,7 +196,9 @@ int main(int argc, char *argv[], char *envp[]){
 					yield();
 					//printf("Ppid: %d\n", getppid());
 					//while(1);
-					waitpid(0);
+					wait();
+					//printf("status:%d\n", status);
+					//waitpid(0);
 				}
 		}
 		//	waitpid(0);

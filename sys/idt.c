@@ -236,13 +236,13 @@ void syscall_handler(void) {
 				//		__asm__("cli");
 				//				__asm__ volatile("movq %0, %%rax;"::"r"(str_len(char_buf)));
 		}
-		else if (syscall_num == 4) {
+		else if (syscall_num == 4) { //fork
 		sys_fork();
 	}
-	else if (syscall_num == 6){
+	else if (syscall_num == 6){ //yield
 		schedule(0);
 	}
-	else if (syscall_num == 7 || syscall_num == 8){
+	else if (syscall_num == 7 || syscall_num == 8){ //exec
 //		kprintf("execvp called for %s %s\n", buf, ((char*)third));
 		char cmd[50];
 		str_concat(PATH, (char*)buf, cmd);
@@ -275,7 +275,7 @@ void syscall_handler(void) {
 			schedule(1);
 		}
 	} 
-	else if (syscall_num == 10) {
+	else if (syscall_num == 10) { //exit
 		//while(1);
 		//kprintf("Exit called");
 		sys_exit(buf);
@@ -283,7 +283,7 @@ void syscall_handler(void) {
 	else if (syscall_num == 12){
 		list_dir();
 	}
-	else if (syscall_num == 14){
+	else if (syscall_num == 14){ 
 			char cmd_args[2][FMT_LEN];
 
 			str_split_delim((char*)buf, ' ', cmd_args);
@@ -307,11 +307,17 @@ void syscall_handler(void) {
 	else if (syscall_num == 18){
 		print_task_list(); //ps
 	}
-	else if (syscall_num == 20) {
-//		kprintf("waitId: %d %d", buf, third);
-		sys_waitpid(buf, is_bg);
+	else if (syscall_num == 20) { //waitpid
+		pid_t pid = sys_waitpid(buf, is_bg);
+		__asm__ volatile (
+				"movq %0, %%rax;"
+				:
+				:"a" ((uint64_t)pid)
+				:"cc", "memory"
+				); 
+		//kprintf("pid %d", pid);
 		//is_bg = 0;
-	} else if (syscall_num == 22) {
+	} else if (syscall_num == 22) { //sleep
 		char cmd_args[2][FMT_LEN];
 		str_split_delim((char*)buf, ' ', cmd_args);
 //		kprintf("args:%d", atoi(cmd_args[0]));
@@ -322,7 +328,7 @@ void syscall_handler(void) {
 			is_bg = 0;
 		}
 		sys_sleep(atoi(cmd_args[0]));
-	} else if (syscall_num == 24) {
+	} else if (syscall_num == 24) { //kill
 			char cmd_args[3][FMT_LEN];
 			char out[3];
 			str_split_delim((char*)buf, ' ', cmd_args);
@@ -362,7 +368,17 @@ void syscall_handler(void) {
                  memset(char_buf, 0, 1024);
                  buf_idx = 0;
                  new_line = 0;
-         } 
+         } else if (syscall_num == 32) { //wait
+	 	//char *status = (char *)buf;
+		pid_t pid = sys_waitpid(0, 0);
+		__asm__ volatile (
+				"movq %0, %%rax;"
+				:
+				:"a" ((uint64_t)pid)
+				:"cc", "memory"
+				); 
+		//kprintf("pid %d", pid);
+	 }
 	
 
 }

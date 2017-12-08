@@ -484,7 +484,7 @@ uint64_t sys_waitpid(uint64_t pid, uint64_t is_bg) {
 					//previous = running_task;
 					//running_task = queue_head;
 					//switch_to(running_task->process, previous->process, 1);
-				return 0;
+				return child->pid;
 			}
 			temp = temp->next;
 		}
@@ -497,7 +497,7 @@ uint64_t sys_waitpid(uint64_t pid, uint64_t is_bg) {
 					//running_task = queue_head;
 					//switch_to(running_task->process, previous->process, 1);
 					schedule(0);
-					return 0;
+					return child->pid;
 			}
 			temp = temp->next;
 		}
