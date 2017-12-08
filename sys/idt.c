@@ -112,7 +112,7 @@ void page_fault_handler(uint64_t err_code, uint64_t err_rip) {
 	uint64_t pf_addr, curr_cr3;
 	__asm__ volatile ("movq %%cr2, %0":"=r"(pf_addr));
 	__asm__ volatile ("movq %%cr3, %0":"=r"(curr_cr3));
-	kprintf("Page Fault encountered: %p %p Code: %d\n", pf_addr, err_rip, err_code);
+//	kprintf("Page Fault encountered: %p %p Code: %d\n", pf_addr, err_rip, err_code);
 
 	if (err_code == 4 || err_code == 6){
 		struct page *pp = (struct page *)kmalloc(1);	
@@ -243,7 +243,7 @@ void syscall_handler(void) {
 		schedule(0);
 	}
 	else if (syscall_num == 7 || syscall_num == 8){
-		kprintf("execvp called for %s %s\n", buf, ((char*)third));
+//		kprintf("execvp called for %s %s\n", buf, ((char*)third));
 		char cmd[50];
 		str_concat(PATH, (char*)buf, cmd);
 		file* fd = open((char *)cmd);
@@ -331,7 +331,38 @@ void syscall_handler(void) {
 			kprintf("oxTerm: Usage: kill -9 PID\n");
 		else
 			sys_kill(atoi(out));
-	}
+	} else if (syscall_num == 26) { //getpid
+                 uint32_t pid = get_running_task()->pid;
+		__asm__ volatile (
+				"movq %0, %%rax;"
+				:
+				:"a" ((uint64_t)pid)
+				:"cc", "memory"
+				); 
+         } else if (syscall_num == 28) { //getppid
+                 pid_t ppid = get_running_task()->ppid;
+		__asm__ volatile (
+				"movq %0, %%rax;"
+				:
+				:"a" ((uint64_t)ppid)
+				:"cc", "memory"
+				); 
+         } else if (syscall_num == 30) { //gets
+                 __asm__("sti");
+                 kprintf(PS1);
+                 char *buf_cpy = (char *)buf;
+                 //while(1);
+                 int line = 0;
+                 while(line == 0){
+                 //poll
+                         line = new_line;
+                         //idx = buf_idx;
+                 }
+                 memcpy(buf_cpy, char_buf, str_len(char_buf));
+                 memset(char_buf, 0, 1024);
+                 buf_idx = 0;
+                 new_line = 0;
+         } 
 	
 
 }

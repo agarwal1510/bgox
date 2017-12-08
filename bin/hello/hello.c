@@ -168,7 +168,8 @@ int main(int argc, char *argv[], char *envp[]){
 					cmd[i] = '\0';
 					arg[i] = '\0';
 				}
-				read(0, input, COMM_LEN);
+				gets(input);
+				//read(0, input, COMM_LEN);
 				if (input[0] == '\n')
 					continue;
 				else if (str_len(input) >= COMM_LEN){
@@ -186,13 +187,16 @@ int main(int argc, char *argv[], char *envp[]){
 
 				pid = fork();
 				if (pid == 0){
-							execvp(cmd, arg);
+					//pid_t pid = getpid();
+					//printf("Pid: %d\n", pid);
+					execvp(cmd, arg);
 				}
 				else{
 						//		print(pids);
-						yield();
-//						while(1);
-						waitpid(0);
+					yield();
+					//printf("Ppid: %d\n", getppid());
+					//while(1);
+					waitpid(0);
 				}
 		}
 		//	waitpid(0);
