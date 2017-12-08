@@ -16,7 +16,7 @@
 #include <sys/strings.h>
 #include <sys/memutils.h>
 
-extern void isr128(void);
+extern void isr32(void);
 uint32_t* loader_stack;
 extern char kernmem, physbase;
 
@@ -93,7 +93,7 @@ void start(uint32_t *modulep, void *physbase, void *physfree)
   pcb_boot->kstack[510] = (uint64_t)&(pcb_boot->kstack[511]);
   pcb_boot->kstack[509] = 0x200202UL;
   pcb_boot->kstack[507] = (uint64_t)&idle_proc;
-  pcb_boot->kstack[491] = (uint64_t)(&isr128+29);
+  pcb_boot->kstack[491] = (uint64_t)(&isr32+29);
   pcb_boot->rsp = &(pcb_boot->kstack[491]);
   pcb_boot->is_sleeping = 0;
   pcb_boot->sleep_time = 0;

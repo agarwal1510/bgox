@@ -99,7 +99,7 @@ uint64_t read_dir(uint64_t addr)
 
 
 file *open(char *filename) {
-		file* fd = (file *) kmalloc(1);
+		file* fd = (file *) kmalloc(sizeof(file));
 		tarfs_e entry;
 		for(int i = 0; i < tarf_idx; i++){
 				entry = tarfs_list[i];

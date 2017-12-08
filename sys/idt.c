@@ -39,11 +39,11 @@ extern void isr17(void);
 extern void isr18(void);
 extern void isr19(void);
 extern void isr20(void);
-extern void isr128(void);
 extern void isr14(void);
 extern void isr13(void);
 extern void isr32(void);
 extern void isr33(void);
+extern void isr128(void);
 extern void pusha(void);
 extern void popa(void);
 
@@ -52,12 +52,11 @@ void timer_init();
 extern unsigned char kbdus[128];
 
 static char char_buf[1024];
-static char char_err_buf[1024];
+//static char char_err_buf[1024];
 
 static volatile int buf_idx = 0;
 static volatile int buf_err_idx = 0;
 static volatile int new_line = 0;
-
 int SHIFT_ON = 0;
 int CTRL_ON = 0;
 int is_bg = 0;
@@ -113,7 +112,7 @@ void page_fault_handler(uint64_t err_code, uint64_t err_rip) {
 	uint64_t pf_addr, curr_cr3;
 	__asm__ volatile ("movq %%cr2, %0":"=r"(pf_addr));
 	__asm__ volatile ("movq %%cr3, %0":"=r"(curr_cr3));
-//	kprintf("Page Fault encountered: %p %p Code: %d\n", pf_addr, err_rip, err_code);
+	kprintf("Page Fault encountered: %p %p Code: %d\n", pf_addr, err_rip, err_code);
 
 	if (err_code == 4 || err_code == 6){
 		struct page *pp = (struct page *)kmalloc(1);	
@@ -171,56 +170,80 @@ void irq_timer_handler(void){
 }
 
 void syscall_handler(void) {
-	uint64_t syscall_num = 0;
-	uint64_t buf, third, fourth;
-	//Save register values
-	__asm__ volatile("movq %%rax, %0;"
-			"movq %%rbx, %1;"
-			"movq %%rcx, %2;"
-			"movq %%rdx, %3;"
-			: "=g"(syscall_num),"=g"(buf), "=g"(third), "=g"(fourth)
-			:
-			:"rax","rbx", "rcx", "rdx");
-	
-	if (syscall_num == 1){ // Write
-		if (buf == 1)
-			kprintf("%s", (char *)third);
-		else{
-			memcpy(char_err_buf, (char*)third, str_len((char*)third));
-			buf_err_idx = str_len((char*)third);
-			kprintf("STDERR: %s", char_err_buf);
-			buf_err_idx = 0;
+		uint64_t syscall_num = 0;
+		uint64_t buf, third, fourth;
+		//Save register values
+		__asm volatile("movq %%rax, %0;"
+						"movq %%rbx, %1;"
+						"movq %%rcx, %2;"
+						"movq %%rdx, %3;"
+						: "=g"(syscall_num),"=g"(buf), "=g"(third), "=g"(fourth)
+						:
+						:"rax","rsi","rcx", "rdx"
+					  );
+		//	__asm__ volatile("movq %%rax, %0;"
+		///					"movq %%rbx, %1;"
+		//		"movq %%rcx, %2;"
+		//			"movq %%rdx, %3;"
+		//			: "=g"(syscall_num),"=g"(buf), "=g"(third), "=g"(fourth)
+		//			:
+		//			:"rbx", "rcx", "rdx");
+
+		if (syscall_num == 1){ // WRITE
+				int written = 0;
+				char sub[str_len((char*)third)];
+				if (fourth >= str_len((char*)third)){
+						str_cpy(sub, (char*)third);
+						written = str_len((char*)third);
+				}
+				else{
+						str_substr((char*)third, 0, fourth, sub);
+						written = str_len((char*)sub);
+				}
+				if (buf == 1){
+						kprintf("%s", sub);
+				}
+				else{
+						kprintf("STDERR: %s", sub);
+				}
+				__asm__ volatile (
+								"movq %0, %%rax;"
+								:
+								:"a" ((uint64_t)written)
+								:"cc", "memory"
+								); 
 		}
-		return;
-	}
-	else if (syscall_num == 2){
+		else if (syscall_num == 2){ //READ
 				__asm__("sti");
 				kprintf(PS1);
 				char *buf_cpy = (char *)third;
 				int line = 0, idx = 0;
 				while(line == 0 && idx < fourth){
-				//poll
-					line = new_line;
-					idx = buf_idx;
+						//poll
+						line = new_line;
+						idx = buf_idx;
 				}
 				memcpy(buf_cpy, char_buf, str_len(char_buf));
 				memset(char_buf, 0, 1024);
 				buf_idx = 0;
 				new_line = 0;
-//				__asm__ volatile("movq %0, %%rax;"::"r"(str_len(char_buf)));
-	}
-	else if (syscall_num == 4) {
+				__asm__ volatile (
+								"movq %0, %%rax;"
+								:
+								:"a" ((uint64_t)str_len(char_buf))
+								:"cc", "memory"
+								); 
+				//		__asm__("cli");
+				//				__asm__ volatile("movq %0, %%rax;"::"r"(str_len(char_buf)));
+		}
+		else if (syscall_num == 4) {
 		sys_fork();
 	}
 	else if (syscall_num == 6){
 		schedule(0);
 	}
-//	else if (syscall_num == 7){
-//		kprintf("exec");
-//
-//	}
 	else if (syscall_num == 7 || syscall_num == 8){
-	//	kprintf("execvp called for %s %s\n", buf, ((char*)third));
+		kprintf("execvp called for %s %s\n", buf, ((char*)third));
 		char cmd[50];
 		str_concat(PATH, (char*)buf, cmd);
 		file* fd = open((char *)cmd);
@@ -232,7 +255,7 @@ void syscall_handler(void) {
 			task_struct *parent = get_running_task();
 			PID--; // Since pcb_exec increases PID by one on assignment
 			char argument[50];
-			memcpy(argument, (char*)third, str_len((char*)third));
+			str_cpy(argument, (char*)third);
 //			while(1);
 			char *argv[1] = {(char*)argument};
 			task_struct *pcb_exec;
@@ -309,15 +332,8 @@ void syscall_handler(void) {
 		else
 			sys_kill(atoi(out));
 	}
-/*	
-	if (syscall_num == 2) { //Fork
 	
-	} else if (syscall_num == 3) { //Read
 
-	} else if (syscall_num == 4) { //Write
-		kprintf("%s", buf);
-	}
-*/
 }
 void irq_kb_handler(void){
 		outb(0x20, 0x20);
@@ -344,7 +360,8 @@ void irq_kb_handler(void){
 		if (key == 0x1d){
 			CTRL_ON = 1;
 			SHIFT_ON = 1; // should be ^C and not ^c
-			kprintf_at("%c", '^');
+			kprintf("%c", '^');
+			char_buf[buf_idx++] = '^';
 			return;
 		}
 		else if (key == 0x9d){
@@ -377,21 +394,27 @@ void irq_kb_handler(void){
 				switch (key){
 					case 2:
 						kprintf("%c", '!');
+						char_buf[buf_idx++] = '!';
 						break;
 					case 3:
 						kprintf("%c", '@');
+						char_buf[buf_idx++] = '@';
 						break;
 					case 4:
 						kprintf("%c", '#');
+						char_buf[buf_idx++] = '#';
 						break;
 					case 5:
 						kprintf("%c", '$');
+						char_buf[buf_idx++] = '$';
 						break;
 					case 6:
 						kprintf("%c", '%');
+						char_buf[buf_idx++] = '%';
 						break;
 					case 7:
 						kprintf("%c",  '^');
+						char_buf[buf_idx++] = '^';
 						break;
 					case 8:
 						kprintf("%c", '&');
@@ -399,50 +422,64 @@ void irq_kb_handler(void){
 						break;
 					case 9:
 						kprintf("%c", '*');
+						char_buf[buf_idx++] = '*';
 						break;
 					case 10:
 						kprintf("%c", '(');
+						char_buf[buf_idx++] = '(';
 						break;
 					case 11:
 						kprintf("%c", ')');
+						char_buf[buf_idx++] = ')';
 						break;
 					case 12:
 						kprintf("%c", '_');
+						char_buf[buf_idx++] = '_';
 						break;
 					case 13:
 						kprintf("%c", '+');
+						char_buf[buf_idx++] = '+';
 						break;
 					case 26:
 						kprintf("%c", '{');
+						char_buf[buf_idx++] = '{';
 						break;
 					case 27:
 						kprintf("%c", '}');
+						char_buf[buf_idx++] = '}';
 						break;
 					case 39:
 						kprintf("%c", ':');
+						char_buf[buf_idx++] = ':';
 						break;
 					case 40:
 						kprintf("%c", '"');
+						char_buf[buf_idx++] = '"';
 						break;
 					case 41:
 						kprintf("%c", '~');
+						char_buf[buf_idx++] = '~';
 						break;
 					case 43:
 						kprintf("%c", '|');
+						char_buf[buf_idx++] = '|';
 						break;
 					case 51:
 						kprintf("%c", '<');
+						char_buf[buf_idx++] = '<';
 						break;
 					case 52:
 						kprintf("%c", '>');
+						char_buf[buf_idx++] = '>';
 						break;
 					case 53:
 						kprintf("%c", '?');
+						char_buf[buf_idx++] = '?';
 						break;
 					default:
 						kprintf("%c", kbdus[key] - 32);	
+						char_buf[buf_idx++] = kbdus[key] - 32;
 						break;
-//					char_buf[buf_idx++] = kbdus[key];
 				}
 			}
 			else {
@@ -503,6 +540,7 @@ void idt_init(void)
 	setup_gate(32, (uint64_t)isr32, 0);
 	setup_gate(33, (uint64_t)isr33, 0);
 	setup_gate(128, (uint64_t)isr128, 3);
+//	setup_gate(128, (uint64_t)syscall_handler, 3);
 	_x86_64_asm_lidt(&idtr);
 }
 

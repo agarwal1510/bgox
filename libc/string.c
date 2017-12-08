@@ -1,5 +1,5 @@
 #include <string.h>
-
+#include <sys/defs.h>
 void str_cpy(char *to_str, char *frm_str){
 		int i=0;
 		for(i=0;frm_str[i] != '\0'; i++){
@@ -111,4 +111,36 @@ void str_concat(char *prev, char *current, char *after, char *dest){
 		}
 		dest[i+j+k] = '\0';
 }
+char *itoa(uint64_t val, char *str, int32_t base)
+{
+    *str = '\0'; // Currently pointing to the end of string
+    if (val == 0) {
+        *--str = '0';
+        return str;
+    }
+    if (base != 10 && base != 16) {
+        return str;
+    }
+    while (val) {
+        *--str = "0123456789abcdef"[val%base];
+        val = val/base;
+    }
+    return str;
+}
+void mem_set (void *address, uint64_t value, uint64_t size) {
+		char *p = (char *)address;
+		for (uint64_t i = 0; i< size; i++)
+				*p++ = (char)value;
+}
 
+void *memcpy(void *destination, void *source, uint64_t num) 
+{
+    uint8_t *dest = (uint8_t *)destination;
+    uint8_t *src = (uint8_t *)source;
+
+    while(num--) {
+        *dest++ = *src++; 
+    }
+
+    return destination;
+}

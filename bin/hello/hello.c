@@ -1,9 +1,9 @@
 #include<stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
-#include <sys/utils.h>
+#include <string.h>
 #define COMM_LEN 50
-
+/*
 void str_cpy(char *to_str, char *frm_str){
 		int i=0;
 		for(i=0;frm_str[i] != '\0'; i++){
@@ -116,7 +116,7 @@ void str_concat(char *prev, char *current, char *after, char *dest){
 		dest[i+j+k] = '\0';
 }
 
-char* itoa(int num, char* str, int base)
+char* itoa2(int num, char* str, int base)
 {
     int i = 0;
     bool isNegative = false;
@@ -155,81 +155,65 @@ char* itoa(int num, char* str, int base)
  
     return str;
 }
-
+*/
 int main(int argc, char *argv[], char *envp[]){
-
-		char input[COMM_LEN] = {0};
-		char split_cmd[2][COMM_LEN];
-		char cmd[COMM_LEN];
-		char pets[50];
+		
+//		char pets[50];
+				char input[COMM_LEN] ;
+				char cmd[COMM_LEN] ;
+				char arg[COMM_LEN] ;
 		while(1){
 				for(int i = 0; i < COMM_LEN; i++){
-						input[i] = 0;
-						cmd[i] = 0;
+					input[i] = '\0';
+					cmd[i] = '\0';
+					arg[i] = '\0';
 				}
 				read(0, input, COMM_LEN);
 				if (input[0] == '\n')
 					continue;
 				else if (str_len(input) >= COMM_LEN){
-					print(1, "\noxTerm: Careful with command lengths !\n");
+					printf("\noxTerm: Careful with command lengths !\n");
 					continue;
 				}
-				str_substr(input, 0, str_len(input)-2, cmd);
-				int i, prev_ptr = 0, arg_ctr = 0;
-				for(i=0; cmd[i] != '\0'; i++){
-						if (cmd[i] == '\t' || cmd[i] == ' '){
-								str_substr(cmd, prev_ptr, i-1, split_cmd[arg_ctr++]);
-								prev_ptr = i+1;
-								break;
-						}
-						else if (cmd[i+1] == '\0'){
-								str_substr(cmd, prev_ptr, i, split_cmd[arg_ctr++]);
-								prev_ptr = i+1;
-								break;	
-						}
-				}
-				if (arg_ctr > 0)
-					str_substr(cmd, prev_ptr, str_len(cmd)-1, split_cmd[arg_ctr++]);
-				else
-					str_substr(cmd, 0, str_len(cmd)-1, split_cmd[arg_ctr++]);
+				int delim = strfind_delim(input, 0);
+				str_substr(input, 0, delim-1, cmd);
+				str_substr(input, delim+1, str_len(input), arg);
+				cmd[delim] = '\0';	
+				arg[str_len(input)-delim-2] = '\0';
+				printf("%s","");
+	//			printf("delim %s", cmd);
+	//			printf("delim %s", arg);
+//				while(1);
+//				str_substr(input, 0, str_len(input)-2, cmd);
+//				int i, prev_ptr = 0, arg_ctr = 0;
+//				for(i=0; cmd[i] != '\0'; i++){
+//						if (cmd[i] == '\t' || cmd[i] == ' '){
+//								str_substr(cmd, prev_ptr, i-1, split_cmd[arg_ctr++]);
+//								prev_ptr = i+1;
+//								break;
+//						}
+//						else if (cmd[i+1] == '\0' || cmd[i+1] == '\n'){
+//								str_substr(cmd, prev_ptr, i, split_cmd[arg_ctr++]);
+//								prev_ptr = i+1;
+//								break;	
+//						}
+//				}
+//				if (arg_ctr > 0)
+//					str_substr(cmd, prev_ptr, str_len(cmd)-1, split_cmd[arg_ctr++]);
+//				else
+//					str_substr(cmd, 0, str_len(cmd)-1, split_cmd[arg_ctr++]);
 				
 				pid_t pid = 1;
-
-						itoa(arg_ctr, pets, 10);
-						if (argc > 0)
-							print(1, argv[0]);
-//						print(pets);
-//						print(split_cmd[0]);
-//						print(split_cmd[1]);
-//						print("done");
-//						print(pets);
-//						print(split_cmd[arg_ctr-1]);
 				pid = fork();
-
 				if (pid == 0){
-//						print("hi there");	
-//						while(1);
-	//					print("second");
-//						if (arg_ctr > 1){
-							execvp(split_cmd[0], split_cmd[1]);
-//						}
-//						else
-//							exec(split_cmd[0]);
-//						print("here");
-						while(1);
+							execvp(cmd, arg);
 				}
 				else{
 						//		print(pids);
 						yield();
 //						while(1);
 						waitpid(0);
-//						while(1);
-	//					print("below yield");
 				}
-	//			for(int i = 0; i < COMM_LEN; i++){
-	//					input[i] = 0;
-	//					cmd[i] = 0;
-	//			}
 		}
 		//	waitpid(0);
 		exit(1);

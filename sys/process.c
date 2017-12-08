@@ -6,7 +6,7 @@
 #include <sys/paging.h>
 #include <sys/utils.h>
 
-extern void isr128(void);
+extern void isr32(void);
 void switch_to(task_struct *next, task_struct *me, int first_switch);
 
 ready_task *queue_head = NULL;
@@ -84,7 +84,7 @@ void delete_from_task_list(uint64_t pid) {
 		temp = temp->next;
 	}
 	if (temp == NULL) {
-		kprintf("Process with PID:%d not found\n", pid);
+		kprintf("Process with PID: %d not found\n", pid);
 	} else {
 		if (temp == previous) {
 			temp = queue_head;
@@ -295,7 +295,7 @@ uint64_t sys_fork() {
 	
 	add_to_task_list(child);
 	
-	struct page *pt_page = (struct page*) kmalloc(1);
+	struct page *pt_page = (struct page*) kmalloc(sizeof(struct page));
 	uint64_t *pml4a = (uint64_t *)(pt_page);
 	for (uint64_t i = 0; i < PAGES_PER_PML4; i++) {
 		pml4a[i] = 0;
@@ -372,7 +372,7 @@ uint64_t sys_fork() {
 //	child->kstack[494] = temp_kstack[493];
 //	child->kstack[493] = temp_kstack[492];
 //	child->kstack[492] = temp_kstack[491];
-	child->kstack[491] = (uint64_t)(&isr128+29);
+	child->kstack[491] = (uint64_t)(&isr32+29);
 
 	child->rsp = &(child->kstack[491]);
 //	child->rsp = &(child->kstack[491]);
