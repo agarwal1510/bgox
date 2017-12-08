@@ -1,6 +1,9 @@
 #include <sys/syscall.h>
-#include <unistd.h>
+#include <sys/tarfs.h>
 
-#define __NR_close 6
+DEFN_SYSCALL1(close, 36, file *);
 
-_syscall1(int, close, int, fd);
+int close(file *fd) {
+	int ret = syscall_close(fd);
+	return ret;
+}

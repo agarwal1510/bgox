@@ -3,6 +3,7 @@
 
 #include <sys/kprintf.h>
 #include <sys/defs.h>
+#include <sys/tarfs.h>
 
 typedef struct registers
 {

@@ -295,7 +295,7 @@ void syscall_handler(void) {
 					int bread = 2048;
 					char readbuf[bytes];
 					while(bread >= bytes){
-							bread = read(fd, readbuf, bytes);
+							bread = read_file(fd, readbuf, bytes);
 							kprintf("%s", readbuf);
 					}
 					close(fd);
@@ -378,6 +378,59 @@ void syscall_handler(void) {
 				:"cc", "memory"
 				); 
 		//kprintf("pid %d", pid);
+	 } else if (syscall_num == 34) { //open
+	 	file *fd = open((char *)buf);
+		__asm__ volatile (
+				"movq %0, %%rax;"
+				:
+				:"a" ((uint64_t)fd)
+				:"cc", "memory"
+				); 
+
+	 } else if (syscall_num == 36) { //close
+	 	int status = close((file *)buf);
+		__asm__ volatile (
+				"movq %0, %%rax;"
+				:
+				:"a" ((uint64_t)status)
+				:"cc", "memory"
+				); 
+
+	 } else if (syscall_num == 38) { //read-file
+	 	size_t size = read_file((file *)buf, (void *)third, (size_t)fourth);
+		__asm__ volatile (
+				"movq %0, %%rax;"
+				:
+				:"a" ((uint64_t)size)
+				:"cc", "memory"
+				); 
+	 } else if (syscall_num == 40) { //opendir
+		uint64_t ret = opendir((char *)buf);
+		__asm__ volatile (
+				"movq %0, %%rax;"
+				:
+				:"a" ((uint64_t)ret)
+				:"cc", "memory"
+				); 
+	 	
+	 } else if (syscall_num == 42) { //read_dir
+	 	uint64_t ret = read_dir((uint64_t)buf);
+		__asm__ volatile (
+				"movq %0, %%rax;"
+				:
+				:"a" ((uint64_t)ret)
+				:"cc", "memory"
+				); 
+	 } else if (syscall_num == 44) { //closedir
+	 	kprintf("a\n");
+	 	uint64_t ret = closedir((uint64_t)buf);
+		kprintf("b\n");
+		__asm__ volatile (
+				"movq %0, %%rax;"
+				:
+				:"a" ((uint64_t)ret)
+				:"cc", "memory"
+				); 
 	 }
 	
 
