@@ -42,7 +42,7 @@ void idle_proc(){
 }
 
 void load_sbush() {
-  file* fd = open("bin/hello");
+  file* fd = open("bin/oxterm");
   char *argv1 = "myargs";
   char *argv[1] = {argv1};
   task_struct *pcb_hello = elf_parse(fd->addr+512,(file *)fd->addr, 0, argv);

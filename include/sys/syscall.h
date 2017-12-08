@@ -54,6 +54,7 @@ uint64_t syscall_##fn(P1 p1, P2 p2, P3 p3) \
 
 DECL_SYSCALL0(ls)
 DECL_SYSCALL0(ps)
+DECL_SYSCALL0(clear)
 DECL_SYSCALL1(echo, const char*)
 DECL_SYSCALL1(cat, const char *)
 DECL_SYSCALL1(sleep, const char *)

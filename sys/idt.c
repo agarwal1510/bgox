@@ -380,6 +380,9 @@ void syscall_handler(void) {
 		else
 			sys_kill(atoi(out));
 	}
+	else if (syscall_num == 26) {
+			clear_screen();
+	}
 	
 
 }
