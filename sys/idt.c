@@ -470,19 +470,17 @@ void syscall_handler(void) {
 				:"cc", "memory"
 				); 
 	 } else if (syscall_num == 44) { //closedir
-	 	kprintf("a\n");
 	 	uint64_t ret = closedir((uint64_t)buf);
-		kprintf("b\n");
 		__asm__ volatile (
 				"movq %0, %%rax;"
 				:
 				:"a" ((uint64_t)ret)
 				:"cc", "memory"
 				); 
+	 } 
+	 else if (syscall_num == 46) { //clear
+	 	clear_screen();
 	 }
-	else if (syscall_num == 34) {
-			clear_screen();
-	}
 	
 
 }

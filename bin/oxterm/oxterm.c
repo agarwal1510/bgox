@@ -2,6 +2,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/tarfs.h>
 #define COMM_LEN 50
 
 int main(int argc, char *argv[], char *envp[]){
@@ -39,22 +40,6 @@ int main(int argc, char *argv[], char *envp[]){
 				else{
 						//		print(pids);
 					yield();
-					//printf("Ppid: %d\n", getppid());
-					//while(1);
-					/*char *filename = "nigga";
-                                         file *fd = open((filename));
-                                         if (fd != NULL) {
-                                                 printf("success");
-                                         } else {
-                                                 printf("null");
-                                         }
-                                         char buffer[10];
-                                         read_file(fd, (void *)buffer, 10);
-                                         printf("B: %s", buffer);
-                                         close(fd);*/
-                                         uint64_t ret = opendir("bin/");
-                                         read_dir(ret);
-                                         closedir(1);
 					wait();
 					//printf("status:%d\n", status);
 					//waitpid(0);
