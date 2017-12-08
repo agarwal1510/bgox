@@ -52,7 +52,23 @@ void memcpy(void *dest, void* src, uint64_t size ){
 }
 
 void memset (void *address, uint64_t value, uint64_t size) {
-         unsigned char *p = address;
+         char *p = (char *)address;
          for (uint64_t i = 0; i< size; i++)
-             *p++ = (unsigned char)value;
+             *p++ = (char)value;
+}
+char *itoa(uint64_t val, char *str, int32_t base)
+{
+    *str = '\0'; // Currently pointing to the end of string
+    if (val == 0) {
+        *--str = '0';
+        return str;
+    }
+    if (base != 10 && base != 16) {
+        return str;
+    }
+    while (val) {
+        *--str = "0123456789abcdef"[val%base];
+        val = val/base;
+    }
+    return str;
 }

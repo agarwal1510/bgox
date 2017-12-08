@@ -111,7 +111,7 @@ void print_seq(const char * seq, int x, int y){
 		move_csr();
 //		update_cursor(X,Y);
 }
-int itoa(unsigned long long num, char *dest, int base){
+int itoap(unsigned long long num, char *dest, int base){
 	unsigned long long i = 0;
 	if (num == 0){
 		dest[i++] = '0';
@@ -154,7 +154,7 @@ void kprintf_boott(const char *seq, int sec){
 	int x = 100;
 	char time_str[FMT_LEN];
 	char boots[FMT_LEN];
-	itoa(sec, boots, 10);
+	itoap(sec, boots, 10);
 	str_concat(seq, boots, time_str);
 	const char *temp1 = time_str;
 	char* temp2 = (char*)vd_addr + y*160 + x;	
@@ -194,7 +194,7 @@ void kprintf_at(const char *fmt, ...)
 					const unsigned long long num = va_arg(al, unsigned long long);
 
 					char temp_tr[FMT_LEN];
-					itoa(num, temp_tr, base);
+					itoap(num, temp_tr, base);
 					
 					str_concat(temp_tr, const_trail, str);
 					char final_str[FMT_LEN];
@@ -249,7 +249,7 @@ void kprintf(const char *fmt, ...)
 
 					const unsigned long long num = va_arg(al, uint64_t);
 					char temp_tr[FMT_LEN];
-					itoa(num, temp_tr, base);
+					itoap(num, temp_tr, base);
 					
 					str_concat(temp_tr, const_trail, str);
 					char final_str[FMT_LEN];

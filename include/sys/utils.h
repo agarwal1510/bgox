@@ -10,6 +10,6 @@ uint64_t get_ending_page(uint64_t addr);
 
 void memcpy(void *dest, void* src, int size );
 void memset (void *address, int value, int size);
-
+char *itoa(uint64_t val, char *str, int32_t base);
 
 #endif

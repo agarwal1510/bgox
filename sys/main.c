@@ -16,7 +16,7 @@
 #include <sys/strings.h>
 #include <sys/memutils.h>
 
-extern void isr128(void);
+extern void isr32(void);
 uint32_t* loader_stack;
 extern char kernmem, physbase;
 
@@ -42,10 +42,10 @@ void idle_proc(){
 }
 
 void load_sbush() {
-  file* fd = open("bin/hello");
+  file* fd = open("bin/oxterm");
   char *argv1 = "myargs";
   char *argv[1] = {argv1};
-  task_struct *pcb_hello = elf_parse(fd->addr+512,(file *)fd->addr, 1, argv);
+  task_struct *pcb_hello = elf_parse(fd->addr+512,(file *)fd->addr, 0, argv);
   pcb_hello->pid = 1;
   pcb_hello->ppid = 0;
 //  kprintf("elf %d %d", pcb_hello->ppid, pcb_hello->pid);
@@ -93,7 +93,7 @@ void start(uint32_t *modulep, void *physbase, void *physfree)
   pcb_boot->kstack[510] = (uint64_t)&(pcb_boot->kstack[511]);
   pcb_boot->kstack[509] = 0x200202UL;
   pcb_boot->kstack[507] = (uint64_t)&idle_proc;
-  pcb_boot->kstack[491] = (uint64_t)(&isr128+29);
+  pcb_boot->kstack[491] = (uint64_t)(&isr32+29);
   pcb_boot->rsp = &(pcb_boot->kstack[491]);
   pcb_boot->is_sleeping = 0;
   pcb_boot->sleep_time = 0;
@@ -131,23 +131,6 @@ void start(uint32_t *modulep, void *physbase, void *physfree)
   clear_screen();
   schedule(1);
 
-  //TODO disable interrupts before this and renable after pushf using EFLAGS;
-  /*  __asm__ __volatile__("mov $0x23, %ax\n"
-	  "mov %ax, %ds\n"
-	  "mov %ax, %es\n"
-	  "mov %ax, %fs\n"
-	  "mov %ax, %gs\n"
-	  "mov %rsp, %rax\n"
-	  "push $0x23\n"
-	  "push %rax\n"
-	  "pushf\n"
-	  "push $0x1B\n"
-	  "push $1f\n"
-	  "iretq\n"
-	  "1:\n");
-
-	  syscall_kprintf("Teri maa ki chut\n");
-   */
   // while(1){}
   //  switch_user_thread();
  kprintf("All Tasks done scheduling\n");

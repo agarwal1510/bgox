@@ -8,7 +8,7 @@
 #include <sys/strings.h>
 #include <sys/paging.h>
 //#include <sys/threads.h>
-extern void isr128(void);
+extern void isr32(void);
 
 int elf_check_file(Elf64_Ehdr *elfhdr){
 
@@ -69,7 +69,7 @@ task_struct *elf_run_bin(uint64_t addr, file *fileptr, int argc, char *argv[]){
 //	kprintf("**elf running task %d**", parent->pid);
 	
 	Elf64_Ehdr *elfhdr = (Elf64_Ehdr *)addr;
-	struct page *process_page = (struct page *)kmalloc(1);
+	struct page *process_page = (struct page *)kmalloc(sizeof(struct page));
 
 	task_struct *pcb = (task_struct *)kmalloc(sizeof(task_struct));
 
@@ -98,7 +98,6 @@ task_struct *elf_run_bin(uint64_t addr, file *fileptr, int argc, char *argv[]){
 
 	pml4a[PAGES_PER_PML4 - 1] = (uint64_t)(ker_pml4_t[511]);
 	
-	pcb->ustack = (uint64_t*)kmalloc_stack(1, pml4a);
 //	kprintf("stack: %p", pcb->ustack);
 
 //	init_map_virt_phys_addr(0xFFFFFFFF800B8000, 0xB8000, 1, pml4a,0);
@@ -108,6 +107,7 @@ task_struct *elf_run_bin(uint64_t addr, file *fileptr, int argc, char *argv[]){
 	pcb->is_waiting = 0;
 	pcb->sleep_time = 0;
 	pcb->is_sleeping = 0;
+	pcb->ustack = (uint64_t*)kmalloc_stack(1, pcb->pml4);
 //	kprintf("pcb->ustack %p %p", pcb->ustack, PADDR(pcb->ustack));
 //	init_map_virt_phys_addr((uint64_t)pcb->ustack, PADDR(pcb->ustack), 2, (uint64_t *)pcb->pml4, 1);
 //	init_map_virt_phys_addr((uint64_t)pcb->ustack, PADDR(pcb->ustack), 2, ker_pml4_t, 1);
@@ -136,7 +136,7 @@ task_struct *elf_run_bin(uint64_t addr, file *fileptr, int argc, char *argv[]){
 	}
 	int j = argc+1;
 	for(int i = 1; i < 15; i++){
-		pcb->kstack[506 - argc - i] = j++;
+		pcb->kstack[506 - argc - i] = ++j;
 	}
 //	for(int i = 0; i < 15; i++)
 //		kprintf("%p ", pcb->kstack[491 + i]);
@@ -146,7 +146,7 @@ task_struct *elf_run_bin(uint64_t addr, file *fileptr, int argc, char *argv[]){
 //	pcb->kstack[498] = 9; pcb->kstack[497] = 10; pcb->kstack[496] = 11; pcb->kstack[495] = 12; 
 //	pcb->kstack[494] = 13; pcb->kstack[493] = 14; pcb->kstack[492] = 15; 
 
-	pcb->kstack[491] = (uint64_t)(&isr128+29); 
+	pcb->kstack[491] = (uint64_t)(&isr32+29); 
 
 	//pcb->rsp = (&pcb->kstack[493]);
 	pcb->rsp = &(pcb->kstack[491]);

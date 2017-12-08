@@ -1,6 +1,10 @@
-#include <fcntl.h>
 #include <sys/syscall.h>
+#include <sys/tarfs.h>
 
-#define __NR_open 5
+DEFN_SYSCALL1(open, 34, char *)
 
-_syscall2(int, open, const char *, pathname, int, flags);
+file *open(char *filename) {
+	uint64_t ret = syscall_open(filename);
+	return (file *)ret;
+}
+

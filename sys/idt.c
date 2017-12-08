@@ -18,6 +18,7 @@
 #include <sys/mem.h>
 #include <sys/env.h>
 #include "kb_map.h"
+#define MAX_SCRIPT_CMDS 50
 extern int X;
 extern int Y;
 extern void load_idt(unsigned long *idt_ptr);
@@ -39,11 +40,11 @@ extern void isr17(void);
 extern void isr18(void);
 extern void isr19(void);
 extern void isr20(void);
-extern void isr128(void);
 extern void isr14(void);
 extern void isr13(void);
 extern void isr32(void);
 extern void isr33(void);
+extern void isr128(void);
 extern void pusha(void);
 extern void popa(void);
 
@@ -52,12 +53,11 @@ void timer_init();
 extern unsigned char kbdus[128];
 
 static char char_buf[1024];
-static char char_err_buf[1024];
+//static char char_err_buf[1024];
 
 static volatile int buf_idx = 0;
 static volatile int buf_err_idx = 0;
 static volatile int new_line = 0;
-
 int SHIFT_ON = 0;
 int CTRL_ON = 0;
 int is_bg = 0;
@@ -171,76 +171,147 @@ void irq_timer_handler(void){
 }
 
 void syscall_handler(void) {
-	uint64_t syscall_num = 0;
-	uint64_t buf, third, fourth;
-	//Save register values
-	__asm__ volatile("movq %%rax, %0;"
-			"movq %%rbx, %1;"
-			"movq %%rcx, %2;"
-			"movq %%rdx, %3;"
-			: "=g"(syscall_num),"=g"(buf), "=g"(third), "=g"(fourth)
-			:
-			:"rax","rbx", "rcx", "rdx");
-	
-	if (syscall_num == 1){ // Write
-		if (buf == 1)
-			kprintf("%s", (char *)third);
-		else{
-			memcpy(char_err_buf, (char*)third, str_len((char*)third));
-			buf_err_idx = str_len((char*)third);
-			kprintf("STDERR: %s", char_err_buf);
-			buf_err_idx = 0;
+		uint64_t syscall_num = 0;
+		uint64_t buf, third, fourth;
+		//Save register values
+		__asm volatile("movq %%rax, %0;"
+						"movq %%rbx, %1;"
+						"movq %%rcx, %2;"
+						"movq %%rdx, %3;"
+						: "=g"(syscall_num),"=g"(buf), "=g"(third), "=g"(fourth)
+						:
+						:"rax","rsi","rcx", "rdx"
+					  );
+		//	__asm__ volatile("movq %%rax, %0;"
+		///					"movq %%rbx, %1;"
+		//		"movq %%rcx, %2;"
+		//			"movq %%rdx, %3;"
+		//			: "=g"(syscall_num),"=g"(buf), "=g"(third), "=g"(fourth)
+		//			:
+		//			:"rbx", "rcx", "rdx");
+
+		if (syscall_num == 1){ // WRITE
+				int written = 0;
+				char sub[str_len((char*)third)];
+				if (fourth >= str_len((char*)third)){
+						str_cpy(sub, (char*)third);
+						written = str_len((char*)third);
+				}
+				else{
+						str_substr((char*)third, 0, fourth, sub);
+						written = str_len((char*)sub);
+				}
+				if (buf == 1){
+						kprintf("%s", sub);
+				}
+				else{
+						kprintf("STDERR: %s", sub);
+				}
+				__asm__ volatile (
+								"movq %0, %%rax;"
+								:
+								:"a" ((uint64_t)written)
+								:"cc", "memory"
+								); 
 		}
-		return;
-	}
-	else if (syscall_num == 2){
+		else if (syscall_num == 2){ //READ
 				__asm__("sti");
 				kprintf(PS1);
 				char *buf_cpy = (char *)third;
 				int line = 0, idx = 0;
 				while(line == 0 && idx < fourth){
-				//poll
-					line = new_line;
-					idx = buf_idx;
+						//poll
+						line = new_line;
+						idx = buf_idx;
 				}
 				memcpy(buf_cpy, char_buf, str_len(char_buf));
 				memset(char_buf, 0, 1024);
 				buf_idx = 0;
 				new_line = 0;
-//				__asm__ volatile("movq %0, %%rax;"::"r"(str_len(char_buf)));
-	}
-	else if (syscall_num == 4) {
+				__asm__ volatile (
+								"movq %0, %%rax;"
+								:
+								:"a" ((uint64_t)str_len(char_buf))
+								:"cc", "memory"
+								); 
+				//		__asm__("cli");
+				//				__asm__ volatile("movq %0, %%rax;"::"r"(str_len(char_buf)));
+		}
+		else if (syscall_num == 4) { //fork
 		sys_fork();
 	}
-	else if (syscall_num == 6){
+	else if (syscall_num == 6){ //yield
 		schedule(0);
 	}
-//	else if (syscall_num == 7){
-//		kprintf("exec");
-//
-//	}
-	else if (syscall_num == 7 || syscall_num == 8){
-	//	kprintf("execvp called for %s %s\n", buf, ((char*)third));
+	else if (syscall_num == 7 || syscall_num == 8){ //exec
+//		kprintf("execvp called for %s %s\n", buf, ((char*)third));
 		char cmd[50];
 		str_concat(PATH, (char*)buf, cmd);
 		file* fd = open((char *)cmd);
 		if (fd == NULL){
-			kprintf("oxTerm error: Command %s not found\n", buf);
-			sys_exit(1);
+				kprintf("oxTerm error: Command %s not found\n", buf);
+				sys_exit(1);	
 		}
-		else{
+/*		if (fd == NULL){ // Executes Scripts
+			file *fd_sc = (file*)open((char*)buf);
+			if (fd_sc == NULL){
+				kprintf("oxTerm error: Command %s not found\n", buf);
+				sys_exit(1);
+			}
+			else{
+					char shebang[50];
+					if (readline(fd_sc, shebang, 50) > 0){
+							if (str_cmp("!#bin/oxTerm", shebang) > 0){
+									kprintf("shebang");
+									task_struct *parsed[MAX_SCRIPT_CMDS];
+									task_struct *parent = get_running_task();
+									int idx = 0;
+									while(readline(fd_sc, shebang, 50) > 0){
+											char task[50] = {0};
+											str_concat(PATH, shebang, task);
+											file* cmd = (file*)open(task);
+											if (cmd == NULL){
+													kprintf("oxTerm error: Command %s not found\n", buf);
+													sys_exit(1);
+											}
+											else{
+													file *tfd = open(task);
+													char *argv[1] = {""};
+													parsed[idx++] = elf_parse(tfd->addr+512, (file*)tfd->addr, 0, argv);
+													parsed[idx]->pid = parent->pid;
+													parsed[idx]->ppid = parent->ppid;	
+											}
+											for(int i = 0; i < 50; i++){
+												shebang[i] = 0;
+											}
+									}
+									delete_curr_from_task_list();
+									for(int i = 0; i < idx; i++){
+											add_to_task_list(parsed[i]);
+									}
+									close(fd_sc);
+							}
+							else{
+								kprintf("oxTerm err: Trying to execute invalid oxTerm script\n");
+								sys_exit(1);
+							}
+					}
+			}
+		}
+*/		else{
 			task_struct *parent = get_running_task();
 			PID--; // Since pcb_exec increases PID by one on assignment
 			char argument[50];
-			memcpy(argument, (char*)third, str_len((char*)third));
+			str_cpy(argument, (char*)third);
 //			while(1);
 			char *argv[1] = {(char*)argument};
 			task_struct *pcb_exec;
 //			char argument[10];
 //			memcpy(argument, (char*)third, str_len((char*)third));
 //			kprintf("\nargs:%s %s\n", argument, buf);
-			if (str_len((char*)argument) > 0 && str_cmp((char*)argument, (char*)buf) < 0 )
-				pcb_exec = elf_parse(fd->addr+512,(file *)fd->addr, 1, argv);
+			if (str_len((char*)argument) > 0 && str_cmp((char*)argument, (char*)buf) < 0 ){	
+					pcb_exec = elf_parse(fd->addr+512,(file *)fd->addr, 1, argv);
+				}
 			else
 				pcb_exec = elf_parse(fd->addr+512,(file *)fd->addr, 0, argv);
 			pcb_exec->pid = parent->pid;
@@ -252,7 +323,7 @@ void syscall_handler(void) {
 			schedule(1);
 		}
 	} 
-	else if (syscall_num == 10) {
+	else if (syscall_num == 10) { //exit
 		//while(1);
 		//kprintf("Exit called");
 		sys_exit(buf);
@@ -260,7 +331,7 @@ void syscall_handler(void) {
 	else if (syscall_num == 12){
 		list_dir();
 	}
-	else if (syscall_num == 14){
+	else if (syscall_num == 14){ 
 			char cmd_args[2][FMT_LEN];
 
 			str_split_delim((char*)buf, ' ', cmd_args);
@@ -272,7 +343,7 @@ void syscall_handler(void) {
 					int bread = 2048;
 					char readbuf[bytes];
 					while(bread >= bytes){
-							bread = read(fd, readbuf, bytes);
+							bread = read_file(fd, readbuf, bytes);
 							kprintf("%s", readbuf);
 					}
 					close(fd);
@@ -284,11 +355,17 @@ void syscall_handler(void) {
 	else if (syscall_num == 18){
 		print_task_list(); //ps
 	}
-	else if (syscall_num == 20) {
-//		kprintf("waitId: %d %d", buf, third);
-		sys_waitpid(buf, is_bg);
+	else if (syscall_num == 20) { //waitpid
+		pid_t pid = sys_waitpid(buf, is_bg);
+		__asm__ volatile (
+				"movq %0, %%rax;"
+				:
+				:"a" ((uint64_t)pid)
+				:"cc", "memory"
+				); 
+		//kprintf("pid %d", pid);
 		//is_bg = 0;
-	} else if (syscall_num == 22) {
+	} else if (syscall_num == 22) { //sleep
 		char cmd_args[2][FMT_LEN];
 		str_split_delim((char*)buf, ' ', cmd_args);
 //		kprintf("args:%d", atoi(cmd_args[0]));
@@ -299,7 +376,7 @@ void syscall_handler(void) {
 			is_bg = 0;
 		}
 		sys_sleep(atoi(cmd_args[0]));
-	} else if (syscall_num == 24) {
+	} else if (syscall_num == 24) { //kill
 			char cmd_args[3][FMT_LEN];
 			char out[3];
 			str_split_delim((char*)buf, ' ', cmd_args);
@@ -308,16 +385,104 @@ void syscall_handler(void) {
 			kprintf("oxTerm: Usage: kill -9 PID\n");
 		else
 			sys_kill(atoi(out));
-	}
-/*	
-	if (syscall_num == 2) { //Fork
-	
-	} else if (syscall_num == 3) { //Read
+	} else if (syscall_num == 26) { //getpid
+                 uint32_t pid = get_running_task()->pid;
+		__asm__ volatile (
+				"movq %0, %%rax;"
+				:
+				:"a" ((uint64_t)pid)
+				:"cc", "memory"
+				); 
+         } else if (syscall_num == 28) { //getppid
+                 pid_t ppid = get_running_task()->ppid;
+		__asm__ volatile (
+				"movq %0, %%rax;"
+				:
+				:"a" ((uint64_t)ppid)
+				:"cc", "memory"
+				); 
+         } else if (syscall_num == 30) { //gets
+                 __asm__("sti");
+                 kprintf(PS1);
+                 char *buf_cpy = (char *)buf;
+                 //while(1);
+                 int line = 0;
+                 while(line == 0){
+                 //poll
+                         line = new_line;
+                         //idx = buf_idx;
+                 }
+                 memcpy(buf_cpy, char_buf, str_len(char_buf));
+                 memset(char_buf, 0, 1024);
+                 buf_idx = 0;
+                 new_line = 0;
+         } else if (syscall_num == 32) { //wait
+	 	//char *status = (char *)buf;
+		pid_t pid = sys_waitpid(0, 0);
+		__asm__ volatile (
+				"movq %0, %%rax;"
+				:
+				:"a" ((uint64_t)pid)
+				:"cc", "memory"
+				); 
+		//kprintf("pid %d", pid);
+	 } else if (syscall_num == 34) { //open
+	 	file *fd = open((char *)buf);
+		__asm__ volatile (
+				"movq %0, %%rax;"
+				:
+				:"a" ((uint64_t)fd)
+				:"cc", "memory"
+				); 
 
-	} else if (syscall_num == 4) { //Write
-		kprintf("%s", buf);
-	}
-*/
+	 } else if (syscall_num == 36) { //close
+	 	int status = close((file *)buf);
+		__asm__ volatile (
+				"movq %0, %%rax;"
+				:
+				:"a" ((uint64_t)status)
+				:"cc", "memory"
+				); 
+
+	 } else if (syscall_num == 38) { //read-file
+	 	size_t size = read_file((file *)buf, (void *)third, (size_t)fourth);
+		__asm__ volatile (
+				"movq %0, %%rax;"
+				:
+				:"a" ((uint64_t)size)
+				:"cc", "memory"
+				); 
+	 } else if (syscall_num == 40) { //opendir
+		uint64_t ret = opendir((char *)buf);
+		__asm__ volatile (
+				"movq %0, %%rax;"
+				:
+				:"a" ((uint64_t)ret)
+				:"cc", "memory"
+				); 
+	 	
+	 } else if (syscall_num == 42) { //read_dir
+	 	uint64_t ret = read_dir((uint64_t)buf);
+		__asm__ volatile (
+				"movq %0, %%rax;"
+				:
+				:"a" ((uint64_t)ret)
+				:"cc", "memory"
+				); 
+	 } else if (syscall_num == 44) { //closedir
+	 	uint64_t ret = closedir((uint64_t)buf);
+		__asm__ volatile (
+				"movq %0, %%rax;"
+				:
+				:"a" ((uint64_t)ret)
+				:"cc", "memory"
+				); 
+	 } 
+	 else if (syscall_num == 46) { //clear
+	 	clear_screen();
+	 }
+	
+
 }
 void irq_kb_handler(void){
 		outb(0x20, 0x20);
@@ -344,7 +509,8 @@ void irq_kb_handler(void){
 		if (key == 0x1d){
 			CTRL_ON = 1;
 			SHIFT_ON = 1; // should be ^C and not ^c
-			kprintf_at("%c", '^');
+			kprintf("%c", '^');
+			char_buf[buf_idx++] = '^';
 			return;
 		}
 		else if (key == 0x9d){
@@ -377,21 +543,27 @@ void irq_kb_handler(void){
 				switch (key){
 					case 2:
 						kprintf("%c", '!');
+						char_buf[buf_idx++] = '!';
 						break;
 					case 3:
 						kprintf("%c", '@');
+						char_buf[buf_idx++] = '@';
 						break;
 					case 4:
 						kprintf("%c", '#');
+						char_buf[buf_idx++] = '#';
 						break;
 					case 5:
 						kprintf("%c", '$');
+						char_buf[buf_idx++] = '$';
 						break;
 					case 6:
 						kprintf("%c", '%');
+						char_buf[buf_idx++] = '%';
 						break;
 					case 7:
 						kprintf("%c",  '^');
+						char_buf[buf_idx++] = '^';
 						break;
 					case 8:
 						kprintf("%c", '&');
@@ -399,50 +571,64 @@ void irq_kb_handler(void){
 						break;
 					case 9:
 						kprintf("%c", '*');
+						char_buf[buf_idx++] = '*';
 						break;
 					case 10:
 						kprintf("%c", '(');
+						char_buf[buf_idx++] = '(';
 						break;
 					case 11:
 						kprintf("%c", ')');
+						char_buf[buf_idx++] = ')';
 						break;
 					case 12:
 						kprintf("%c", '_');
+						char_buf[buf_idx++] = '_';
 						break;
 					case 13:
 						kprintf("%c", '+');
+						char_buf[buf_idx++] = '+';
 						break;
 					case 26:
 						kprintf("%c", '{');
+						char_buf[buf_idx++] = '{';
 						break;
 					case 27:
 						kprintf("%c", '}');
+						char_buf[buf_idx++] = '}';
 						break;
 					case 39:
 						kprintf("%c", ':');
+						char_buf[buf_idx++] = ':';
 						break;
 					case 40:
 						kprintf("%c", '"');
+						char_buf[buf_idx++] = '"';
 						break;
 					case 41:
 						kprintf("%c", '~');
+						char_buf[buf_idx++] = '~';
 						break;
 					case 43:
 						kprintf("%c", '|');
+						char_buf[buf_idx++] = '|';
 						break;
 					case 51:
 						kprintf("%c", '<');
+						char_buf[buf_idx++] = '<';
 						break;
 					case 52:
 						kprintf("%c", '>');
+						char_buf[buf_idx++] = '>';
 						break;
 					case 53:
 						kprintf("%c", '?');
+						char_buf[buf_idx++] = '?';
 						break;
 					default:
 						kprintf("%c", kbdus[key] - 32);	
+						char_buf[buf_idx++] = kbdus[key] - 32;
 						break;
-//					char_buf[buf_idx++] = kbdus[key];
 				}
 			}
 			else {
@@ -503,6 +689,7 @@ void idt_init(void)
 	setup_gate(32, (uint64_t)isr32, 0);
 	setup_gate(33, (uint64_t)isr33, 0);
 	setup_gate(128, (uint64_t)isr128, 3);
+//	setup_gate(128, (uint64_t)syscall_handler, 3);
 	_x86_64_asm_lidt(&idtr);
 }
 

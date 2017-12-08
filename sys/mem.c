@@ -169,7 +169,7 @@ struct vm_area_struct *vma_malloc(struct mm_struct *mm) {
                 return vma->vm_next;
 
         } else {
-                vma = (struct vm_area_struct *)kmalloc(1);
+                vma = (struct vm_area_struct *)kmalloc(sizeof(vm_area_struct));
                 mm->mmap = vma;
                 mm->count += 1;
                 return vma;

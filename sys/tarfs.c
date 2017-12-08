@@ -50,7 +50,7 @@ uint64_t opendir(char *dir) {
 		tarfs_e entry;
 		for(int i = 0; i < tarf_idx; i++){
 				entry = tarfs_list[i];
-				kprintf("%s %s %d\n", entry.name, dir, entry.type);
+				//kprintf("%s %s %d\n", entry.name, dir, entry.type);
 				if (entry.type == TYPE_DIRECTORY && (str_cmp(entry.name, dir) == 1)) {
 						return (uint64_t)entry.addr;
 				}
@@ -91,15 +91,16 @@ uint64_t read_dir(uint64_t addr)
 				}  
 				else if(parent >= 0 && strn_cmp(entry.name, dir, str_len(dir)) == 0){  
 					
-					kprintf("Reading contents: %s in %s\n", entry.name, dir);
+					kprintf("\n%s", entry.name);
 				}  
-		}  
+		}
+		kprintf("\n");
 		return 0;
 }
 
 
 file *open(char *filename) {
-		file* fd = (file *) kmalloc(1);
+		file* fd = (file *) kmalloc(sizeof(file));
 		tarfs_e entry;
 		for(int i = 0; i < tarf_idx; i++){
 				entry = tarfs_list[i];
@@ -129,7 +130,7 @@ int close(file *fd) {
 }
 
 
-size_t read(file* fd, void *buf, size_t bytes){
+size_t read_file(file* fd, void *buf, size_t bytes){
 	if (fd->size == 0)
 		return 0;
 	int bytestoRead = (max(bytes, fd->size - bytesdone) == fd->size - bytesdone ? bytes : fd->size - bytesdone);
@@ -142,4 +143,24 @@ size_t read(file* fd, void *buf, size_t bytes){
 	tempbuf[i] = '\0';
 	bytesdone += str_len(tempbuf)-1;
 	return bytestoRead;
+}
+
+size_t readline(file* fd, void *buf, size_t bytes){
+	if (fd->size == 0 || bytesdone - fd->size == 0)
+		return 0;
+	int bytestoRead = (max(bytes, fd->size - bytesdone) == fd->size - bytesdone ? bytes : fd->size - bytesdone);
+	char* fileaddr = (char *)(fd->addr + skip_size + bytesdone);
+	int i = 0;
+	char *tempbuf = (char *)buf;
+	for(i = 0; i < bytestoRead; i++){
+		if (*fileaddr == '\n'){
+			bytesdone++;
+			break;
+		}
+		tempbuf[i] = *fileaddr++;
+	}
+	tempbuf[i] = '\0';
+//	while(1);
+	bytesdone += str_len(tempbuf);
+	return str_len(tempbuf);
 }

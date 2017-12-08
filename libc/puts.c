@@ -1,12 +1,9 @@
 #include <stdio.h>
 #include <sys/syscall.h>
-#define __NR_write 4
+#include <unistd.h>
+#include <string.h>
 
-//DEFN_SYSCALL1(kprintf, 0, const char*);
-
-_syscall3(ssize_t, write, int, fd, const void*, buf, size_t, bytes );
 int puts(const char *s)
 {
- int ret = write(1, s, sizeof(s)-1);
-	return ret;
+	return write(1, s, str_len((char*)s));
 }
