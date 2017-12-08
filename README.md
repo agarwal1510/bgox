@@ -109,7 +109,7 @@ int execvp(char *proc, char *arg);
 
 int exec(char *proc);
 
-pid_t wait(int *status);
+pid_t wait();
 
 pid_t waitpid(int pid);
 
@@ -121,7 +121,7 @@ pid_t getppid(void);
 
 **File system Management**
 ```
-int64_t opendir(char *dir);
+uint64_t opendir(char *dir);
 
 uint64_t read_dir(uint64_t dir);
 
@@ -133,7 +133,6 @@ int close(file *fd);
 
 size_t read_file(file* fd, void *buf, size_t bytes);
 
-size_t readline(file* fd, void *buf, size_t bytes);
 ```
 ---
 
