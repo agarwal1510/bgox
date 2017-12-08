@@ -37,82 +37,104 @@ Explanation of parameters:
 
 *Supported Binaries*
 
-NAME:
+**NAME:**
 echo - displays the text passed as argument
-USAGE:
+
+**USAGE:**
 echo [STRING]
 
-NAME:
+**NAME:**
 sleep - puts the terminal process to sleep for specified amount of time
-USAGE:
-sleep [TimeinSeconds]
-sleep 10
-sleep 10 [&]optional - Puts the process to sleep in background and clears it up after time expiration
 
-NAME:
+**USAGE:**
+sleep [TimeinSeconds] [&...optional] - Puts the process to sleep in background and clears it up after time expiration
+
+**NAME:**
 cat - displays the content of the file (passed as argument)
-USAGE:
+
+**USAGE:**
 cat [filename]
 
-NAME:
+**NAME:**
 ls - displays the entire list of files from the r/o file system
-USAGE:
+
+**USAGE:**
 ls
 
-NAME:
+**NAME:**
 kill -9 - kills the process with pid specified as argument
-USAGE:
+
+**USAGE:**
 kill -9 [PID]
 
-NAME:
+**NAME:**
 ps - reports a snapshot of the processes[running, sleeping] for the system.
-USAGE:
+
+**USAGE:**
 ps
 
-NAME:
+**NAME:**
 clear - Clears the oxTerm sesion screen
-USAGE:
+
+**USAGE:**
 clear
 
 ------------------------------------
 
-*SysCalls definitions*
-
+### SysCalls definitions
+```
 STD I/O:
 
 int putchar(int c); 
+
 int puts(const char *s);
+
 void print(int stream, const char *s);
+
 int read(0, char *s, uint16_t size); //STDIN
+
 ssize_t write(int stream, const void *buf, size_t count); //STDOUT, STDERR
+
 int printf(const char *format, ...);
+
 int gets(char *s);
-
+```
 ---
 
-Process Management:
-
+**Process Management**
+```
 pid_t fork();
-int execvp(char *proc, char *arg);
-int exec(char *proc);
-pid_t wait(int *status);
-pid_t waitpid(int pid);
-pid_t getpid(void);
-pid_t getppid(void);
 
+int execvp(char *proc, char *arg);
+
+int exec(char *proc);
+
+pid_t wait(int *status);
+
+pid_t waitpid(int pid);
+
+pid_t getpid(void);
+
+pid_t getppid(void);
+```
 ---
 
-File system Management:
-
+**File system Management**
+```
 int64_t opendir(char *dir);
+
 uint64_t read_dir(uint64_t dir);
+
 uint64_t closedir(uint64_t dir);
 
 file *open(char *filename);
-int close(file *fd);
-size_t read_file(file* fd, void *buf, size_t bytes);
-size_t readline(file* fd, void *buf, size_t bytes);
 
+int close(file *fd);
+
+size_t read_file(file* fd, void *buf, size_t bytes);
+
+size_t readline(file* fd, void *buf, size_t bytes);
+```
 ---
 
 Thanks to OSDEV for their comprehensive refence for kernel development !
