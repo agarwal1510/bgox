@@ -181,29 +181,9 @@ int main(int argc, char *argv[], char *envp[]){
 				cmd[delim] = '\0';	
 				arg[str_len(input)-delim-2] = '\0';
 				printf("%s","");
-	//			printf("delim %s", cmd);
-	//			printf("delim %s", arg);
-//				while(1);
-//				str_substr(input, 0, str_len(input)-2, cmd);
-//				int i, prev_ptr = 0, arg_ctr = 0;
-//				for(i=0; cmd[i] != '\0'; i++){
-//						if (cmd[i] == '\t' || cmd[i] == ' '){
-//								str_substr(cmd, prev_ptr, i-1, split_cmd[arg_ctr++]);
-//								prev_ptr = i+1;
-//								break;
-//						}
-//						else if (cmd[i+1] == '\0' || cmd[i+1] == '\n'){
-//								str_substr(cmd, prev_ptr, i, split_cmd[arg_ctr++]);
-//								prev_ptr = i+1;
-//								break;	
-//						}
-//				}
-//				if (arg_ctr > 0)
-//					str_substr(cmd, prev_ptr, str_len(cmd)-1, split_cmd[arg_ctr++]);
-//				else
-//					str_substr(cmd, 0, str_len(cmd)-1, split_cmd[arg_ctr++]);
 				
 				pid_t pid = 1;
+
 				pid = fork();
 				if (pid == 0){
 							execvp(cmd, arg);

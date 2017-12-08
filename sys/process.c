@@ -138,6 +138,7 @@ void add_to_task_list(task_struct *process) {
 }
 
 int is_child_done(uint64_t pid) {
+//	kprintf("%d", pid);
 	int present = 0;
 	ready_task *temp = queue_head;
 	while (temp != NULL) {
@@ -159,7 +160,7 @@ int is_child_done(uint64_t pid) {
 
 void schedule(int first_switch) {
 	if (running_task == NULL) {
-//		kprintf("here");
+//		kprintf("here %d", previous->process->pid);
 		if (previous->next == NULL) {
 			running_task = queue_head;
 		} else {
@@ -174,9 +175,9 @@ void schedule(int first_switch) {
 			}
 				temp = temp->next; 
 			}
-//		if (temp->process->is_waiting > 0 && (is_child_done(temp->process->is_waiting))) {
-//			temp->process->is_waiting = 0;
-//		}
+		if (temp->process->is_waiting > 0 && (is_child_done(temp->process->is_waiting))) {
+			temp->process->is_waiting = 0;
+		}
 		//kprintf("id: %d", temp->process->pid);
 		if (temp->next != NULL) {
 			running_task = temp->next;
@@ -197,10 +198,10 @@ void schedule(int first_switch) {
 			}
 			temp = temp->next; 
 		}
-//		if (temp->process->is_waiting > 0 && (is_child_done(temp->process->is_waiting))) {
+		if (temp->process->is_waiting > 0 && (is_child_done(temp->process->is_waiting))) {
 			//kprintf("Done");
-//			temp->process->is_waiting = 0;
-//		}
+			temp->process->is_waiting = 0;
+		}
 
 		if (temp->next != NULL) {
 			previous = running_task;
@@ -430,6 +431,7 @@ void sys_exit(uint64_t status) {
 //	task_struct *current = get_running_task();
 //	kprintf("%p", running_task->process->pid);
 	delete_curr_from_task_list();
+//	kprintf("exit");
 	//PID--;
 //	running_task = queue_head;	
 //	kprintf("\nnextd: %d med: %d", running_task->process->pid, previous->process->pid);
@@ -511,7 +513,7 @@ void sys_sleep(int time) {
 //	__asm__ volatile ("movq %%rsp, %0" : "=r"(current->rsp));
 //	add_to_sleeping_queue(current);
 //	delete_curr_from_task_list();
-//	kprintf("sleep called");
+//	kprintf("sleep called %d", current->is_bg);
 	schedule(0);
 }
 
