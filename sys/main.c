@@ -42,10 +42,10 @@ void idle_proc(){
 }
 
 void load_sbush() {
-  file* fd = open("bin/hello");
+  file* fd = open("bin/oxterm");
   char *argv1 = "myargs";
   char *argv[1] = {argv1};
-  task_struct *pcb_hello = elf_parse(fd->addr+512,(file *)fd->addr, 1, argv);
+  task_struct *pcb_hello = elf_parse(fd->addr+512,(file *)fd->addr, 0, argv);
   pcb_hello->pid = 1;
   pcb_hello->ppid = 0;
 //  kprintf("elf %d %d", pcb_hello->ppid, pcb_hello->pid);
@@ -131,23 +131,6 @@ void start(uint32_t *modulep, void *physbase, void *physfree)
   clear_screen();
   schedule(1);
 
-  //TODO disable interrupts before this and renable after pushf using EFLAGS;
-  /*  __asm__ __volatile__("mov $0x23, %ax\n"
-	  "mov %ax, %ds\n"
-	  "mov %ax, %es\n"
-	  "mov %ax, %fs\n"
-	  "mov %ax, %gs\n"
-	  "mov %rsp, %rax\n"
-	  "push $0x23\n"
-	  "push %rax\n"
-	  "pushf\n"
-	  "push $0x1B\n"
-	  "push $1f\n"
-	  "iretq\n"
-	  "1:\n");
-
-	  syscall_kprintf("Teri maa ki chut\n");
-   */
   // while(1){}
   //  switch_user_thread();
  kprintf("All Tasks done scheduling\n");

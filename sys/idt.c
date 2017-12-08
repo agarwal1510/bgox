@@ -18,6 +18,7 @@
 #include <sys/mem.h>
 #include <sys/env.h>
 #include "kb_map.h"
+#define MAX_SCRIPT_CMDS 50
 extern int X;
 extern int Y;
 extern void load_idt(unsigned long *idt_ptr);
@@ -248,10 +249,56 @@ void syscall_handler(void) {
 		str_concat(PATH, (char*)buf, cmd);
 		file* fd = open((char *)cmd);
 		if (fd == NULL){
-			kprintf("oxTerm error: Command %s not found\n", buf);
-			sys_exit(1);
+				kprintf("oxTerm error: Command %s not found\n", buf);
+				sys_exit(1);	
 		}
-		else{
+/*		if (fd == NULL){ // Executes Scripts
+			file *fd_sc = (file*)open((char*)buf);
+			if (fd_sc == NULL){
+				kprintf("oxTerm error: Command %s not found\n", buf);
+				sys_exit(1);
+			}
+			else{
+					char shebang[50];
+					if (readline(fd_sc, shebang, 50) > 0){
+							if (str_cmp("!#bin/oxTerm", shebang) > 0){
+									kprintf("shebang");
+									task_struct *parsed[MAX_SCRIPT_CMDS];
+									task_struct *parent = get_running_task();
+									int idx = 0;
+									while(readline(fd_sc, shebang, 50) > 0){
+											char task[50] = {0};
+											str_concat(PATH, shebang, task);
+											file* cmd = (file*)open(task);
+											if (cmd == NULL){
+													kprintf("oxTerm error: Command %s not found\n", buf);
+													sys_exit(1);
+											}
+											else{
+													file *tfd = open(task);
+													char *argv[1] = {""};
+													parsed[idx++] = elf_parse(tfd->addr+512, (file*)tfd->addr, 0, argv);
+													parsed[idx]->pid = parent->pid;
+													parsed[idx]->ppid = parent->ppid;	
+											}
+											for(int i = 0; i < 50; i++){
+												shebang[i] = 0;
+											}
+									}
+									delete_curr_from_task_list();
+									for(int i = 0; i < idx; i++){
+											add_to_task_list(parsed[i]);
+									}
+									close(fd_sc);
+							}
+							else{
+								kprintf("oxTerm err: Trying to execute invalid oxTerm script\n");
+								sys_exit(1);
+							}
+					}
+			}
+		}
+*/		else{
 			task_struct *parent = get_running_task();
 			PID--; // Since pcb_exec increases PID by one on assignment
 			char argument[50];
@@ -262,8 +309,9 @@ void syscall_handler(void) {
 //			char argument[10];
 //			memcpy(argument, (char*)third, str_len((char*)third));
 //			kprintf("\nargs:%s %s\n", argument, buf);
-			if (str_len((char*)argument) > 0 && str_cmp((char*)argument, (char*)buf) < 0 )
-				pcb_exec = elf_parse(fd->addr+512,(file *)fd->addr, 1, argv);
+			if (str_len((char*)argument) > 0 && str_cmp((char*)argument, (char*)buf) < 0 ){	
+					pcb_exec = elf_parse(fd->addr+512,(file *)fd->addr, 1, argv);
+				}
 			else
 				pcb_exec = elf_parse(fd->addr+512,(file *)fd->addr, 0, argv);
 			pcb_exec->pid = parent->pid;
@@ -432,6 +480,9 @@ void syscall_handler(void) {
 				:"cc", "memory"
 				); 
 	 }
+	else if (syscall_num == 34) {
+			clear_screen();
+	}
 	
 
 }

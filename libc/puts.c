@@ -1,10 +1,9 @@
 #include <stdio.h>
 #include <sys/syscall.h>
-
-DEFN_SYSCALL2(putc, 1, int, const char*);
+#include <unistd.h>
+#include <string.h>
 
 int puts(const char *s)
 {
-	syscall_putc(1, s);
-	return 1;
+	return write(1, s, str_len((char*)s));
 }

@@ -51,4 +51,5 @@ uint64_t closedir(uint64_t dir);
 file *open(char *filename);
 int close(file *fd);
 size_t read_file(file* fd, void *buf, size_t bytes);
+size_t readline(file* fd, void *buf, size_t bytes);
 #endif
