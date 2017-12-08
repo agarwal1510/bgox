@@ -21,8 +21,7 @@ int printf(const char *str, ...){
         if (*ptr == '%') {
             switch (*++ptr) {
                 case 'd':
-                {
-                    // Consider negative signed integers
+             	{
                     int32_t isNegative = 0;
                     int32_t ival = va_arg(ap, int32_t);
                     char *dstr;
@@ -32,7 +31,6 @@ int printf(const char *str, ...){
                         ival = -ival;
                     }
                     dstr = itoa(ival, istr+99, 10);
-
                     if (isNegative) {
                         *--dstr = '-';
                     }
@@ -42,7 +40,6 @@ int printf(const char *str, ...){
                 }
                 case 'p':
                 {
-                    // Prepend "0x"
                     char *pstr = itoa(va_arg(ap, uint64_t), istr+99, 16);
                     *--pstr = 'x';
                     *--pstr = '0';
