@@ -1,6 +1,11 @@
 #include <sys/syscall.h>
-#include <unistd.h>
+#include <stdio.h>
 
-#define __NR_fork 2
+//_syscall0(pid_t, fork);
+DEFN_SYSCALL0(fork, 4);
 
-_syscall0(pid_t, fork);
+pid_t fork() {
+///	while(1);
+	pid_t pid = syscall_fork();
+	return pid;
+}

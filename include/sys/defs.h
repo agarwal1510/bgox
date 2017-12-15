@@ -3,7 +3,6 @@
 
 #define NULL ((void*)0)
 
-
 typedef unsigned long  uint64_t;
 typedef          long   int64_t;
 typedef unsigned int   uint32_t;
@@ -22,5 +21,7 @@ typedef int64_t ssize_t;
 typedef uint64_t off_t;
 
 typedef uint32_t pid_t;
+
+
 
 #endif

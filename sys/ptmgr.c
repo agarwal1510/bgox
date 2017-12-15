@@ -2,7 +2,7 @@
 #include <sys/defs.h>
 #include <sys/kprintf.h>
 #include <sys/ptops.h>
-#include <sys/ptmgr.h>
+#include <sys/paging.h>
 #include <sys/mem.h>
 
 uint64_t *pml4, *pdpt, *pdt;

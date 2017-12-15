@@ -1,4 +1,4 @@
-#include <sys/ptmgr.h>
+#include <sys/paging.h>
 #include <sys/defs.h>
 
 void pte_entry_add_attr(pte_entry *e, uint64_t attr){

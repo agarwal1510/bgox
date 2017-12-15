@@ -3,21 +3,24 @@
 
 #include <sys/defs.h>
 
-int open(const char *pathname, int flags);
-int close(int fd);
-ssize_t read(int fd, void *buf, size_t count);
+//int open(const char *pathname, int flags);
+//int close(int fd);
+//ssize_t read(int fd, void *buf, size_t count);
 ssize_t write(int fd, const void *buf, size_t count);
 int chdir(const char *path);
 char *getcwd(char *buf, size_t size);
 
 pid_t fork();
 int execve(const char *file, char **const argv, char **const envp);
-pid_t wait(int *status);
+int execvp(char *proc, char *arg);
+int exec(char *proc);
+//pid_t wait(int *status);
+pid_t wait();
+pid_t waitpid(int pid);
 extern char **__environ;
 #ifdef __USE_GNU
 extern char **environ;
 #endif
-unsigned int sleep(unsigned int seconds);
 
 pid_t getpid(void);
 pid_t getppid(void);
@@ -25,10 +28,11 @@ pid_t getppid(void);
 // OPTIONAL: implement for ``on-disk r/w file system (+10 pts)''
 off_t lseek(int fd, off_t offset, int whence);
 //int mkdir(const char *pathname, mode_t mode);
-int mkdir(const char *pathname, mode_t mode);
+//int mkdir(const char *pathname, mode_t mode);
 int unlink(const char *pathname);
 
 // OPTIONAL: implement for ``signals and pipes (+10 pts)''
 int pipe(int *pipefd);
+void yield();
 int dup2(int oldfd, int newfd);
 #endif

@@ -1,25 +1,65 @@
 #include <sys/kprintf.h>
 #include <sys/stdarg.h>
 #include <sys/defs.h>
+#include <sys/strings.h>
+#include <sys/paging.h>
+#include <sys/portio.h>
 
-#define FMT_LEN 100
 #define X_DEFAULT 0
 #define Y_DEFAULT 0
 int X = X_DEFAULT;
 int Y = Y_DEFAULT;
+uint64_t vd_addr = VADDR(0xb8000);
 void str_cpy(char *to_str, char *frm_str);
+void move_csr(void)
+{
+    unsigned temp;
+
+    temp = Y * 80 + X/2 + 1;
+
+    outb(0x3D4, 14);
+    outb(0x3D5, temp >> 8);
+    outb(0x3D4, 15);
+    outb(0x3D5, temp);
+}
 void scroll_up(){
+			char *init = "";
 			for(int i = 1; i < 24; i++){
-				char *next = (char*)0xb8000 + i*160;
+					char *next = (char*)vd_addr + i*160;
+					char *top = (char*)vd_addr + (i-1)*160;
+					for(int k = 0; k < 160; k++)
+							*(top + k) = *init;
 					for(int j = 0; j < 160; j++){
-						char *top = (char*)0xb8000 + (i-1)*160;
-						*(top + j) = *(next + j);
-						str_cpy((next+j),"");
+							*(top + j) = *(next + j);
+							*(next + j) = *(init);
 					}
 			}
 			Y = 23;
 			X = 0;
+		move_csr();
 }
+void clear_screen(){
+	char *init = "";
+	for(int y = 0; y < 25; y++){
+		for(int x = 0; x < 160; x++){
+			char *addr = (char*)vd_addr + y*160 + x;
+			*addr = *init;
+		}
+	}
+	X = X_DEFAULT;
+	Y = Y_DEFAULT;
+		move_csr();
+}
+void update_cursor(int x, int y)
+{
+		uint16_t pos = y *160 + x/2;
+
+		outb(0x3D4, 0x0F);
+		outb(0x3D5, (uint8_t) (pos & 0xFF));
+		outb(0x3D4, 0x0E);
+		outb(0x3D5, (uint8_t) ((pos >> 8) & 0xFF));
+}
+
 void print_seq(const char * seq, int x, int y){
 
 		int overwrite_cood = 0;
@@ -32,10 +72,10 @@ void print_seq(const char * seq, int x, int y){
 			overwrite_cood = 1;
 		}
 		const char *temp1 = seq;
+	//	if (flag == 1)
+	//		while(1);
 
-
-		char* temp2 = (char*)0xb8000 + y*160 + x;
-
+		char* temp2 = (char*)vd_addr + y*160 + x;
 		for(;*temp1; temp1 += 1) {
 			if (*temp1 == '\n'){
 		   		y++;
@@ -44,11 +84,11 @@ void print_seq(const char * seq, int x, int y){
 					scroll_up();
 					y = 23;
 				}
-				temp2 = (char*)0xb8000 + y*160 + x;
+				temp2 = (char*)vd_addr + y*160 + x;
 			}
 			else if (*temp1 == '\r'){
 		   		y = 0;
-				temp2 = (char*)0xb8000 + y*160 + x;
+				temp2 = (char*)vd_addr + y*160 + x;
 			}
 			else{
 				x +=2;
@@ -60,7 +100,7 @@ void print_seq(const char * seq, int x, int y){
 						y = 23;
 					}
 				}
-				temp2 = (char*)0xb8000 + y*160 + x;
+				temp2 = (char*)vd_addr + y*160 + x;
 				*temp2 = *temp1;
 			}
 		}
@@ -68,71 +108,10 @@ void print_seq(const char * seq, int x, int y){
 			X = x;
 			Y = y;
 		}
-
+		move_csr();
+//		update_cursor(X,Y);
 }
-void str_cpy(char *to_str, char *frm_str){
-		int i=0;
-		for(i=0;frm_str[i] != '\0'; i++){
-				to_str[i] = frm_str[i];
-		}
-		to_str[i] = '\0';
-}
-int str_len(const char *str){
-		int i=0;
-		for(i=0;str[i] != '\0';i++){
-				// spin
-		}
-		return i;
-}
-
-void str_concat(const char *prev, const char *current, char *dest){
-		int i=0;
-		int j=0;
-		for(i = 0;prev[i] != '\0';i++){
-				dest[i] = prev[i];
-		}
-		dest[i] = '\0';
-		for(j = 0;current[j] != '\0';j++){
-				dest[j + i] = current[j];
-		}
-		dest[i+j] = '\0';
-}
-int str_cmp(char* str1, char* str2){
-
-		return (*str1 == *str2 && *str1 == '\0') ? 1 : (*str1 == *str2 ? str_cmp(++str1, ++str2) : -1);
-
-}
-void str_substr(const char *str, int from, int to, char *out_str){
-		int index = 0;
-		for(int i = from; i <= to; i++){
-				out_str[index] = str[i];
-				index++;
-		}
-		out_str[index] = '\0';
-}
-int str_split_delim(const char *str, char delim, char out[][FMT_LEN]){
-		int prev_ptr = 0;
-		int i = 0;
-		int arg_ctr = 0;
-		for(i=0;str[i] != '\0';i++){
-				if (str[i] == delim){
-						str_substr(str, prev_ptr, i-1, out[arg_ctr++]);
-						prev_ptr = i;
-				}
-		}
-		str_substr(str, prev_ptr, i-1, out[arg_ctr++]);
-		return arg_ctr;
-
-}
-void str_reverse(char *str, char *dest){
-	int len = str_len(str), i=0;
-	while(i < len){
-		dest[i] = str[len - 1 - i];
-		i++;
-	}
-	dest[i] = '\0';
-}
-int itoa(unsigned long long num, char *dest, int base){
+int itoap(unsigned long long num, char *dest, int base){
 	unsigned long long i = 0;
 	if (num == 0){
 		dest[i++] = '0';
@@ -175,10 +154,10 @@ void kprintf_boott(const char *seq, int sec){
 	int x = 100;
 	char time_str[FMT_LEN];
 	char boots[FMT_LEN];
-	itoa(sec, boots, 10);
+	itoap(sec, boots, 10);
 	str_concat(seq, boots, time_str);
 	const char *temp1 = time_str;
-	char* temp2 = (char*)0xb8000 + y*160 + x;	
+	char* temp2 = (char*)vd_addr + y*160 + x;	
 	for(;*temp1; temp1 += 1) {
 				temp2 += 2;
 				x +=2;
@@ -215,7 +194,7 @@ void kprintf_at(const char *fmt, ...)
 					const unsigned long long num = va_arg(al, unsigned long long);
 
 					char temp_tr[FMT_LEN];
-					itoa(num, temp_tr, base);
+					itoap(num, temp_tr, base);
 					
 					str_concat(temp_tr, const_trail, str);
 					char final_str[FMT_LEN];
@@ -244,7 +223,8 @@ void kprintf_at(const char *fmt, ...)
 					const char* const_str = str;
 					print_seq(const_str, x, y);
 				}
-				else{print_seq(fmt_const, x, y);}
+				else{
+				print_seq(fmt_const, x, y);}
 		}
 		va_end(al);
 }
@@ -269,7 +249,7 @@ void kprintf(const char *fmt, ...)
 
 					const unsigned long long num = va_arg(al, uint64_t);
 					char temp_tr[FMT_LEN];
-					itoa(num, temp_tr, base);
+					itoap(num, temp_tr, base);
 					
 					str_concat(temp_tr, const_trail, str);
 					char final_str[FMT_LEN];

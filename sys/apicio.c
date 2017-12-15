@@ -1,5 +1,6 @@
 #include <sys/defs.h>
 #include <sys/kprintf.h>
+#include <sys/apicio.h>
 static inline void apicwrite(uint64_t *reg, uint64_t value)
 {
 		kprintf("\nWriting: %x %x\n", reg, value);
