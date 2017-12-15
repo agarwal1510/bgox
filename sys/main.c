@@ -59,6 +59,7 @@ void start(uint32_t *modulep, void *physbase, void *physfree)
     uint32_t type;
   }__attribute__((packed)) *smap;
   uint64_t last_mem_ptr = 0;
+  clear_screen();
   while(modulep[0] != 0x9001) modulep += modulep[1]+2;
   for(smap = (struct smap_t*)(modulep+2); smap < (struct smap_t*)((char*)modulep+modulep[1]+2*4); ++smap) {
     if (smap->type == 1 /* memory */ && smap->length != 0) {
@@ -72,7 +73,7 @@ void start(uint32_t *modulep, void *physbase, void *physfree)
   //uint64_t *ptr2 = kmalloc(8000);
   //kprintf("Lmalloc2 %p", ptr2);
   uint64_t num_pages = last_mem_ptr/0x1000;
-  kprintf("Num pages: %d", num_pages);
+  kprintf("Num pages: %d\n", num_pages);
   calculate_free_list(num_pages, (uint64_t)physfree);
   init_paging(KERNEL_VADDR + (uint64_t)physbase, (uint64_t)physbase, num_pages);
 

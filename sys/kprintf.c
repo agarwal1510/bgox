@@ -36,7 +36,7 @@ void scroll_up(){
 			}
 			Y = 23;
 			X = 0;
-		move_csr();
+//		move_csr();
 }
 void clear_screen(){
 	char *init = "";
@@ -108,7 +108,7 @@ void print_seq(const char * seq, int x, int y){
 			X = x;
 			Y = y;
 		}
-		move_csr();
+//		move_csr();
 //		update_cursor(X,Y);
 }
 int itoap(unsigned long long num, char *dest, int base){

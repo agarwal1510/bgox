@@ -19,7 +19,6 @@
 #define IA32_APIC_BASE_MSR_ENABLE 0x800
 uint64_t volatile *APIC_BASE = (uint64_t*)0xFEE00000;
 uint64_t volatile *IOAPIC_BASE = (uint64_t*)0xFEC00000;
-//static volatile uint64_t  *IOAPIC_BASE = (uint64_t*)0xFEC00000;
 extern void load_idt(unsigned long *idt_ptr);
 extern void isr0(void);
 extern void InitTickISR(void);
@@ -30,7 +29,7 @@ void timer_init();
 extern unsigned char kbdus[128];
 int SHIFT_ON = 0;
 int CTRL_ON = 0;
-//static AcpiMadt *s_madt;
+static AcpiMadt *s_madt;
 
 struct gate_str
 {
@@ -86,29 +85,7 @@ inline void ioapic_write(uint64_t reg, uint64_t value) //IO Apic
    ioapic[0] = (reg & 0xff);
    ioapic[4] = value;
 }
-//static inline void apicwrite(void *reg, uint64_t value)
-//{
-//		kprintf("\nWriting: %x %x\n", reg, value);
-//		uint64_t volatile *localapic = (uint64_t volatile *)reg;
-//		*localapic = value;
-//		*(volatile uint64_t *)(reg) = value;
-//}
-//static inline uint64_t apicread(void *reg)
-//{
-//		kprintf("reading: %x\n", reg);
-	//	uint64_t volatile *localapic = (uint64_t volatile *)(reg);
-//		return *(volatile uint64_t *)(reg);
-//}
 
-void irq_kb_handler(void){
-	apicwrite(LAPIC_EOI, 0);
-
-//	if (ticks % 56 == 0){
-//		sec++;
-			kprintf("Key pressed");
-//	}
-//	ticks++;
-}
 void irq_timer_handler(void){
 	apicwrite(LAPIC_EOI, 0);
 
@@ -125,117 +102,124 @@ void irq_timer_handler(void){
 //		dst[i] = source[i];
 //	}
 //}
-/*
+
 void irq_kb_handler(void){
-//	outb(0x20, 0x20);
-//	outb(0xa0, 0x20);
-
-	char status = inb(KB_STATUS);
-	if (status & 0x01){
-//		outb(KB_STATUS, 0x20);
-		unsigned int key = inb(KB_DATA);
-		if (key < 0){
-			kprintf("OOPS");
-			return;
-		}
-		if (key == 0x2a){
-			SHIFT_ON = 1;
-			return;
-		}
-		else if (key == 0xaa){
-			SHIFT_ON = 0;
-			return;
-		}
-		if (key == 0x1d){
-			CTRL_ON = 1;
-			SHIFT_ON = 1; // should be ^C and not ^c
-			kprintf_at("%c", 146, 24, '^');
-			return;
-		}
-		else if (key == 0x9d){
-			CTRL_ON = 0;
-			SHIFT_ON = 0;
-			return;
-		}
-		if (key < 0x52){ // Keys over SSH
-			if (CTRL_ON == 0)
-				kprintf_at("%c", 146, 24, ' ');
-			if (SHIFT_ON == 1){
-				switch (key){
-					case 2:
-						kprintf_at("%c", 148, 24, '!');
-						break;
-					case 3:
-						kprintf_at("%c", 148, 24, '@');
-						break;
-					case 4:
-						kprintf_at("%c", 148, 24, '#');
-						break;
-					case 5:
-						kprintf_at("%c", 148, 24, '$');
-						break;
-					case 6:
-						kprintf_at("%c", 148, 24, '%');
-						break;
-					case 7:
-						kprintf_at("%c", 148, 24, '^');
-						break;
-					case 8:
-						kprintf_at("%c", 148, 24, '&');
-						break;
-					case 9:
-						kprintf_at("%c", 148, 24, '*');
-						break;
-					case 10:
-						kprintf_at("%c", 148, 24, '(');
-						break;
-					case 11:
-						kprintf_at("%c", 148, 24, ')');
-						break;
-					case 12:
-						kprintf_at("%c", 148, 24, '_');
-						break;
-					case 13:
-						kprintf_at("%c", 148, 24, '+');
-						break;
-					case 26:
-						kprintf_at("%c", 148, 24, '{');
-						break;
-					case 27:
-						kprintf_at("%c", 148, 24, '}');
-						break;
-					case 39:
-						kprintf_at("%c", 148, 24, ':');
-						break;
-					case 40:
-						kprintf_at("%c", 148, 24, '"');
-						break;
-					case 41:
-						kprintf_at("%c", 148, 24, '~');
-						break;
-					case 43:
-						kprintf_at("%c", 148, 24, '|');
-						break;
-					case 51:
-						kprintf_at("%c", 148, 24, '<');
-						break;
-						case 52:
-						kprintf_at("%c", 148, 24, '>');
-						break;
-						case 53:
-						kprintf_at("%c", 148, 24, '?');
-						break;
-						default:
-						kprintf_at("%c", 148, 24, kbdus[key] - 32);	
-						break;
+		//	outb(0x20, 0x20);
+		//	outb(0xa0, 0x20);
+	apicwrite(LAPIC_EOI, 0);
+		char status = inb(KB_STATUS);
+		if (status & 0x01){
+				//		outb(KB_STATUS, 0x20);
+				unsigned int key = inb(KB_DATA);
+				if (key < 0){
+						kprintf("OOPS");
+						return;
+				}
+				if (key == 0x2a){
+						SHIFT_ON = 1;
+						return;
+				}
+				else if (key == 0xaa){
+						SHIFT_ON = 0;
+						return;
+				}
+				if (key == 0x1d){
+						CTRL_ON = 1;
+						SHIFT_ON = 1; // should be ^C and not ^c
+						kprintf_at("%c", 146, 24, '^');
+						return;
+				}
+				else if (key == 0x9d){
+						CTRL_ON = 0;
+						SHIFT_ON = 0;
+						return;
+				}
+				if (key < 0x52){ // Keys over SSH
+						if (CTRL_ON == 0){
+		//						kprintf_at("%c", 146, 24, ' ');
 						}
+						if (SHIFT_ON == 1){
+								switch (key){
+										case 2:
+												kprintf_at("%c", 148, 24, '!');
+												break;
+										case 3:
+												kprintf_at("%c", 148, 24, '@');
+												break;
+										case 4:
+												kprintf_at("%c", 148, 24, '#');
+												break;
+										case 5:
+												kprintf_at("%c", 148, 24, '$');
+												break;
+										case 6:
+												kprintf_at("%c", 148, 24, '%');
+												break;
+										case 7:
+												kprintf_at("%c", 148, 24, '^');
+												break;
+										case 8:
+												kprintf_at("%c", 148, 24, '&');
+												break;
+										case 9:
+												kprintf_at("%c", 148, 24, '*');
+												break;
+										case 10:
+												kprintf_at("%c", 148, 24, '(');
+												break;
+										case 11:
+												kprintf_at("%c", 148, 24, ')');
+												break;
+										case 12:
+												kprintf_at("%c", 148, 24, '_');
+												break;
+										case 13:
+												kprintf_at("%c", 148, 24, '+');
+												break;
+										case 26:
+												kprintf_at("%c", 148, 24, '{');
+												break;
+										case 27:
+												kprintf_at("%c", 148, 24, '}');
+												break;
+										case 39:
+												kprintf_at("%c", 148, 24, ':');
+												break;
+										case 40:
+												kprintf_at("%c", 148, 24, '"');
+												break;
+										case 41:
+												kprintf_at("%c", 148, 24, '~');
+												break;
+										case 43:
+												kprintf_at("%c", 148, 24, '|');
+												break;
+										case 51:
+												kprintf_at("%c", 148, 24, '<');
+												break;
+										case 52:
+												kprintf_at("%c", 148, 24, '>');
+												break;
+										case 53:
+												kprintf_at("%c", 148, 24, '?');
+												break;
+										default:
+												kprintf_at("%c", 148, 24, kbdus[key] - 32);	
+												break;
+								}
+						}
+						else if (key < 128){
+					//		kprintf("else %p", key);
+							kprintf_at("%c", 146, 24, ' ');
+							kprintf_at("%c", 148+CTRL_ON, 24, kbdus[key]);
+						}
+				}
+				else{
+	//				kprintf("key found: %p", key);
+					return;
+				}
+		}
 }
-else
-kprintf_at("%c", 148, 24, kbdus[key]);
-}
-}
-}*/
-
 void pic_init(void){ // SETUP Master and Slave PICS
 		outb(0x20, 0x11);
 		outb(0xA0, 0x11); 
@@ -248,43 +232,29 @@ void pic_init(void){ // SETUP Master and Slave PICS
 		//    outb(0x21, 0xff);
 		//	outb(0xA1, 0xff);
 }
-void pic_disable()
-{
-		/* Set OCW1 (interrupt masks) */
+void pic_disable(){
 		outb(0x21, 0xFF);
 		outb(0xA1, 0xFF);
 }
 void apic_start_timer() {
-		// Tell APIC timer to use divider 16
 		apicwrite(LAPIC_TDCR, 0x3);
 
-		// Prepare the PIT to sleep for 10ms (10000µs)
-		//    pit_prepare_sleep(10000);
 
-		// Set APIC init counter to -1
 		apicwrite(LAPIC_TICR, 0xffffffff);
 		apicwrite(LAPIC_TIMER, 0x10000);
-		// Perform PIT-supported sleep
-		//      pit_perform_sleep();
 
-		// Stop the APIC timer
 //		apicwrite(APIC_BASE + LAPIC_TIMER, 0x10000);
 		//  apicwrite(APIC_REGISTER_LVT_TIMER, APIC_LVT_INT_MASKED);
 
-		// Now we know how often the APIC timer has ticked in 10ms
-		//uint64_t ticksIn10ms = 0xFFFFFFFF - apicread(APIC_REGISTER_TIMER_CURRCNT);
 
-		// Start timer as periodic on IRQ 0, divider 16, with the number of ticks we counted
 		//    apicwrite(APIC_REGISTER_LVT_TIMER, 32 | APIC_LVT_TIMER_MODE_PERIODIC);
 		//    apicwrite(APIC_REGISTER_TIMER_DIV, 0x3);
-//		 uint64_t ticksIn10ms = 0x1;
 		apicwrite(LAPIC_TIMER, 51 | 0x20000);
 //		apicwrite(LAPIC_TIMER, 32 | 0x00000); //One - Shot
 //		apicwrite(LAPIC_TDCR, 0x3);
 		apicwrite(LAPIC_TDCR, 0x3);
 		apicwrite(LAPIC_TICR, 1193180);
-//		apicwrite(LAPIC_TICR, 0x1);
-		kprintf("timer: %p\n", apicread(LAPIC_TIMER));
+		kprintf("LAPIC Timer Val Set: %p\n", apicread(LAPIC_TIMER));
 }
 void cpuid(uint64_t a, uint64_t *b){
 		__asm__("cpuid"
@@ -352,16 +322,8 @@ void setup_gate(int32_t num, uint64_t handler_addr, unsigned dpl){
 
 void idt_init(void)
 {
-//	for(int i = 0; i < 255; i ++)
-//		setup_gate(i, (uint64_t)isr0);
-		setup_gate(50, (uint64_t)isr32, 0);
 		setup_gate(51, (uint64_t)isr32, 0);
-		setup_gate(32, (uint64_t)isr33, 0);
 		setup_gate(33, (uint64_t)isr33, 0);
-		setup_gate(34, (uint64_t)isr33, 0);
-//		setup_gate(0xff, (uint64_t)isr0);
-//		setup_gate(31, (uint64_t)isr0);
-//			setup_gate(33, (uint64_t)isr0);
 		_x86_64_asm_lidt(&idtr);
 }
 
@@ -369,32 +331,20 @@ void mask_en(void){
 		outb(0x21 , 0xFC); //11111100
 		outb(0xA1 , 0xFC); //11111100
 }
-#define IOREGSEL                        0x00
-#define IOWIN                           0x10
-
-// ------------------------------------------------------------------------------------------------
-// IO APIC Registers
-#define IOAPICID                        0x00
-#define IOAPICVER                       0x01
-#define IOAPICARB                       0x02
-#define IOREDTBL                        0x10
-
-// ------------------------------------------------------------------------------------------------
-//-----------------------------------
-/*static void IoApicOut(uint8_t reg, uint32_t val)
+static void IoApicOut(uint8_t reg, uint32_t val)
 {
-    apicwrite(base + IOREGSEL, reg);
-    apicwrite(base + IOWIN, val);
+   uint32_t volatile *ioapic = (uint32_t volatile *)IOAPIC_BASE;
+   ioapic[0] = (reg & 0xff);
+   ioapic[4] = val;
 }
 
-// ------------------------------------------------------------------------------------------------
 static uint32_t IoApicIn(uint8_t reg)
 {
-    apicwrite(base + IOREGSEL, reg);
-    return apicread(base + IOWIN);
+   uint32_t volatile *ioapic = (uint32_t volatile *)IOAPIC_BASE;
+   ioapic[0] = (reg & 0xff);
+   return ioapic[4];
 }
 
-// ------------------------------------------------------------------------------------------------
 void IoApicSetEntry(uint8_t index, uint64_t data)
 {
     IoApicOut(IOREDTBL + index * 2, (uint32_t)data);
@@ -402,16 +352,12 @@ void IoApicSetEntry(uint8_t index, uint64_t data)
 }
 void IoApicInit()
 {
-    // Get number of entries supported by the IO APIC
     uint32_t x = IoApicIn(IOAPICVER);
-    kprintf("x: %p", x);
-    int count = (((uint32_t)x >> (uint32_t)16) & 0xff) + 1;    // maximum redirection entry
+ //   kprintf("x: %p", x);
+    int count = (((uint32_t)x >> (uint32_t)16) & 0xff) + 1;
 
-
-    // Disable all entries
-    for (int i = 0; i < count; ++i)
-    {
-//    	kprintf("Here at SetEntry\n");
+	// Mask everything
+    for (int i = 0; i < count; ++i){
         IoApicSetEntry(i, 1 << 16);
     }
     kprintf("I/O APIC pins = %d\n", count);
@@ -422,44 +368,25 @@ static void AcpiParseApic(AcpiMadt *madt)
     s_madt = madt;
 
     kprintf("Local APIC Address = 0x%x\n", madt->localApicAddr);
-    APIC_BASE = (uint32_t *)(uintptr_t)madt->localApicAddr;
-
+    APIC_BASE = (uint64_t *)(uintptr_t)madt->localApicAddr;
     uint8_t *p = (uint8_t *)(madt + 1);
     uint8_t *end = (uint8_t *)madt + madt->header.length;
 
-    while (p < end)
-    {
+    while (p < end){
         ApicHeader *header = (ApicHeader *)p;
         uint8_t type = header->type;
         uint8_t length = header->length;
 
-        if (type == APIC_TYPE_LOCAL_APIC)
-        {
-            ApicLocalApic *s = (ApicLocalApic *)p;
+        if (type == APIC_TYPE_IO_APIC){
 
-            kprintf("Found CPU: %d %d %x\n", s->acpiProcessorId, s->apicId, s->flags);
-      //      if (g_acpiCpuCount < MAX_CPU_COUNT)
-       //     {
-        //        g_acpiCpuIds[g_acpiCpuCount] = s->apicId;
-         //       ++g_acpiCpuCount;
-          //  }
-        }
-        else if (type == APIC_TYPE_IO_APIC)
-        {
             ApicIoApic *s = (ApicIoApic *)p;
 
             kprintf("Found I/O APIC: %d 0x%x %d\n", s->ioApicId, s->ioApicAddress, s->globalSystemInterruptBase);
-            IOAPIC_BASE = (uint32_t *)(uintptr_t)s->ioApicAddress;
-        }
-        else if (type == APIC_TYPE_INTERRUPT_OVERRIDE)
-        {
-   //         ApicInterruptOverride *s = (ApicInterruptOverride *)p;
-
-//            kprintf("Found Interrupt Override: %d %d %d 0x%04x\n", s->bus, s->source, s->interrupt, s->flags);
-        }
-        else
-        {
-  //          kprintf("Unknown APIC structure %d\n", type);
+            IOAPIC_BASE = (uint64_t *)(uintptr_t)s->ioApicAddress;
+		}
+        else{
+//			 kprintf("Unknown APIC. Contact admin!!\n");
+//			 while(1);
         }
 
         p += length;
@@ -470,17 +397,12 @@ static void AcpiParseDT(AcpiHeader *header)
     uint32_t signature = header->signature;
 
     char sigStr[5];
+//	kprintf("%p: signature", signature);
     memcpy(sigStr, &signature, 4);
     sigStr[4] = 0;
-    kprintf("%s 0x%x\n", sigStr, signature);
+//    kprintf("%s 0x%x\n", sigStr, signature);
 
-    if (signature == 0x50434146)
-    {
-		kprintf("sig: 1\n");
-  //      AcpiParseFacp((AcpiFadt *)header);
-    }
-    else if (signature == 0x43495041)
-    {
+   	if (signature == 0x43495041){
 //		kprintf("sig2: \n");
         AcpiParseApic((AcpiMadt *)header);
     }
@@ -491,184 +413,84 @@ static void AcpiParseRsdt(AcpiHeader *rsdt)
     uint32_t *p = (uint32_t *)(rsdt + 1);
     uint32_t *end = (uint32_t *)((uint8_t*)rsdt + rsdt->length);
 
-    while (p < end)
-    {
+    while (p < end){
         uint32_t address = *p++;
+//		kprintf("header: %p", address);
+		init_map_virt_phys_addr((uint64_t)(address),(uint64_t)address, 1, ker_pml4_t, 0);
         AcpiParseDT((AcpiHeader *)(uintptr_t)address);
     }
 }
 static int AcpiParseRsdp(uint8_t *p)
 {
-    // Parse Root System Description Pointer
-//    ConsolePrint("RSDP found\n");
 
     // Verify checksum
     uint8_t sum = 0;
-    for (int i = 0; i < 20; ++i)
-    {
+    for (int i = 0; i < 20; ++i){
         sum += p[i];
     }
-
     if (sum)
-    {
-  //      ConsolePrint("Checksum failed\n");
         return 0;
-    }
-
-    // Print OEM
     char oem[7];
     memcpy(oem, p + 9, 6);
     oem[6] = '\0';
-    //ConsolePrint("OEM = %s\n", oem);
 
-    // Check version
     uint8_t revision = p[15];
-    if (revision == 0)
-    {
- //       ConsolePrint("Version 1\n");
-//		kprintf("revision 0");
+    if (revision == 0){
         uint32_t rsdtAddr = *(uint32_t *)(p + 16);
+		kprintf("RSDT: %p", rsdtAddr);
+		init_map_virt_phys_addr((uint64_t)(rsdtAddr),(uint64_t)rsdtAddr, 1, ker_pml4_t, 0);
         AcpiParseRsdt((AcpiHeader *)(uintptr_t)rsdtAddr);
-    }
-//    else if (revision == 2)
-  //  {
- //       ConsolePrint("Version 2\n");
-  //      uint32_t rsdtAddr = *(uint32_t *)(p + 16);
-//        uint64_t xsdtAddr = *(u64 *)(p + 24);
-//        if (xsdtAddr)
-//        {
-//            AcpiParseXsdt((AcpiHeader *)(uintptr_t)xsdtAddr);
-//        }
-//        else
-//        {
-//            AcpiParseRsdt((AcpiHeader *)(uintptr_t)rsdtAddr);
-//        }
-//    }
-    else
-    {
-        kprintf("Unsupported ACPI version %d\n", revision);
     }
 
     return 1;
 }
-void AcpiInit()
-{
-    // TODO - Search Extended BIOS Area
+void AcpiInit(){
 
-    // Search main BIOS area below 1MB
     uint8_t *p = (uint8_t *)0x000e0000;
-    uint8_t *end = (uint8_t *)0x000fffff;
+	uint8_t *end = (uint8_t *)0x000fffff;
 
-    while (p < end)
-    {
-        uint64_t signature = *(uint64_t *)p;
-
-        if (signature == 0x2052545020445352) // 'RSD PTR '
-        {
-           if (AcpiParseRsdp(p))
-           {
-			kprintf("\nSignature found\n");
-               break;
-            }
-        }
-
-        p += 16;
-    }
+	while (p < end){
+			uint64_t signature = *(uint64_t *)p;
+			if (signature == 0x2052545020445352){
+					if (AcpiParseRsdp(p)){
+							kprintf("\nSignature found\n");
+							break;
+					}
+			}
+			p += 16;
+	}
 }
-int AcpiRemapIrq(int irq)
-{
-    AcpiMadt *madt = s_madt;
+int AcpiRemapIrq(int irq){
+		AcpiMadt *madt = s_madt;
 
-    uint8_t *p = (uint8_t *)(madt + 1);
-    uint8_t *end = (uint8_t *)madt + madt->header.length;
+		uint8_t *p = (uint8_t *)(madt + 1);
+		uint8_t *end = (uint8_t *)madt + madt->header.length;
 
-    while (p < end)
-    {
-     //   kprintf("%x %x\n", p, end);
-		ApicHeader *header = (ApicHeader *)p;
-        uint8_t type = header->type;
-        uint8_t length = header->length;
+		while (p < end){
 
-        if (type == APIC_TYPE_INTERRUPT_OVERRIDE)
-        {
-            kprintf("\ntype found\n");
-			ApicInterruptOverride *s = (ApicInterruptOverride *)p;
+				ApicHeader *header = (ApicHeader *)p;
+				uint8_t type = header->type;
+				uint8_t length = header->length;
 
-            if (s->source == irq)
-            {
-            kprintf("\nsource type found %x\n", s->interrupt);
-                return s->interrupt;
-            }
-        }
+				if (type == APIC_TYPE_INTERRUPT_OVERRIDE){
 
-        p += length;
-    }
+						ApicInterruptOverride *s = (ApicInterruptOverride *)p;
 
-    return irq;
+						if (s->source == irq){
+								return s->interrupt;
+						}
+				}
+
+				p += length;
+		}
+
+		return irq;
 } 
-*/
-/*void ioapic_set_irq(uint8_t irq, uint64_t apic_id, uint8_t vector) {
-    const uint64_t low_index = 0x10 + irq*2;
-    const uint64_t high_index = 0x10 + irq*2 + 1;
-
-    uint64_t high = IoApicIn((uint64_t *)high_index);
-    // set APIC ID
-    high &= ~0xff000000;
-    high |= apic_id << 24;
-    IoApicOut(high_index, high);
-
-    uint64_t low = IoApicIn((uint64_t *)low_index);
-
-    // unmask the IRQ
-    low &= ~(1<<16);
-
-    // set to physical delivery mode
-    low &= ~(1<<11);
-
-    // set to fixed delivery mode
-    low &= ~0x700;
-
-    // set delivery vector
-    low &= ~0xff;
-    low |= vector;
-
-    IoApicOut(()low_index, low);
-}
-*/ 
 void LOAD_CR(uint64_t addr) {
  
      __asm__ volatile ( "movq %0, %%cr3;"
              :: "r" (addr));
  }
-inline void ioapic_set_irq(uint8_t irq, uint64_t apic_id, uint8_t vector)
-{
-  const uint32_t low_index = 0x10 + irq*2;
-  const uint32_t high_index = 0x10 + irq*2 + 1;
-
-  uint32_t high = ioapic_read(high_index);
-  // set APIC ID
-	high &= ~0xff000000;
-  high |= apic_id << 24;
-  ioapic_write(high_index, high);
-
-  uint32_t low = ioapic_read(low_index);
-	kprintf("low b4: %p\n", low);
-  // unmask the IRQ
-  low &= ~(1<<16);
-
-  // set to physical delivery mode
-  low &= ~(1<<11);
-
-  // set to fixed delivery mode
-  low &= ~0x700;
-
-  // set delivery vector
-  low &= ~0xff;
-  low |= vector;
-
-  ioapic_write(low_index, low);
-	kprintf("low b4: %p\n", ioapic_read(low_index));
-}
 void apicMain(void){
 
 		pic_init();
@@ -686,7 +508,7 @@ void apicMain(void){
 //		IOAPIC_BASE = (uint64_t *)0x45000;
 		APIC_BASE = (uint64_t *)cpu_get_apic_base();
 //		init_map_virt_phys_addr((uint64_t)(KERNEL_VADDR+APIC_BASE),(uint64_t)APIC_BASE, 1, ker_pml4_t, 0);
-		kprintf("\nTesting APIC! Local APIC revision: %x Max LVT entry: %x\n",apicread(LAPIC_VER)&&0xff, ((apicread(LAPIC_VER)>>16) && 0xff)+1);
+		kprintf("APIC rev: %x Max entry: %x\n",apicread(LAPIC_VER)&&0xff, ((apicread(LAPIC_VER)>>16) && 0xff)+1);
 //		apicwrite(0xF0, apicread(0xF0) | 0x100);
 		apicwrite(LAPIC_ERROR, 0x1F); /// 0x1F: temporary vector (all other bits: 0)
 		apicwrite(LAPIC_TPR, 0);
@@ -694,7 +516,6 @@ void apicMain(void){
 		apicwrite(LAPIC_DFR, 0xffffffff);
 		apicwrite(LAPIC_LDR, 0x01000000);
 		apicwrite(LAPIC_SVR, 0x100|0xff);
-//		InitTickISR();
 //		kprintf("\n%x\n", apicread(APIC_BASE + LAPIC_DFR));
 //		kprintf("\n%p\n", apicread(0xF0));
 	//	idt_init();
@@ -709,21 +530,24 @@ void apicMain(void){
 //		IoApicSetEntry(IOAPIC_BASE, AcpiRemapIrq(0x00), 0x20);
 //		__asm__ volatile("sti");
 //kprintf("Passing: %x\n", APIC_BASE + LAPIC_DFR);
-		kprintf("%p\n", apicread(LAPIC_DFR));
-		kprintf("%p\n", apicread(LAPIC_LDR));
-		kprintf("%p\n", apicread(LAPIC_SVR));
+		kprintf("Reading DFR: %p\n", apicread(LAPIC_DFR));
+		kprintf("Reading LDR: %p\n", apicread(LAPIC_LDR));
+		kprintf("Reading SVR: %p\n", apicread(LAPIC_SVR));
 
-		kprintf("\n%x\n", APIC_BASE);
+		kprintf("Verifying LAPIC_BASE in page table: %p\n", APIC_BASE);
 		walk_page_table((uint64_t)APIC_BASE);
-		ioapic_set_irq(33, 0x0020, 33);
+		kprintf("\n");
+		AcpiInit();
+		IoApicInit();
+		IoApicSetEntry(AcpiRemapIrq(0x01), 33);	
+//		ioapic_set_irq(33, 0x0020, 33);
+		kprintf("Setting up interrupt gates\n");
 		idt_init();
+		kprintf("Initializing LAPIC timer\n");
 		timer_init();
 //		mask_en();
 		apic_start_timer();
-//		while(1);
 //		__asm__ volatile("int $33");
-//		apicwrite(APIC_BASE + LAPIC_TIMER, 32 | 0x20000);
-	//	apic_start_timer();
 		
 		
 //		while(1)

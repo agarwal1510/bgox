@@ -32,7 +32,8 @@
 #define APIC_TYPE_LOCAL_APIC            0
 #define APIC_TYPE_IO_APIC               1
 #define APIC_TYPE_INTERRUPT_OVERRIDE    2
-
+#define IOAPICVER                       0x01
+#define IOREDTBL                        0x10
 typedef struct AcpiHeader
 {
     uint32_t signature;
