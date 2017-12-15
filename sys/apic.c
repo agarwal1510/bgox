@@ -125,20 +125,25 @@ void irq_kb_handler(void){
 				}
 				if (key == 0x1d){
 						CTRL_ON = 1;
-						SHIFT_ON = 1; // should be ^C and not ^c
+			//			SHIFT_ON = 1; // should be ^C and not ^c
 						kprintf_at("%c", 146, 24, '^');
 						return;
 				}
 				else if (key == 0x9d){
 						CTRL_ON = 0;
 						SHIFT_ON = 0;
+	//					kprintf_at("%c", 146, 24, ' ');
 						return;
+				}
+				else if (key == 0x1c){
+					kprintf_at("^M", 146, 24);
+					return;
 				}
 				if (key < 0x52){ // Keys over SSH
 						if (CTRL_ON == 0){
 		//						kprintf_at("%c", 146, 24, ' ');
 						}
-						if (SHIFT_ON == 1){
+						if (SHIFT_ON == 1 || CTRL_ON == 1){
 								switch (key){
 										case 2:
 												kprintf_at("%c", 148, 24, '!');
@@ -203,8 +208,13 @@ void irq_kb_handler(void){
 										case 53:
 												kprintf_at("%c", 148, 24, '?');
 												break;
-										default:
+										default:{
+								//				kprintf_at("%c", 146, 24, ' ');
+								//				kprintf_at("%c", 148+CTRL_ON, 24, kbdus[key] - 32);
+												if (SHIFT_ON == 1)
+													kprintf_at("%c", 146, 24, ' ');
 												kprintf_at("%c", 148, 24, kbdus[key] - 32);	
+										}
 												break;
 								}
 						}
