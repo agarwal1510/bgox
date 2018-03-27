@@ -1,4 +1,4 @@
-# bgox (BigOx)
+# SBUnix
 A cooperative 64-bit multitasking operating system featuring interrupt driven I/O, x86 compliant 4 level page tables, User and Kernel Level process context switch and scheduling policies, memory virtualization and a read-only file system. When booted, the kernel presents user with a command line interface[oxTerm] for execution of a pre-defined set of command line stack.
 
 
